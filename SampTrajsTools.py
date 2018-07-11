@@ -3,29 +3,31 @@
 
 import numpy as np
 import cvxpy as cp
+#from cvxpy import *
 
-# Default solver options for CVXOPT. 
+# Default solver options for CVXOPT.
 # Scroll down to "Setting solver options" for explanations here:
-# https://www.cvxpy.org/tutorial/advanced/index.html 
+# https://www.cvxpy.org/tutorial/advanced/index.html
 #
-# These options can be overwritten from outside (for example in 
-# python notebook) before calling semidefRelaxation[Noiseless]. 
+# These options can be overwritten from outside (for example in
+# python notebook) before calling semidefRelaxation[Noiseless].
 OPTIONS = {
     cp.SCS: {
-        "max_iters": 2500, 
-        "eps": 1e-3, #convergence tolerance
-        "alpha": 1.8, #relaxation parameer
-        "scale": 5.0, # balance between primal and dual residual
-        "normalize": True, #precondition data matrices
-        "use_indirect": True, #use indirect solver for KKT system
-    }, 
+        "max_iters": 2500,
+        "eps": 1e-3,  # convergence tolerance
+        "alpha": 1.8,  # relaxation parameer
+        "scale": 5.0,  # balance between primal and dual residual
+        "normalize": True,  # precondition data matrices
+        "use_indirect": True,  # use indirect solver for KKT system
+    },
     cp.CVXOPT: {
         "max_iters": 100,
-        "abstol": 1e-7, 
+        "abstol": 1e-7,
         "reltol": 1e-6,
-        "feastol": 1e-7, 
-        "refinement": 1, #number of iterative refinement steps after solving KKT.
-        "kktsolver": "chol" #set to "robust" for LDL fact. without cholesky-preprocessing
+        "feastol": 1e-7,
+        # number of iterative refinement steps after solving KKT.
+        "refinement": 1,
+        "kktsolver": "chol"  # set to "robust" for LDL fact. without cholesky-preprocessing
     }
 }
 
@@ -42,7 +44,6 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS)
 
     parameters are same as for semidefRelaxation. 
     """
-
     print("Running with options:", OPTIONS[chosen_solver])
 
     [D, M] = anchors.shape
@@ -50,38 +51,59 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS)
     N = D_topright.shape[0]
 
     Z = cp.Variable((D + K, D + K), PSD=True)
+
     Epsilon = cp.Variable(1)
 
     constraints = []
 
+    #constraints.append(Z == Z.T)
     for d in range(D):
         e_d = np.zeros((D + K, 1))
         e_d[d] = 1.0
-        for dprime in range(D):
+
+        # Because of symmetry, we can
+        # impose the upper right triangle of the matrix only.
+        for dprime in range(d, D):
             e_dprime = np.zeros((D + K, 1))
             e_dprime[dprime] = 1.0
 
             delta = 1.0 if d == dprime else 0.0
 
             constraints.append(e_d.T * Z * e_dprime == delta)
-    
+
     W = D_topright > 0
     Ns, Ms = np.where(W)
 
+    T = []
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((N, 1))
         e_n[n] = 1.0
+        f_n = basis @ e_n
         a_m = np.reshape(anchors[:, m], (-1, 1))
-        t_mn = np.r_[a_m, -basis @ e_n]
-            
+        t_mn = np.r_[a_m, -f_n]
+
+        T.append(t_mn)
+
+        tmp = t_mn @ t_mn.T
+        #print(tmp)
+        #constraints.append(cp.atoms.affine.vec.vec(tmp) * cp.atoms.affine.vec.vec(Z) == D_topright[n, m])
+
+        #if i == -10:
+        #    print(t_mn)
         constraints.append(t_mn.T * Z * t_mn == D_topright[n, m])
 
-    obj = cp.Minimize(cp.sum(Epsilon))
+    #cp.indicator(constraints) # infinity when not met, otherwise 0.
+
+    T = np.array(T)
+    print(T.shape)
+
+    #obj = cp.Minimize(cp.sum(Epsilon))
+    obj = cp.Minimize(cp.sum(Z))
     prob = cp.Problem(obj, constraints)
 
     # TODO for debugging only
-    #print("Standard form:")
-    #print(prob.get_problem_data(chosen_solver))
+    #  print("Standard form:")
+    #  print(prob.get_problem_data(chosen_solver))
 
     prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver], verbose=True)
     return Z.value
@@ -93,8 +115,8 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     Z, D = argmin sum_i(epsilon_i)
 
     s.t.
-    [-d_i 1] D_i [-d_i 1]^T
-    [a_m -Fe_n] Z [a_m -Fe_n]^T = v_i
+    [-d_i 1] D_i [-d_i 1]^T = epsilon_i
+    [a_m -f_n] Z [a_m -f_n]^T = v_i
     D_i >= 0
     Z >= 0 
     
@@ -106,7 +128,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
     :return: Z, the matrix composed of [I, P; P^T, Pbar]. 
     """
-    # TODO this part and the one of the noiseless function could be combined in one. 
+    # TODO this part and the one of the noiseless function could be combined in one.
 
     print("Running with options:", OPTIONS[chosen_solver])
 
@@ -120,35 +142,59 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     Ns, Ms = np.where(W)
     S = len(Ms)
 
-    # We introduce a big matrix consisting of Z and D_mn on the diagonal, 
-    # to bring the problem into a standard form with only one variable. 
-    X_size = D+K + 2*S
+    # We introduce a big matrix consisting of Z and D_mn on the diagonal,
+    # to bring the problem into a standard form with only one variable.
+    X_size = D + K + 2 * S
     X = cp.Variable((X_size, X_size), PSD=True)
 
 
-    # The error that we are minimizing (has to be of form "Variable" even though 
-    # we are not really interested in its value in the end. 
-    Epsilon = cp.Variable(shape=(N, M))
+    # The error that we are minimizing (has to be of form "Variable" even though
+    # we are not really interested in its value in the end.
+    Epsilon = cp.Variable(shape=(N, M), nonneg=True)
+
+    # DEBUGGING
+    constraints.append(X == X.T)
+
+    # impose form 
+    constraints.append(X[0, 0] == 1.0)
+    constraints.append(X[1, 1] == 1.0)
+    constraints.append(X[0, 1] == 0.0)
+
+    test = np.ones((X_size, X_size))
+
+    constraints.append(X[D+K:, :D+K] == 0.0)
+    test[D+K:, :D+K] = 0
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((N, 1))
         e_n[n] = 1.0
         a_m = np.reshape(anchors[:, m], (-1, 1))
-        t_mn = np.r_[a_m, -basis @ e_n]
+        f_n = basis @ e_n
+        t_mn = np.r_[a_m, -f_n]
 
         # express constraint on Z in terms of X.
         b = np.zeros((X_size, 1))
         b[:D + K] = t_mn
         b[D + K + 2 * i + 1] = -1.0
-        constraints.append(b.T * X * b == 0)
+        tmp = b @ b.T
+        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == 0)
+        #constraints.append(b.transpose() * X * b == 0)
 
-        # Express constraint on D_i in terms of X. 
+        # Express constraint on D_i in terms of X.
         d = np.zeros((X_size, 1))
-        d[K + D + 2 * i] = - D_topright[n, m]
-        d[K + D + 2 * i + 1] = 1.0
-        constraints.append(d.T * X * d == Epsilon[n, m])
+        d[D + K + 2 * i] = - D_topright[n, m] # multiplies 1
+        d[D + K + 2 * i + 1] = 1.0 # multiplies v_i
+        tmp = d @ d.T
+        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
+        #constraints.append(d.transpose() * X * d == Epsilon[n, m])
 
-    obj = cp.Minimize(cp.sum(cp.multiply(W, Epsilon)))
+        for ys in range(D+K + 2*(i+1), X_size):
+            for xs in range(D+K+2*i, D+K+2*(i+1)):
+                constraints.append(X[ys, xs] == 0.0)
+                test[ys, xs] = 0.0
+        print('set up constraint {}/{}'.format(i+1, S))
+
+    obj = cp.Minimize(cp.sum(Epsilon))
     prob = cp.Problem(obj, constraints)
 
     # TODO for debugging only
