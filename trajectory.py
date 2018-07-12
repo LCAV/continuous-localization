@@ -24,14 +24,18 @@ class Trajectory(object):
     def get_basis(self, n_samples=None):
         if n_samples is None:
             n_samples = self.n_positions
-
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(np.linspace(0, self.n_positions,
                                    n_samples), [1, n_samples])
-        self.basis = np.cos(np.pi * k * n / self.n_positions)
-        return self.basis
+        return np.cos(np.pi * k * n / self.n_positions)
 
-    def get_random_trajectory(self, seed=None):
+
+    def set_basis(self, n_samples=None):
+        """ Sets self.basis. """
+        self.basis = self.get_basis(n_samples)
+
+    def set_random_trajectory(self, seed=None):
+        """ Sets self.coeffs, self.Z_opt, self.trajectory. """
         if seed is not None:
             np.random.seed(seed)
 
@@ -41,7 +45,7 @@ class Trajectory(object):
         self.Z_opt = np.vstack([np.hstack([np.eye(DIM), self.coeffs]),
                                 np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
-        self.get_basis()
+        self.set_basis()
         self.trajectory = self.coeffs @ self.basis
 
         return self.trajectory

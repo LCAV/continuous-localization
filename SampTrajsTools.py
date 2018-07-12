@@ -192,7 +192,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
             for xs in range(D+K+2*i, D+K+2*(i+1)):
                 constraints.append(X[ys, xs] == 0.0)
                 test[ys, xs] = 0.0
-        print('set up constraint {}/{}'.format(i+1, S))
+    print('Set up constraint {}/{}. Solving...'.format(i+1, S))
 
     obj = cp.Minimize(cp.sum(Epsilon))
     prob = cp.Problem(obj, constraints)
