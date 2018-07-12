@@ -21,9 +21,7 @@ class TestTrajectory(unittest.TestCase):
         self.traj.get_random_trajectory(seed=1)
 
         w, v = np.linalg.eig(self.traj.Z_opt)
-        # TODO make test
-        print('should be positive:')
-        print(w)
+        self.assertTrue(np.all(w > -1e-10))
 
     def test_constraints(self):
         """ Check the correct trajectory satisfies constraints.  """
@@ -66,43 +64,6 @@ class TestTrajectory(unittest.TestCase):
         A, b = get_constraints_matrix(
             self.env.D_topright, self.env.anchors, self.traj.basis)
         np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
-
-    #  def test_nullspace(self):
-        # TODO decide what to check here. 
-        #  DIM = 2
-
-        #  print(ConstraintsMat.shape)
-        #  print(ConstraintsVec.shape)
-        #  u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=True)
-
-        #  print(np.around(s, 3))
-
-        #  #construct right inverse and check i
-        #  num_zero_SVs = len(np.where(s < 1e-10)[0])
-        #  Z_hat = vh[:-num_zero_SVs, :].T@np.diag(1/s[:-num_zero_SVs])@u[:, :len(
-            #  s)-num_zero_SVs].T@ConstraintsVec  # right inverse
-        #  Z_hat = Z_hat.reshape([DIM + n_complexity, DIM + n_complexity])
-        #  # should satisfy constraints since it's a right inverse
-        #  print(np.isclose(ConstraintsMat @ Z_hat.flatten(), ConstraintsVec))
-        #  coeffs_hat = Z_hat[:DIM, DIM:]
-        #  print(np.isclose(coeffs, coeffs_hat))
-
-        #  print('find basis vectors of null space')
-        #  tmp = vh[-num_zero_SVs:, :]
-        #  print(tmp.shape)
-        #  nullSpace = []
-        #  for i in range(num_zero_SVs):
-            #  nullSpace.append(tmp[i, :].reshape(
-                #  [DIM + n_complexity, DIM + n_complexity]))
-
-        #  nullSpace = np.array(nullSpace)
-        #  Z_hat2 = Z_hat + nullSpace[0, :] + 2 * \
-            #  nullSpace[1, :] + 3*nullSpace[2, :]
-        #  print(np.isclose(ConstraintsMat@(
-            #  Z_hat2.flatten()), ConstraintsVec))
-        #  print(np.around(nullSpace[0, :], 5))
-        #  print(np.around(nullSpace[1, :], 5))
-        #  print(np.around(nullSpace[2, :], 5))
 
 if __name__ == "__main__":
     unittest.main()
