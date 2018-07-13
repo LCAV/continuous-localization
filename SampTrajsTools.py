@@ -13,7 +13,7 @@ import cvxpy as cp
 # python notebook) before calling semidefRelaxation[Noiseless].
 OPTIONS = {
     cp.SCS: {
-        "verbose": False, 
+        "verbose": False,
         "max_iters": 2500,
         "eps": 1e-3,  # convergence tolerance
         "alpha": 1.8,  # relaxation parameer
@@ -22,7 +22,7 @@ OPTIONS = {
         "use_indirect": True,  # use indirect solver for KKT system
     },
     cp.CVXOPT: {
-        "verbose": False, 
+        "verbose": False,
         "max_iters": 100,
         "abstol": 1e-7,
         "reltol": 1e-6,
@@ -47,7 +47,7 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     parameters are same as for semidefRelaxation. 
     """
 
-    # overwrite predefined options with kwargs. 
+    # overwrite predefined options with kwargs.
     options = OPTIONS[chosen_solver]
     options.update(kwargs)
 
@@ -148,7 +148,6 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     X_size = D + K + 2 * S
     X = cp.Variable((X_size, X_size), PSD=True)
 
-
     # The error that we are minimizing (has to be of form "Variable" even though
     # we are not really interested in its value in the end.
     Epsilon = cp.Variable(shape=(N, M), nonneg=True)
@@ -156,15 +155,15 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     # DEBUGGING
     constraints.append(X == X.T)
 
-    # impose form 
+    # impose form
     constraints.append(X[0, 0] == 1.0)
     constraints.append(X[1, 1] == 1.0)
     constraints.append(X[0, 1] == 0.0)
 
     test = np.ones((X_size, X_size))
 
-    constraints.append(X[D+K:, :D+K] == 0.0)
-    test[D+K:, :D+K] = 0
+    constraints.append(X[D + K:, :D + K] == 0.0)
+    test[D + K:, :D + K] = 0
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((N, 1))
@@ -183,17 +182,18 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
         # Express constraint on D_i in terms of X.
         d = np.zeros((X_size, 1))
-        d[D + K + 2 * i] = - D_topright[n, m] # multiplies 1
-        d[D + K + 2 * i + 1] = 1.0 # multiplies v_i
+        d[D + K + 2 * i] = -D_topright[n, m]  # multiplies 1
+        d[D + K + 2 * i + 1] = 1.0  # multiplies v_i
         tmp = d @ d.T
-        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
+        constraints.append(
+            cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
         #constraints.append(d.transpose() * X * d == Epsilon[n, m])
 
-        for ys in range(D+K + 2*(i+1), X_size):
-            for xs in range(D+K+2*i, D+K+2*(i+1)):
+        for ys in range(D + K + 2 * (i + 1), X_size):
+            for xs in range(D + K + 2 * i, D + K + 2 * (i + 1)):
                 constraints.append(X[ys, xs] == 0.0)
                 test[ys, xs] = 0.0
-    print('Set up constraint {}/{}. Solving...'.format(i+1, S))
+    print('Set up constraint {}/{}. Solving...'.format(i + 1, S))
 
     obj = cp.Minimize(cp.sum(Epsilon))
     prob = cp.Problem(obj, constraints)
@@ -205,7 +205,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
 
     if X.value is not None:
-        Z = X.value[:D+K, :D+K]
+        Z = X.value[:D + K, :D + K]
         return Z
     else:
         return None
@@ -214,38 +214,41 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 def lowRankApproximation(anchors, r):
     U, s, VT = np.linalg.svd(anchors, full_matrices=False)
     s[r:] = 0
-    return U@np.diag(s)@VT
+    return U @ np.diag(s) @ VT
 
 
 def reconstructD_topright(X_0, basis, anchors):
     N = basis.shape[1]
     M = anchors.shape[1]
-    return np.outer(np.ones(N), np.diag(anchors.T@anchors))-2*basis.T@X_0.T@anchors+np.outer(np.diag(basis.T@X_0.T@X_0@basis), np.ones(M))
+    return np.outer(np.ones(N), np.diag(
+        anchors.T @ anchors)) - 2 * basis.T @ X_0.T @ anchors + np.outer(
+            np.diag(basis.T @ X_0.T @ X_0 @ basis), np.ones(M))
 
 
 def customMDS(D_topright, basis, anchors):
     [d, M] = anchors.shape
     N = basis.shape[1]
-    JM = np.eye(M)-np.ones([M, M])/M
+    JM = np.eye(M) - np.ones([M, M]) / M
     tmp = lowRankApproximation(
-        JM@(np.outer(np.diag(anchors.T@anchors), np.ones(N)) - D_topright.T), d)
-    return 0.5 * np.linalg.inv(anchors @ JM @ anchors.T) @ anchors @ tmp @ basis.T @ np.linalg.inv(basis @ basis.T)
+        JM @ (np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.T), d)
+    return 0.5 * np.linalg.inv(anchors @ JM @ anchors.T) @ anchors @ tmp @ basis.T @ np.linalg.inv(
+        basis @ basis.T)
 
 
 def SRLS(anchors, basis, X_0, D_topright):
     D_topright_hat = reconstructD_topright(X_0, basis, anchors)
-    return np.linalg.norm(D_topright-D_topright_hat, 2)
+    return np.linalg.norm(D_topright - D_topright_hat, 2)
 
 
 def getSRLSGrad(anchors, basis, X_0, D_topright):
     [K, N] = basis.shape
     M = anchors.shape[1]
-    LHS = anchors@(np.outer(np.diag(anchors.T@anchors),
-                            np.ones(N))-D_topright.transpose())@basis.T
+    LHS = anchors @ (
+        np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.transpose()) @ basis.T
 
-    term1 = M*np.outer(np.diag(basis.T@X_0.T@X_0@basis), np.ones(K))
-    term2 = - 2*basis.T@X_0.T@anchors@np.outer(np.ones(M), np.ones(K))
-    term3 = - D_topright@np.outer(np.ones(M), np.ones(K))
+    term1 = M * np.outer(np.diag(basis.T @ X_0.T @ X_0 @ basis), np.ones(K))
+    term2 = -2 * basis.T @ X_0.T @ anchors @ np.outer(np.ones(M), np.ones(K))
+    term3 = -D_topright @ np.outer(np.ones(M), np.ones(K))
     RHS = X_0@basis@((term1+term2+term3)*basis.T)+np.sum(np.diag(anchors.T@anchors))*X_0@basis@basis.T + \
         anchors@(2*anchors.T@X_0@basis-np.outer(np.ones(M),
                                                 np.diag(basis.T@X_0.T@X_0@basis)))@basis.T
@@ -264,28 +267,27 @@ def gradientStep(anchors, basis, X_0, D_topright, maxIters=10):
     minStep = 0
     maxStep = 0.01
     for i in range(maxIters):
-        step = (maxStep-minStep)/2
-        X_0_test = X_0_hat-step*grad
+        step = (maxStep - minStep) / 2
+        X_0_test = X_0_hat - step * grad
         cost = SRLS(anchors, basis, X_0_test, D_topright)
         if cost < bestX_0ost:
             bestX_0ost = cost
             X_0_hat = X_0_test
             minStep = step
-            maxStep = 2*maxStep
+            maxStep = 2 * maxStep
         else:
             maxStep = step
-            minStep = minStep/2
+            minStep = minStep / 2
     return X_0_hat, bestX_0ost
 
 
 def gradientDescent(anchors, basis, X_0, D_topright, maxIters=10):
-     X_0_hat = X_0
-     costs = [SRLS(anchors, basis, X_0, D_topright)]
-     for i in range(maxIters):
-         X_0_hat, cost = gradientStep(
-             anchors, basis, X_0_hat, D_topright, maxIters=100)
-         costs.append(cost)
-     return X_0_hat, costs
+    X_0_hat = X_0
+    costs = [SRLS(anchors, basis, X_0, D_topright)]
+    for i in range(maxIters):
+        X_0_hat, cost = gradientStep(anchors, basis, X_0_hat, D_topright, maxIters=100)
+        costs.append(cost)
+    return X_0_hat, costs
 
 
 def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, print_out=False, DR_true=None):
@@ -316,8 +318,7 @@ def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, print_out=F
 
         # approximate coeffiecients
         X_0 = customMDS(DR_complete[:N, :], basis, anchors)
-        X_0, costs = gradientDescent(
-            anchors, basis, X_0, DR_complete[:N, :], maxIters=10)
+        X_0, costs = gradientDescent(anchors, basis, X_0, DR_complete[:N, :], maxIters=10)
 
         # update DR
         DR_complete[:N, :] = reconstructD_topright(X_0, basis, anchors)
@@ -329,4 +330,4 @@ def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, print_out=F
 
 
 if __name__ == "__main__":
-  print('nothing happens when running this module.')
+    print('nothing happens when running this module.')
