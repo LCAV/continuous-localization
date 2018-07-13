@@ -1,6 +1,5 @@
-# coding: utf-8
-
-# In[4]:
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import numpy as np
 import unittest
@@ -42,20 +41,24 @@ class TestGeometry(unittest.TestCase):
                 np.testing.assert_almost_equal(
                     t_mn.T @ self.traj.Z_opt @ t_mn, D_topright_mn)
 
+                tmp = t_mn @ t_mn.T
+                A = tmp.flatten()
+                self.assertAlmostEqual(A @ (self.traj.Z_opt).flatten(), D_topright_mn)
+
             A, b = get_constraints_identity(
                 self.traj.n_complexity, linear=True)
             np.testing.assert_array_almost_equal(
                 A @ self.traj.Z_opt.flatten(), b)
 
             A, b = get_constraints_D(
-                D_topright, self.env.anchors, self.traj.basis, linear=True)
-            np.testing.assert_array_almost_equal(
-                A @ self.traj.Z_opt.flatten(), b)
+                D_topright, self.env.anchors, self.traj.basis, linear=True, A=A, b=b)
+            np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
             A, b = get_constraints_symmetry(
                 self.traj.n_complexity, linear=True)
             np.testing.assert_array_almost_equal(
                 A @ self.traj.Z_opt.flatten(), b)
+
 
     def test_all_linear(self):
         self.traj.set_trajectory()

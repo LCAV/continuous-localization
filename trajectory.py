@@ -1,9 +1,5 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-#
-# Copyright © 2018 Frederike Duembgen <frederike.duembgen@gmail.com>
-#
-# Distributed under terms of the MIT license.
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,6 +21,7 @@ class Trajectory(object):
     def get_basis(self, n_samples=None):
         if n_samples is None:
             n_samples = self.n_positions
+
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(np.linspace(0, self.n_positions,
                                    n_samples), [1, n_samples])
