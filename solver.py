@@ -12,46 +12,6 @@ import numpy as np
 solver.py: 
 """
 
-def estimate_trajectory(env, traj):
-    env.get_measurements()
-    from SampTrajsTools import OPTIONS
-
-    # We cane change the global variable OPTIONS here.
-
-    #OPTIONS[cvxpy.SCS]["max_iters"] = 200
-    # Seems to have no effect:
-    #OPTIONS[cvxpy.SCS]["use_indirect"] = False
-    # Seems to have no effect either:
-    #OPTIONS[cvxpy.SCS]["eps"] = 1e-1
-    # Seems to have no effect either:
-    #OPTIONS[cvxpy.SCS]["scale"] = 1
-
-    # Fails completely without this:
-    #OPTIONS[cvxpy.CVXOPT]["kktsolver"] = "robust"
-
-    # have no effect:
-    #OPTIONS[cvxpy.CVXOPT]["feastol"] = 1e-3
-    #OPTIONS[cvxpy.CVXOPT]["reltol"] = 1e-5
-    #OPTIONS[cvxpy.CVXOPT]["abstol"] = 1e-5
-
-    # leads to faster non-convergence:
-    #OPTIONS[cvxpy.CVXOPT]["refinement"] = 0
-
-    #OPTIONS[cvxpy.SCS]["verbose"] = False
-
-    X = semidefRelaxationNoiseless(env.D_topright, env.anchors, traj.basis)
-
-    print('should be identity:\n', X[:DIM, :DIM])
-    print('should be equal:\n', X[:DIM:, DIM:])
-    print(coeffs)
-
-    plt.matshow(X[:20, :20])
-    plt.colorbar()
-
-    plt.matshow(X[-20:, -20:])
-    plt.colorbar()
-
-
 def get_constraints_D(D, anchors, basis, linear=False, A=[], b=[]):
     n_positions,__ = D.shape
     W = D > 0

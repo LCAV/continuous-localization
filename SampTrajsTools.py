@@ -32,7 +32,7 @@ OPTIONS = {
 }
 
 
-def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS):
+def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
     """ Solve semidefinite feasibility problem of sensor localization problem. 
 
     find Z 
@@ -44,7 +44,13 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS)
 
     parameters are same as for semidefRelaxation. 
     """
-    print("Running with options:", OPTIONS[chosen_solver])
+
+    # overwrite predefined options with kwargs. 
+    options = OPTIONS[chosen_solver]
+    options.update(kwargs)
+
+    if options["verbose"]:
+        print("Running with options:", OPTIONS[chosen_solver])
 
     [D, M] = anchors.shape
     K = basis.shape[0]
@@ -95,7 +101,6 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS)
     #cp.indicator(constraints) # infinity when not met, otherwise 0.
 
     T = np.array(T)
-    print(T.shape)
 
     #obj = cp.Minimize(cp.sum(Epsilon))
     obj = cp.Minimize(cp.sum(Z))
@@ -105,7 +110,7 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS)
     #  print("Standard form:")
     #  print(prob.get_problem_data(chosen_solver))
 
-    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver], verbose=True)
+    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
     return Z.value
 
 
@@ -201,7 +206,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     #print("Standard form:")
     #print(prob.get_problem_data(chosen_solver))
 
-    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver], verbose=True)
+    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
 
     if X.value is not None:
         Z = X.value[:D+K, :D+K]
