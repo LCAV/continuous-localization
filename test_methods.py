@@ -8,6 +8,7 @@ from SampTrajsTools import *
 from trajectory import Trajectory
 from environment import Environment
 from solver import *
+import cvxpy
 
 
 class TestMethods(unittest.TestCase):
@@ -60,6 +61,7 @@ class TestMethods(unittest.TestCase):
                 self.D_topright,
                 self.env.anchors,
                 self.traj.basis,
+                chosen_solver=cvxpy.CVXOPT,
                 verbose=False)
             coeffs_est = X[:DIM:, DIM:]
             np.testing.assert_array_almost_equal(

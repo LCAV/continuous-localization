@@ -13,6 +13,7 @@ import cvxpy as cp
 # python notebook) before calling semidefRelaxation[Noiseless].
 OPTIONS = {
     cp.SCS: {
+        "verbose": False, 
         "max_iters": 2500,
         "eps": 1e-3,  # convergence tolerance
         "alpha": 1.8,  # relaxation parameer
@@ -21,6 +22,7 @@ OPTIONS = {
         "use_indirect": True,  # use indirect solver for KKT system
     },
     cp.CVXOPT: {
+        "verbose": False, 
         "max_iters": 100,
         "abstol": 1e-7,
         "reltol": 1e-6,
@@ -90,12 +92,6 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
 
         T.append(t_mn)
 
-        tmp = t_mn @ t_mn.T
-        #print(tmp)
-        #constraints.append(cp.atoms.affine.vec.vec(tmp) * cp.atoms.affine.vec.vec(Z) == D_topright[n, m])
-
-        #if i == -10:
-        #    print(t_mn)
         constraints.append(t_mn.T * Z * t_mn == D_topright[n, m])
 
     #cp.indicator(constraints) # infinity when not met, otherwise 0.
@@ -110,7 +106,7 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     #  print("Standard form:")
     #  print(prob.get_problem_data(chosen_solver))
 
-    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
+    prob.solve(solver=chosen_solver, **options)
     return Z.value
 
 
