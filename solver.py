@@ -12,7 +12,7 @@ import numpy as np
 solver.py: 
 """
 
-def get_constraints_D(D, anchors, basis, linear=False, A=[], b=[]):
+def get_constraints_D(D, anchors, basis, linear=False, A=None, b=None):
     n_positions,__ = D.shape
     W = D > 0
     Ns, Ms = np.where(W)
@@ -20,6 +20,9 @@ def get_constraints_D(D, anchors, basis, linear=False, A=[], b=[]):
     if not linear:
         t_mns = []
         D_mns = []
+    elif A is None and b is None:
+        A = []
+        b = []
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((n_positions, 1))
@@ -28,6 +31,7 @@ def get_constraints_D(D, anchors, basis, linear=False, A=[], b=[]):
         t_mn = np.r_[a_m, -basis @ e_n]
 
         if linear:
+            t_mn = np.array(t_mn)
             tmp = t_mn @ t_mn.T
             A.append(tmp.flatten())
             b.append(D[n, m])
@@ -41,11 +45,14 @@ def get_constraints_D(D, anchors, basis, linear=False, A=[], b=[]):
         return A, b
 
 
-def get_constraints_identity(n_complexity, linear=False, A=[], b=[]):
+def get_constraints_identity(n_complexity, linear=False, A=None, b=None):
     if not linear:
         e_ds = []
         e_dprimes = []
         deltas = []
+    elif A is None and b is None:
+        A = []
+        b = []
 
     for d in range(DIM):
         e_d = np.zeros((DIM + n_complexity, 1))
@@ -72,7 +79,12 @@ def get_constraints_identity(n_complexity, linear=False, A=[], b=[]):
         return A, b
 
 
-def get_constraints_symmetry(n_complexity, linear=True, A=[], b=[]):
+def get_constraints_symmetry(n_complexity, linear=True, A=None, b=None):
+    if linear and A is None:
+        A = []
+    if linear and b is None:
+        b = []
+
     for i in range(DIM + n_complexity):
         for j in range(i+1, DIM + n_complexity):
             tmp = np.zeros((DIM + n_complexity)*(DIM + n_complexity))
