@@ -11,24 +11,15 @@ from environment import Environment
 from solver import *
 
 
-class TestTrajectory(unittest.TestCase):
+class TestGeometry(unittest.TestCase):
     def setUp(self):
         self.traj = Trajectory()
         self.env = Environment()
 
-    def test_trajectory(self):
-        """ Check the correct trajectory is PSD.  """
-
-        for i in range(100):
-            self.traj.set_trajectory(seed=i)
-
-            w, v = np.linalg.eig(self.traj.Z_opt)
-            self.assertTrue(np.all(w > -1e-10))
-
     def test_constraints(self):
         """ Check the correct trajectory satisfies constraints.  """
 
-        for i in range(1):
+        for i in range(100):
             self.traj.set_trajectory(seed=i)
             self.env.set_random_anchors(seed=i)
             self.env.set_D(self.traj)
