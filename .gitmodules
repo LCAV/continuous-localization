@@ -1,0 +1,4 @@
+[submodule "pylocus"]
+	path = pylocus
+	url = https://github.com/LCAV/pylocus
+	branch = fix/update_cvxpy_version

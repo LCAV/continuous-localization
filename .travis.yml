@@ -1,0 +1,8 @@
+language: python
+sudo: required
+install: 
+  - pip install -r requirements.txt
+python:
+  - "3.5"
+script:
+  - pytest  
