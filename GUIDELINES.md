@@ -33,6 +33,16 @@ Z = {
 # yapf: enable
 ```
 
+If you would like to autoformat all files using yapf before each local commit, 
+simply run the following commands in your local git repository (taken from [here](https://github.com/google/yapf/tree/master/plugins))
+
+```
+curl -o pre-commit.sh https://raw.githubusercontent.com/google/yapf/master/plugins/pre-commit.sh
+chmod a+x pre-commit.sh
+mv pre-commit.sh .git/hooks/pre-commit
+```
+ 
+
 
 ## File headers and footers
 
