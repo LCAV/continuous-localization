@@ -1,5 +1,7 @@
 # SamplingTrajectories
 
+[![Build Status](https://travis-ci.com/duembgen/SamplingTrajectories.svg?token=VrsjbT3JmKFwqdG5e1cc&branch=master)](https://travis-ci.com/duembgen/SamplingTrajectories)
+
 ## Authors
 
 Created by (in alphabetic order): 
