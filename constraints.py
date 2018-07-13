@@ -1,19 +1,16 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2018 Frederike Duembgen <frederike.duembgen@gmail.com>
-#
-# Distributed under terms of the MIT license.
 
 from global_variables import DIM
 import numpy as np
+"""
+constraints.py: 
+"""
 
-"""
-solver.py: 
-"""
 
 def get_constraints_D(D, anchors, basis, linear=False, A=None, b=None):
-    n_positions,__ = D.shape
+    n_positions, __ = D.shape
     W = D > 0
     Ns, Ms = np.where(W)
 
@@ -86,10 +83,10 @@ def get_constraints_symmetry(n_complexity, linear=True, A=None, b=None):
         b = []
 
     for i in range(DIM + n_complexity):
-        for j in range(i+1, DIM + n_complexity):
-            tmp = np.zeros((DIM + n_complexity)*(DIM + n_complexity))
-            tmp[i*(DIM + n_complexity)+j] = 1
-            tmp[j*(DIM + n_complexity)+i] = -1
+        for j in range(i + 1, DIM + n_complexity):
+            tmp = np.zeros((DIM + n_complexity) * (DIM + n_complexity))
+            tmp[i * (DIM + n_complexity) + j] = 1
+            tmp[j * (DIM + n_complexity) + i] = -1
             if linear:
                 A.append(tmp.flatten())
                 b.append(0)

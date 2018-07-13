@@ -3,12 +3,11 @@
 
 import numpy as np
 import unittest
+from cvxpy import CVXOPT
 
-from SampTrajsTools import *
+from solvers import *
 from trajectory import Trajectory
 from environment import Environment
-from solver import *
-import cvxpy
 
 
 class TestMethods(unittest.TestCase):
@@ -21,8 +20,7 @@ class TestMethods(unittest.TestCase):
         self.traj.set_trajectory(seed=seed)
         self.env.set_random_anchors(seed=seed)
         self.env.set_D(self.traj)
-        self.D_topright = self.env.D[:self.traj.n_positions,
-                                     self.traj.n_positions:]
+        self.D_topright = self.env.D[:self.traj.n_positions, self.traj.n_positions:]
 
     def improve_with_gradientDescent(self, coeffs_est):
         """ Make sure result gets better after running a few iters of grad descent. """
@@ -38,15 +36,10 @@ class TestMethods(unittest.TestCase):
             return
 
         coeffs_grad, __ = gradientDescent(
-            self.env.anchors,
-            self.traj.basis,
-            coeffs_est,
-            self.D_topright,
-            maxIters=10)
+            self.env.anchors, self.traj.basis, coeffs_est, self.D_topright, maxIters=10)
         err_refined = np.linalg.norm(coeffs_grad - self.traj.coeffs)
 
-        np.testing.assert_array_almost_equal(
-            coeffs_grad, self.traj.coeffs, decimal=2)
+        np.testing.assert_array_almost_equal(coeffs_grad, self.traj.coeffs, decimal=2)
 
         self.assertTrue((err_refined <= err_raw) or (abs(err_refined) < 1e-10))
 
@@ -61,13 +54,11 @@ class TestMethods(unittest.TestCase):
                 self.D_topright,
                 self.env.anchors,
                 self.traj.basis,
-                chosen_solver=cvxpy.CVXOPT,
+                chosen_solver=CVXOPT,
                 verbose=False)
             coeffs_est = X[:DIM:, DIM:]
-            np.testing.assert_array_almost_equal(
-                X[:DIM:, :DIM], np.eye(DIM), decimal=1)
-            np.testing.assert_array_almost_equal(
-                coeffs_est, self.traj.coeffs, decimal=1)
+            np.testing.assert_array_almost_equal(X[:DIM:, :DIM], np.eye(DIM), decimal=1)
+            np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=1)
 
             self.improve_with_gradientDescent(coeffs_est)
 
@@ -78,10 +69,8 @@ class TestMethods(unittest.TestCase):
             self.set_measurements(i)
 
             # check noiseless methods.
-            coeffs_est = customMDS(self.D_topright, self.traj.basis,
-                                   self.env.anchors)
-            np.testing.assert_array_almost_equal(
-                coeffs_est, self.traj.coeffs, decimal=2)
+            coeffs_est = customMDS(self.D_topright, self.traj.basis, self.env.anchors)
+            np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=2)
 
             self.improve_with_gradientDescent(coeffs_est)
 

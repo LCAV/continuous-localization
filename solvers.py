@@ -3,6 +3,8 @@
 
 import numpy as np
 import cvxpy as cp
+
+from constraints import *
 #from cvxpy import *
 
 # Default solver options for CVXOPT.
@@ -54,57 +56,26 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     if options["verbose"]:
         print("Running with options:", OPTIONS[chosen_solver])
 
-    [D, M] = anchors.shape
+    dim, M = anchors.shape
     K = basis.shape[0]
     N = D_topright.shape[0]
 
-    Z = cp.Variable((D + K, D + K), PSD=True)
+    Z = cp.Variable((dim + K, dim + K), PSD=True)
 
-    Epsilon = cp.Variable(1)
+    e_ds, e_dprimes, deltas = get_constraints_identity(K)
+    t_mns, D_mns = get_constraints_D(D_topright, anchors, basis)
 
     constraints = []
 
-    #constraints.append(Z == Z.T)
-    for d in range(D):
-        e_d = np.zeros((D + K, 1))
-        e_d[d] = 1.0
+    for e_d, e_dprime, delta in zip(e_ds, e_dprimes, deltas):
+        constraints.append(e_d.T * Z * e_dprime == delta)
 
-        # Because of symmetry, we can
-        # impose the upper right triangle of the matrix only.
-        for dprime in range(d, D):
-            e_dprime = np.zeros((D + K, 1))
-            e_dprime[dprime] = 1.0
+    for t_mn, D_topright_mn in zip(t_mns, D_mns):
+        t_mn = np.array(t_mn)
+        constraints.append(t_mn.T * Z * t_mn == D_topright_mn)
 
-            delta = 1.0 if d == dprime else 0.0
-
-            constraints.append(e_d.T * Z * e_dprime == delta)
-
-    W = D_topright > 0
-    Ns, Ms = np.where(W)
-
-    T = []
-    for i, (m, n) in enumerate(zip(Ms, Ns)):
-        e_n = np.zeros((N, 1))
-        e_n[n] = 1.0
-        f_n = basis @ e_n
-        a_m = np.reshape(anchors[:, m], (-1, 1))
-        t_mn = np.r_[a_m, -f_n]
-
-        T.append(t_mn)
-
-        constraints.append(t_mn.T * Z * t_mn == D_topright[n, m])
-
-    #cp.indicator(constraints) # infinity when not met, otherwise 0.
-
-    T = np.array(T)
-
-    #obj = cp.Minimize(cp.sum(Epsilon))
     obj = cp.Minimize(cp.sum(Z))
     prob = cp.Problem(obj, constraints)
-
-    # TODO for debugging only
-    #  print("Standard form:")
-    #  print(prob.get_problem_data(chosen_solver))
 
     prob.solve(solver=chosen_solver, **options)
     return Z.value
