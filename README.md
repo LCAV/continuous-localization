@@ -24,6 +24,14 @@ commit on that branch) then run these lines of code:
     git config -f .gitmodules submodule.pylocus.branch <new branch name>
     git submodule update --remote
 
+
+### Note on SCS dependency: 
+
+The package cvxpy uses SCS as default solver. The problem is that for SCS to work 
+it needs to be installed with BLAS and LAPACK support, which is not done automatically. 
+I did not manage to set up SCS as default solver in the travis environment, so I 
+decided to use CVXOPT instead, for which the installation is less problematic. 
+
 ## License
 
 ```
