@@ -1,5 +1,6 @@
 language: python
 install: 
+  - ./install_libblas3.sh
   - pip install -r requirements.txt
 python:
   - "3.5"
