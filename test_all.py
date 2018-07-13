@@ -20,7 +20,7 @@ class TestTrajectory(unittest.TestCase):
         """ Check the correct trajectory is PSD.  """
 
         for i in range(100):
-            self.traj.set_random_trajectory(seed=i)
+            self.traj.set_trajectory(seed=i)
 
             w, v = np.linalg.eig(self.traj.Z_opt)
             self.assertTrue(np.all(w > -1e-10))
@@ -29,7 +29,7 @@ class TestTrajectory(unittest.TestCase):
         """ Check the correct trajectory satisfies constraints.  """
 
         for i in range(1):
-            self.traj.set_random_trajectory(seed=i)
+            self.traj.set_trajectory(seed=i)
             self.env.set_random_anchors(seed=i)
             self.env.set_D(self.traj)
             D_topright = self.env.D[:self.traj.n_positions,
@@ -67,7 +67,7 @@ class TestTrajectory(unittest.TestCase):
                 A @ self.traj.Z_opt.flatten(), b)
 
     def test_all_linear(self):
-        self.traj.set_random_trajectory()
+        self.traj.set_trajectory()
         self.env.set_random_anchors()
         self.env.set_D(self.traj)
         D_topright = self.env.D[:self.traj.n_positions, self.traj.n_positions:]

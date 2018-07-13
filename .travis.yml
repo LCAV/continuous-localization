@@ -6,4 +6,4 @@ python:
   - "3.6"
   - "3.6-dev"
 script:
-  - pytest
+  - pytest test_all.py # To avoid running all the tests. 

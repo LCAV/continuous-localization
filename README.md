@@ -18,6 +18,12 @@ Install all standard python requirements using
 
     pip install -r requirements.txt
 
+If you want to update the submodule to point to a different branch (i.e. the latest
+commit on that branch) then run these lines of code: 
+
+    git config -f .gitmodules submodule.pylocus.branch <new branch name>
+    git submodule update --remote
+
 ## License
 
 ```
