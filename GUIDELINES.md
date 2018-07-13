@@ -17,6 +17,23 @@ yapf -i *.py
 
 This will read setup.cfg and use the parameters under the tag [yapf].   
 
+Add # yapf: disable in the end of an expression, if you want to keep its formatting.
+
+for whole sections, add `# yapf: disable` and `# yapf: enable` before and after. 
+
+For example: 
+
+```python
+Z = {
+   (1, 2, 3, 4),
+   (5, 6, 7, 8),
+   (9, 10, 11, 12),
+} # yapf: disable
+
+# yapf: enable
+```
+
+
 ## File headers and footers
 
 Not sure yet what we want to use here. 
