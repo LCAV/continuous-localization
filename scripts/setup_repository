@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Creates pre-commit git hooks from the scripts. 
+# We need this function because the hooks, located
+# in .git/hooks/, cannot be included in version control. 
+# Each user therefore has to run this script to setup their
+# git environment. 
+
+GIT_FILES=(`ls --all | grep '.git' `)
+
+THIS_PATH=(`pwd`)
+
+echo $THIS_PAtH
+
+if [ "$GIT_FILES" ]; then
+  ln -s $THIS_PATH/scripts/pre-commit $THIS_PATH/.git/hooks/pre-commit
+  echo "created symbolic link $THIS_PATH/.git/hooks/pre-commit"
+else
+  echo 'You have to run the script from the git root directory:'
+  echo '    ./scripts/setup_repository'
+  exit 1
+fi
+
+exit 0
