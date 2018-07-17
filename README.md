@@ -4,35 +4,44 @@
 
 ## Authors
 
-Created by (in alphabetic order): 
+Created by (in alphabetic order):
 
 * Adam Scholefield
 * Frederike Duembgen
-* Michalina Pacholska 
+* Michalina Pacholska
 
 ## About
 
-Get this package and its non-standard code dependencies using: 
+Get this package and its non-standard code dependencies using:
 
     git clone --recurse-submodules https://github.com/duembgen/SamplingTrajectories.git
 
-Install all standard python requirements using 
+Install all standard python requirements using `pip`:
 
     pip install -r requirements.txt
 
+If you want to use `conda`, you might need to run:
+
+    conda install -c omnia cvxpy
+    conda install -c conda-forge cvxopt
+
+before installing the rest of the requirements by running:
+
+    conda install --file requirements.txt
+
 If you want to update the submodule to point to a different branch (i.e. the latest
-commit on that branch) then run these lines of code: 
+commit on that branch) then run these lines of code:
 
     git config -f .gitmodules submodule.pylocus.branch <new branch name>
     git submodule update --remote
 
 
-### Note on SCS dependency: 
+### Note on SCS dependency:
 
-The package cvxpy uses SCS as default solver. The problem is that for SCS to work 
-it needs to be installed with BLAS and LAPACK support, which is not done automatically. 
-I did not manage to set up SCS as default solver in the travis environment, so I 
-decided to use CVXOPT instead, for which the installation is less problematic. 
+The package cvxpy uses SCS as default solver. The problem is that for SCS to work
+it needs to be installed with BLAS and LAPACK support, which is not done automatically.
+I did not manage to set up SCS as default solver in the travis environment, so I
+decided to use CVXOPT instead, for which the installation is less problematic.
 
 ## License
 
