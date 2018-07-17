@@ -21,6 +21,7 @@
 # is used.
 
 # Find all staged Python files, and exit early if there aren't any.
+
 PYTHON_FILES=(`git diff --name-only --cached --diff-filter=AM | \
   grep --color=never '.py$'`)
 
@@ -28,7 +29,6 @@ IPYTHON_FILES=(`git diff --name-only --cached --diff-filter=AM | \
   grep --color=never '.ipynb$'`)
 
 if [ "$PYTHON_FILES" ]; then
-
   # Verify that yapf is installed; if not, warn and exit.
   if [ -z $(which yapf) ]; then
     echo 'yapf not on path; can not format. Please install yapf:'
@@ -71,12 +71,10 @@ if [ "$PYTHON_FILES" ]; then
 fi
 
 if [ "$IPYTHON_FILES" ]; then
-
-  if [ -z $(which remove_output) ]; then
-    echo 'remove_output not on path; can not format notebooks:'
-    exit 2
-  fi
-
+  #if [ -z $(which remove_output) ]; then
+  #  echo 'remove_output not on path; can not format notebooks:'
+  #  exit 2
+  #fi
 
   # Check for unstaged changes to files in the index.
   CHANGED_FILES=(`git diff --name-only ${IPYTHON_FILES[@]}`)
@@ -97,7 +95,7 @@ if [ "$IPYTHON_FILES" ]; then
   echo 'Formatting staged jupyter notebook files. . .'
 
   for file in ${IPYTHON_FILES[@]}; do
-    remove_output ${file} --backup=''
+    ./scripts/remove_output ${file} --backup=''
   done
 
   CHANGED_FILES=(`git diff --name-only ${IPYTHON_FILES[@]}`)

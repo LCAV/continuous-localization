@@ -30,6 +30,10 @@ Z = {
    (9, 10, 11, 12),
 } # yapf: disable
 
+# yapf: disable
+
+some extremely nicely hand-craft formatted code
+
 # yapf: enable
 ```
 
