@@ -39,6 +39,7 @@ class TestGeometry(unittest.TestCase):
                 A = tmp.flatten()
                 self.assertAlmostEqual(A @ (self.traj.Z_opt).flatten(), D_topright_mn)
 
+            # test linear form of both constraints
             A, b = get_constraints_identity(self.traj.n_complexity, linear=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 

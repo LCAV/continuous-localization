@@ -1,11 +1,14 @@
-#!/usr/bin/env python
-# module SampTrajsTools
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import numpy as np
 import cvxpy as cp
 
 from constraints import *
-#from cvxpy import *
+"""
+solvers.py: Algorithms used to estimate coefficients from distance measurements. 
+
+"""
 
 # Default solver options for CVXOPT.
 # Scroll down to "Setting solver options" for explanations here:
