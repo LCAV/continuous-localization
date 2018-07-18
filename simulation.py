@@ -41,12 +41,15 @@ def run_simulation(parameters, outfolder=None):
         # if we are trying new parameters and saving in a directroy that already exists,
         # we need to make sure that the saved parameters are actually the same.
         if outfolder is not None:
-            parameters_old = read_params(outfolder + 'parameters.json')
-
-            parameters['time'] = parameters_old['time']
-            assert (
-                parameters == parameters_old,
-                'Found parameters file in outfolder with different content than new parameters!')
+            try:
+                parameters_old = read_params(outfolder + 'parameters.json')
+                parameters['time'] = parameters_old['time']
+                assert parameters == parameters_old
+            except FileNotFoundError:
+                print('no conflicting parameters file found.')
+            except AssertionError:
+                print('Found parameters file with different content than new parameters!')
+                raise
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
@@ -152,4 +155,5 @@ def run_simulation(parameters, outfolder=None):
 
         save_params(outfolder + 'parameters.json', **parameters)
         save_results(outfolder + 'result_{}_{}.csv', results)
-    return results
+    else:
+        return results
