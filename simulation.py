@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import cvxpy
 import json
 import os
+import time
 
 from trajectory import Trajectory
 from environment import Environment
@@ -144,10 +145,6 @@ def run_simulation(parameters, outfolder=None):
 
     if outfolder is not None:
         print('Done with simulation. Saving results...')
-
-        from experiment import save_params, save_results
-        import time
-        import os
 
         parameters['time'] = time.time()
 
