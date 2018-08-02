@@ -184,6 +184,33 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     else:
         return None
 
+def rightInverseOfConstraints(D_topright, anchors, basis):
+    """ Solve semidefinite feasibility problem of sensor localization problem. 
+
+    find Z 
+
+    s.t.
+    ed.T * Z * edprime == delta_dd_prime
+    ti.T * Z * ti = di**2
+
+    parameters are same as for semidefRelaxation. 
+    """
+
+    dim, M = anchors.shape
+    K = basis.shape[0]
+
+    #get constraints
+    ConstraintsMat, ConstraintsVec = get_constraints_matrix(D_topright, anchors, basis)
+    ConstraintsMat=np.array(ConstraintsMat)
+    ConstraintsVec=np.array(ConstraintsVec)
+
+    #apply right inverse
+    u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
+    num_zero_SVs = len(np.where(s<1e-10)[0])
+    Z_hat = vh[:-num_zero_SVs,:].T@np.diag(1/s[:-num_zero_SVs])@u[:,:len(s)-num_zero_SVs].T@ConstraintsVec #right inverse
+    Z_hat = Z_hat.reshape([dim + K,dim + K])
+    return Z_hat
+
 
 def lowRankApproximation(anchors, r):
     U, s, VT = np.linalg.svd(anchors, full_matrices=False)

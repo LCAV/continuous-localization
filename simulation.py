@@ -11,7 +11,7 @@ import time
 from trajectory import Trajectory
 from environment import Environment
 from global_variables import DIM
-from solvers import OPTIONS, semidefRelaxationNoiseless
+from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints
 """
 simulation.py: 
 """
@@ -26,7 +26,7 @@ def robust_increment(arr, i, j):
             arr[i, j] += 1
 
 
-def run_simulation(parameters, outfolder=None):
+def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
     :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters. 
@@ -115,11 +115,16 @@ def run_simulation(parameters, outfolder=None):
                         assert n_missing == len(idx[0])
 
                         try:
-                            X = semidefRelaxationNoiseless(
-                                D_topright,
-                                environment.anchors,
-                                trajectory.basis,
-                                chosen_solver=cvxpy.CVXOPT)
+                            if (solver==None) or (solver==semidefRelaxationNoiseless):
+                                X = semidefRelaxationNoiseless(
+                                    D_topright,
+                                    environment.anchors,
+                                    trajectory.basis,
+                                    chosen_solver=cvxpy.CVXOPT)
+                            elif solver=='rightInverseOfConstraints':
+                                X = rightInverseOfConstraints(D_topright, environment.anchors, trajectory.basis)
+                            else:
+                                raise ValueError('Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"')
 
                             assert not np.any(np.abs(X[:DIM, DIM:] - trajectory.coeffs) > 1e-10)
 
