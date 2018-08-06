@@ -115,16 +115,19 @@ def run_simulation(parameters, outfolder=None, solver=None):
                         assert n_missing == len(idx[0])
 
                         try:
-                            if (solver==None) or (solver==semidefRelaxationNoiseless):
+                            if (solver == None) or (solver == semidefRelaxationNoiseless):
                                 X = semidefRelaxationNoiseless(
                                     D_topright,
                                     environment.anchors,
                                     trajectory.basis,
                                     chosen_solver=cvxpy.CVXOPT)
-                            elif solver=='rightInverseOfConstraints':
-                                X = rightInverseOfConstraints(D_topright, environment.anchors, trajectory.basis)
+                            elif solver == 'rightInverseOfConstraints':
+                                X = rightInverseOfConstraints(D_topright, environment.anchors,
+                                                              trajectory.basis)
                             else:
-                                raise ValueError('Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"')
+                                raise ValueError(
+                                    'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
+                                )
 
                             assert not np.any(np.abs(X[:DIM, DIM:] - trajectory.coeffs) > 1e-10)
 
