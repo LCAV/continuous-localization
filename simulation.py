@@ -29,7 +29,7 @@ def robust_increment(arr, i, j):
 def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
-    :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters. 
+    :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
 
     """
     if type(parameters) == str:
@@ -169,7 +169,7 @@ def save_results(filename, results):
             try_name = filename.format(key, i)
             if not os.path.exists(try_name):
                 try_name = filename.format(key, i)
-                np.savetxt(try_name, array, delimiter=',')
+                np.save(try_name, array, allow_pickle=False)
                 print('saved as', try_name)
                 break
             else:
@@ -185,7 +185,7 @@ def read_results(filestart):
         if os.path.isfile(full_path) and filestart in full_path:
             print('reading', full_path)
             key = filename.split('_')[-2]
-            new_array = np.loadtxt(full_path, delimiter=',')
+            new_array = np.load(full_path, allow_pickle=False)
             if key in results.keys():
                 results[key] += new_array
             else:
