@@ -43,6 +43,15 @@ it needs to be installed with BLAS and LAPACK support, which is not done automat
 I did not manage to set up SCS as default solver in the travis environment, so I
 decided to use CVXOPT instead, for which the installation is less problematic.
 
+### Contribute 
+
+If you want to contribute to this repository, you should run:
+
+    ./scripts/setup_repository
+   
+after downloading the repository, in order to set up `yapf` formatter
+and git hook for removing non important changes form Jupyter Notebooks. 
+
 ## License
 
 ```
