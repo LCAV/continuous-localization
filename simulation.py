@@ -17,13 +17,13 @@ simulation.py:
 """
 
 
-def robust_increment(arr, i, j):
+def robust_increment(arr, idx):
     """ increment value of array if inside bound, and set to 1 if previously nan. """
-    if j < arr.shape[1]:
-        if np.isnan(arr[i, j]):
-            arr[i, j] = 1
+    if idx < arr.shape:
+        if np.isnan(arr[idx]):
+            arr[idx] = 1
         else:
-            arr[i, j] += 1
+            arr[idx] += 1
 
 
 def run_simulation(parameters, outfolder=None, solver=None):
@@ -60,23 +60,23 @@ def run_simulation(parameters, outfolder=None, solver=None):
     positions = parameters['positions']
     n_its = parameters['n_its']
 
-    for n_complexity in complexities:
+    successes = np.full(
+        (len(complexities), len(anchors), len(positions), max(positions) * max(anchors)), np.nan)
+    num_not_solved = np.full(successes.shape, np.nan)
+    num_not_accurate = np.full(successes.shape, np.nan)
+
+    for c_idx, n_complexity in enumerate(complexities):
         print('n_complexity', n_complexity)
 
-        for n_anchors in anchors:
+        for a_idx, n_anchors in enumerate(anchors):
             print('n_anchors', n_anchors)
-
-            # TODO currently working for only one complexity and one anchor.
-            successes = np.full((len(positions), max(positions) * n_anchors), np.nan)
-            num_not_solved = np.full(successes.shape, np.nan)
-            num_not_accurate = np.full(successes.shape, np.nan)
 
             environment = Environment(n_anchors)
 
             for n_it in range(n_its):
                 print('n_it')
 
-                for i, n_positions in enumerate(positions):
+                for p_idx, n_positions in enumerate(positions):
                     print('n_positions', n_positions)
 
                     trajectory = Trajectory(n_positions, n_complexity)
@@ -91,15 +91,17 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                     pairs = np.array(np.meshgrid(range(n_positions), range(n_anchors)))
                     pairs.resize((2, n_positions * n_anchors))
-                    for j, n_missing in enumerate(range(n_measurements)):
+                    for m_idx, n_missing in enumerate(range(n_measurements)):
+
+                        indexes = np.s_[c_idx, a_idx, p_idx, m_idx]
 
                         # set all values to 0 since we have visited them.
-                        if np.isnan(successes[i, j]):
-                            successes[i, j] = 0.0
-                        if np.isnan(num_not_solved[i, j]):
-                            num_not_solved[i, j] = 0.0
-                        if np.isnan(num_not_accurate[i, j]):
-                            num_not_accurate[i, j] = 0.0
+                        if np.isnan(successes[indexes]):
+                            successes[indexes] = 0.0
+                        if np.isnan(num_not_solved[indexes]):
+                            num_not_solved[indexes] = 0.0
+                        if np.isnan(num_not_accurate[indexes]):
+                            num_not_accurate[indexes] = 0.0
 
                         #print('n_misisng', n_missing)
                         D_topright = environment.D[:n_positions, n_positions:].copy()
@@ -134,17 +136,16 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             # TODO: why does this not work?
                             #assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
 
-                            robust_increment(successes, i, j)
+                            robust_increment(successes, indexes)
                         except cvxpy.SolverError:
                             #print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_solved, i, j)
+                            robust_increment(num_not_solved, indexes)
                         except ZeroDivisionError:
                             #print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_solved, i, j)
+                            robust_increment(num_not_solved, indexes)
                         except AssertionError:
                             #print("result not accurate n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_accurate, i, j)
-
+                            robust_increment(num_not_accurate, indexes)
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
