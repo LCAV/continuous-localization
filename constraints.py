@@ -102,11 +102,11 @@ def get_constraints_matrix(D_topright, anchors, basis):
     n_complexity = basis.shape[0]
 
     get_constraints_D(D_topright, anchors, basis, linear=True, A=A, b=b)
-    TmnStack = np.array(A)
-    u, s, vh = np.linalg.svd(TmnStack)
-    print('number of nonzero elements of s:', len(s[s > 1e-10]))
-    #Think we need (K+D)*(K+D+1)/2-(D*(D+1)/2)=K(K+1)/2+DK=18
-    print('need:', n_complexity * (n_complexity + 1) / 2 + DIM * n_complexity)
+    # TmnStack = np.array(A)
+    # u, s, vh = np.linalg.svd(TmnStack)
+    # print('number of nonzero elements of s:', len(s[s > 1e-10]))
+    # #Think we need (K+D)*(K+D+1)/2-(D*(D+1)/2)=K(K+1)/2+DK=18
+    # print('need:', n_complexity * (n_complexity + 1) / 2 + DIM * n_complexity)
 
     get_constraints_identity(n_complexity, linear=True, A=A, b=b)
     get_constraints_symmetry(n_complexity, linear=True, A=A, b=b)
