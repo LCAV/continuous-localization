@@ -34,7 +34,7 @@ def robust_add(arr, idx, value):
         arr[idx] += value
 
 
-def run_simulation(parameters, outfolder=None, solver=None, mean_error=False):
+def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
     :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
@@ -48,18 +48,17 @@ def run_simulation(parameters, outfolder=None, solver=None, mean_error=False):
     elif type(parameters) == dict:
         parameters = parameters
 
-        # if we are trying new parameters and saving in a directroy that already exists,
+        # if we are trying new parameters and saving in a directory that already exists,
         # we need to make sure that the saved parameters are actually the same.
         if outfolder is not None:
             try:
                 parameters_old = read_params(outfolder + 'parameters.json')
                 parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old
+                assert parameters == parameters_old, 'Found parameters file with different content than new parameters!'
             except FileNotFoundError:
                 print('no conflicting parameters file found.')
-            except AssertionError:
-                print('Found parameters file with different content than new parameters!')
-                raise
+            except AssertionError as error:
+                raise (error)
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
@@ -68,15 +67,12 @@ def run_simulation(parameters, outfolder=None, solver=None, mean_error=False):
     positions = parameters['positions']
     n_its = parameters['n_its']
     noise_sigmas = parameters['noise_sigmas']
-    print(len(noise_sigmas))
-
-    if 'success_threshold' in parameters:
-        threshold = parameters['success_threshold']
-    else:
-        threshold = 1e-10
+    success_thresholds = parameters['success_thresholds']
+    assert len(success_thresholds) == len(noise_sigmas)
 
     successes = np.full((len(complexities), len(anchors), len(positions), len(noise_sigmas),
                          max(positions) * max(anchors)), np.nan)
+    errors = np.full(successes.shape, np.nan)
     num_not_solved = np.full(successes.shape, np.nan)
     num_not_accurate = np.full(successes.shape, np.nan)
 
@@ -150,14 +146,15 @@ def run_simulation(parameters, outfolder=None, solver=None, mean_error=False):
                                         'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
                                     )
 
-                                if not mean_error:
-                                    assert not np.any(
-                                        np.abs(X[:DIM, DIM:] - trajectory.coeffs) > threshold)
-                                    robust_increment(successes, indexes)
-                                else:
-                                    robust_add(
-                                        successes, indexes,
-                                        np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)) / n_its)
+                                robust_add(
+                                    errors, indexes,
+                                    np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)) / n_its)
+
+                                assert not np.any(
+                                    np.abs(X[:DIM, DIM:] -
+                                           trajectory.coeffs) > success_thresholds[noise_idx])
+
+                                robust_increment(successes, indexes)
 
                                 # TODO: why does this not work?
                                 # assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
@@ -174,7 +171,8 @@ def run_simulation(parameters, outfolder=None, solver=None, mean_error=False):
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
-        'num-not-accurate': num_not_accurate
+        'num-not-accurate': num_not_accurate,
+        'errors': errors
     }
 
     if outfolder is not None:
