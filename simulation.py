@@ -7,12 +7,12 @@ import cvxpy
 import json
 import os
 import time
+import logging
 
 from trajectory import Trajectory
 from environment import Environment
 from global_variables import DIM
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints
-from logprogress import logprogress as lp
 """
 simulation.py: 
 """
@@ -111,6 +111,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             num_not_solved[indexes] = 0.0
                         if np.isnan(num_not_accurate[indexes]):
                             num_not_accurate[indexes] = 0.0
+                        if np.isnan(errors[indexes]):
+                            num_not_accurate[indexes] = 0.0
 
                         for n_it in range(n_its):
 
@@ -146,9 +148,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                         'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
                                     )
 
-                                robust_add(
-                                    errors, indexes,
-                                    np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)) / n_its)
+                                robust_add(errors, indexes,
+                                           np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)))
 
                                 assert not np.any(
                                     np.abs(X[:DIM, DIM:] -
@@ -160,14 +161,26 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 # assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
 
                             except cvxpy.SolverError:
-                                # print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
+                                logging.info("could not solve n_positions={}, n_missing={}".format(
+                                    n_positions, n_missing))
                                 robust_increment(num_not_solved, indexes)
+
                             except ZeroDivisionError:
-                                # print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
+                                logging.info("could not solve n_positions={}, n_missing={}".format(
+                                    n_positions, n_missing))
                                 robust_increment(num_not_solved, indexes)
+
+                            except np.linalg.LinAlgError:
+                                robust_increment(num_not_solved, indexes)
+
                             except AssertionError:
-                                # print("result not accurate n_positions={}, n_missing={}".format(n_positions, n_missing))
+                                logging.info(
+                                    "result not accurate n_positions={}, n_missing={}".format(
+                                        n_positions, n_missing))
                                 robust_increment(num_not_accurate, indexes)
+
+                            errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
+
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
