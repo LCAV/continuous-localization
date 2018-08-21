@@ -7,6 +7,7 @@ import cvxpy
 import json
 import os
 import time
+import logging
 
 from trajectory import Trajectory
 from environment import Environment
@@ -26,6 +27,13 @@ def robust_increment(arr, idx):
             arr[idx] += 1
 
 
+def robust_add(arr, idx, value):
+    if idx < arr.shape:
+        if np.isnan(arr[idx]):
+            arr[idx] = 0
+        arr[idx] += value
+
+
 def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
@@ -40,18 +48,17 @@ def run_simulation(parameters, outfolder=None, solver=None):
     elif type(parameters) == dict:
         parameters = parameters
 
-        # if we are trying new parameters and saving in a directroy that already exists,
+        # if we are trying new parameters and saving in a directory that already exists,
         # we need to make sure that the saved parameters are actually the same.
         if outfolder is not None:
             try:
                 parameters_old = read_params(outfolder + 'parameters.json')
                 parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old
+                assert parameters == parameters_old, 'Found parameters file with different content than new parameters!'
             except FileNotFoundError:
                 print('no conflicting parameters file found.')
-            except AssertionError:
-                print('Found parameters file with different content than new parameters!')
-                raise
+            except AssertionError as error:
+                raise (error)
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
@@ -59,9 +66,13 @@ def run_simulation(parameters, outfolder=None, solver=None):
     anchors = parameters['anchors']
     positions = parameters['positions']
     n_its = parameters['n_its']
+    noise_sigmas = parameters['noise_sigmas']
+    success_thresholds = parameters['success_thresholds']
+    assert len(success_thresholds) == len(noise_sigmas)
 
-    successes = np.full(
-        (len(complexities), len(anchors), len(positions), max(positions) * max(anchors)), np.nan)
+    successes = np.full((len(complexities), len(anchors), len(positions), len(noise_sigmas),
+                         max(positions) * max(anchors)), np.nan)
+    errors = np.full(successes.shape, np.nan)
     num_not_solved = np.full(successes.shape, np.nan)
     num_not_accurate = np.full(successes.shape, np.nan)
 
@@ -73,27 +84,25 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
             environment = Environment(n_anchors)
 
-            for n_it in range(n_its):
-                print('n_it')
+            for p_idx, n_positions in enumerate(positions):
+                print('n_positions', n_positions)
 
-                for p_idx, n_positions in enumerate(positions):
-                    print('n_positions', n_positions)
+                trajectory = Trajectory(n_positions, n_complexity)
 
-                    trajectory = Trajectory(n_positions, n_complexity)
+                trajectory.set_trajectory(seed=None)
+                environment.set_random_anchors(seed=None)
+                environment.set_D(trajectory)
+                # remove some measurements
 
-                    trajectory.set_trajectory(seed=None)
-                    environment.set_random_anchors(seed=None)
-                    environment.set_D(trajectory)
+                n_measurements = n_positions * n_anchors
 
-                    # remove some measurements
+                pairs = np.array(np.meshgrid(range(n_positions), range(n_anchors)))
+                pairs.resize((2, n_positions * n_anchors))
+                for m_idx, n_missing in enumerate(range(n_measurements)):
 
-                    n_measurements = n_positions * n_anchors
+                    for noise_idx, noise_sigma in enumerate(noise_sigmas):
 
-                    pairs = np.array(np.meshgrid(range(n_positions), range(n_anchors)))
-                    pairs.resize((2, n_positions * n_anchors))
-                    for m_idx, n_missing in enumerate(range(n_measurements)):
-
-                        indexes = np.s_[c_idx, a_idx, p_idx, m_idx]
+                        indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
 
                         # set all values to 0 since we have visited them.
                         if np.isnan(successes[indexes]):
@@ -102,54 +111,80 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             num_not_solved[indexes] = 0.0
                         if np.isnan(num_not_accurate[indexes]):
                             num_not_accurate[indexes] = 0.0
+                        if np.isnan(errors[indexes]):
+                            num_not_accurate[indexes] = 0.0
 
-                        #print('n_misisng', n_missing)
-                        D_topright = environment.D[:n_positions, n_positions:].copy()
-                        indices = np.random.choice(n_measurements, size=n_missing, replace=False)
-                        xs = pairs[0, indices]
-                        ys = pairs[1, indices]
-                        assert len(xs) == n_missing
-                        assert len(ys) == n_missing
-                        D_topright[xs, ys] = 0.0
+                        for n_it in range(n_its):
 
-                        # assert correct number of missing measurements
-                        idx = np.where(D_topright == 0.0)
-                        assert n_missing == len(idx[0])
+                            environment.add_noise(noise_sigma, seed=None)
 
-                        try:
-                            if (solver == None) or (solver == semidefRelaxationNoiseless):
-                                X = semidefRelaxationNoiseless(
-                                    D_topright,
-                                    environment.anchors,
-                                    trajectory.basis,
-                                    chosen_solver=cvxpy.CVXOPT)
-                            elif solver == 'rightInverseOfConstraints':
-                                X = rightInverseOfConstraints(D_topright, environment.anchors,
-                                                              trajectory.basis)
-                            else:
-                                raise ValueError(
-                                    'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
-                                )
+                            # print('n_misisng', n_missing)
+                            D_topright = environment.D[:n_positions, n_positions:].copy()
+                            indices = np.random.choice(
+                                n_measurements, size=n_missing, replace=False)
+                            xs = pairs[0, indices]
+                            ys = pairs[1, indices]
+                            assert len(xs) == n_missing
+                            assert len(ys) == n_missing
+                            D_topright[xs, ys] = 0.0
 
-                            assert not np.any(np.abs(X[:DIM, DIM:] - trajectory.coeffs) > 1e-10)
+                            # assert correct number of missing measurements
+                            idx = np.where(D_topright == 0.0)
+                            assert n_missing == len(idx[0])
 
-                            # TODO: why does this not work?
-                            #assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
+                            try:
+                                if (solver == None) or (solver == semidefRelaxationNoiseless):
+                                    X = semidefRelaxationNoiseless(
+                                        D_topright,
+                                        environment.anchors,
+                                        trajectory.basis,
+                                        chosen_solver=cvxpy.CVXOPT)
+                                elif solver == 'rightInverseOfConstraints':
+                                    X = rightInverseOfConstraints(D_topright, environment.anchors,
+                                                                  trajectory.basis)
+                                else:
+                                    raise ValueError(
+                                        'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
+                                    )
 
-                            robust_increment(successes, indexes)
-                        except cvxpy.SolverError:
-                            #print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_solved, indexes)
-                        except ZeroDivisionError:
-                            #print("could not solve n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_solved, indexes)
-                        except AssertionError:
-                            #print("result not accurate n_positions={}, n_missing={}".format(n_positions, n_missing))
-                            robust_increment(num_not_accurate, indexes)
+                                robust_add(errors, indexes,
+                                           np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)))
+
+                                assert not np.any(
+                                    np.abs(X[:DIM, DIM:] -
+                                           trajectory.coeffs) > success_thresholds[noise_idx])
+
+                                robust_increment(successes, indexes)
+
+                                # TODO: why does this not work?
+                                # assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
+
+                            except cvxpy.SolverError:
+                                logging.info("could not solve n_positions={}, n_missing={}".format(
+                                    n_positions, n_missing))
+                                robust_increment(num_not_solved, indexes)
+
+                            except ZeroDivisionError:
+                                logging.info("could not solve n_positions={}, n_missing={}".format(
+                                    n_positions, n_missing))
+                                robust_increment(num_not_solved, indexes)
+
+                            except np.linalg.LinAlgError:
+                                robust_increment(num_not_solved, indexes)
+
+                            except AssertionError:
+                                logging.info(
+                                    "result not accurate n_positions={}, n_missing={}".format(
+                                        n_positions, n_missing))
+                                robust_increment(num_not_accurate, indexes)
+
+                            errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
+
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
-        'num-not-accurate': num_not_accurate
+        'num-not-accurate': num_not_accurate,
+        'errors': errors
     }
 
     if outfolder is not None:
