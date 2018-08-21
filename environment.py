@@ -31,25 +31,28 @@ class Environment(object):
             np.diag(G), np.ones(X.shape[1])) - 2 * G
         self.D_true = self.D
 
-    def add_noise(self, noise, seed, noise_to_square=False):
-        self.D_true = np.copy(self.D)
+    def add_noise(self, noise_sigma, seed, noise_to_square=False):
+        self.D = np.copy(self.D_true)
+
         if seed is not None:
             np.random.seed(seed)
 
-        noise_vector = noise * np.random.normal(size=self.D.shape)
+        if noise_sigma>0:
+            noise_vector = noise_sigma * np.random.normal(size=self.D.shape)
 
-        if noise_to_square:
-            self.D += noise_vector
-            if noise is not 0:
+            if noise_to_square:
+                self.D += noise_vector
                 snr = np.var(self.D.flatten()) / np.var(noise_vector.flatten())
                 self.snr = 10 * np.log10(snr)
-        else:
-            sqrt_D = np.sqrt(self.D)
-            self.D = np.power(sqrt_D + noise_vector, 2)
-            if noise is not 0:
+            else:
+                sqrt_D = np.sqrt(self.D)
+                self.D = np.power(sqrt_D + noise_vector, 2)
                 snr = np.var(sqrt_D.flatten()) / np.var(noise_vector.flatten())
                 self.snr = 10 * np.log10(snr)
+        else:
+            self.D = self.D_true
+            self.snr = np.inf
 
     def clean_noise(self):
-        self.D = np.copy(self.D_true)
-        self.snr = np.inf
+        # resets to the noiseless case
+        self.add_noise(0, seed=None)

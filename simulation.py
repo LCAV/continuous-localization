@@ -116,7 +116,6 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                         for n_it in range(n_its):
 
-                            environment.clean_noise()
                             environment.add_noise(noise_sigma, seed=None)
 
                             # print('n_misisng', n_missing)
