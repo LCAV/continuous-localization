@@ -8,6 +8,7 @@ from cvxpy import CVXOPT
 from solvers import *
 from trajectory import Trajectory
 from environment import Environment
+from simulation import run_simulation
 
 
 class TestMethods(unittest.TestCase):
@@ -73,6 +74,23 @@ class TestMethods(unittest.TestCase):
             np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=2)
 
             self.improve_with_gradientDescent(coeffs_est)
+
+    def test_simulations(self):
+        parameters = {
+            'key': 'test',
+            'n_its': 2,
+            'time': 'undefined',
+            'positions': [6, 7],
+            'complexities': [4, 5],
+            'anchors': [3],
+            'noise_sigmas': [0],
+            'success_thresholds': [0]
+        }
+        outfolder = 'results/{}/'.format(parameters['key'])
+        try:
+            run_simulation(parameters, outfolder, solver="rightInverseOfConstraints")
+        except RuntimeError as e:
+            self.fail("run_simulation raised exception: " + str(e))
 
 
 if __name__ == "__main__":
