@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
+import os
 
 
 def get_anchors(n_anchors, n_dimensions=2, scale=10):
@@ -51,6 +52,8 @@ if __name__ == '__main__':
     n_positions = 50
     n_repetitions = 1000
     directory = "results/ranks_prob/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     ratio = n_dimensions * n_constrains / (n_dimensions * n_positions)
     max_prob = min(2 * ratio, 1)
     probabilities = np.linspace(0, max_prob, 100)
