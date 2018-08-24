@@ -246,7 +246,7 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
         P_hat = np.diag(np.sqrt(eigVals))@eigVecs.T
         #tmp = np.diag(np.sqrt(eigVals[:d]))
         #np.real(np.hstack((tmp, np.zeros([d, N - d]))) @ eigVecs.T)
-
+        #MIGHT NEED TO ENFORCE SYMMETRY ON Q
 
         #TODO PROJECT ONTO AFFINE SUBSPACE
 
