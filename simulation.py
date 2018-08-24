@@ -12,7 +12,7 @@ import logging
 from trajectory import Trajectory
 from environment import Environment
 from global_variables import DIM
-from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints
+from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 """
 simulation.py: 
 """
@@ -139,20 +139,24 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                         environment.anchors,
                                         trajectory.basis,
                                         chosen_solver=cvxpy.CVXOPT)
+                                    P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
                                     X = rightInverseOfConstraints(D_topright, environment.anchors,
                                                                   trajectory.basis)
+                                    P_hat = X[:DIM, DIM:]
+                                elif solver == 'alternativePseudoInverse':
+                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors,
+                                                                  trajectory.basis)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to "semidefRelaxationNoiseless" or "rightInverseOfConstraints"'
+                                        'Solver needs to "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
                                     )
 
                                 robust_add(errors, indexes,
-                                           np.mean(np.abs(X[:DIM, DIM:] - trajectory.coeffs)))
+                                           np.mean(np.abs(P_hat - trajectory.coeffs)))
 
                                 assert not np.any(
-                                    np.abs(X[:DIM, DIM:] -
-                                           trajectory.coeffs) > success_thresholds[noise_idx])
+                                    np.abs(P_hat-trajectory.coeffs) > success_thresholds[noise_idx])
 
                                 robust_increment(successes, indexes)
 
