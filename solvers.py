@@ -185,7 +185,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
         return None
 
 def rightInverseOfConstraints(D_topright, anchors, basis):
-    """ Solve semidefinite feasibility problem of sensor localization problem. 
+    """ Solve linearised sensor localization problem. 
 
     find Z 
 
@@ -210,6 +210,47 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     Z_hat = vh[:-num_zero_SVs,:].T@np.diag(1/s[:-num_zero_SVs])@u[:,:len(s)-num_zero_SVs].T@ConstraintsVec #right inverse
     Z_hat = Z_hat.reshape([dim + K,dim + K])
     return Z_hat
+
+def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
+    """ Solve linearised sensor localization problem. 
+
+    parameters are same as for semidefRelaxation. 
+    average_with_Q is an option to imporve noise robustness by averaging the estimate of P with the knowledge we have for Q=P^TP
+    """
+
+    dim, M = anchors.shape
+    K = basis.shape[0]
+
+    #get constraints
+    T_A, T_B, b, Ns_that_see_an_anchor = alternative_constraints(D_topright, anchors, basis)
+
+    #reduce dimension T_B to its rank
+    rankT_B = min(2*K-1, Ns_that_see_an_anchor)
+    u, s, vh = np.linalg.svd(T_B, full_matrices=False)
+    num_zero_SVs = len(np.where(s<1e-10)[0])
+    if len(s)-num_zero_SVs!=rankT_B: #This if can be cut, it was just useful for debugging
+        raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
+
+    #solve with a left-inverse (requires enough measurements - see Thm)
+    T = np.hstack((T_A, -u[:,:rankT_B]@np.diag(s[:rankT_B])/2))
+    
+    P_alpha_hat = np.linalg.inv(T.T@T)@T.T@b
+    P_hat = P_alpha_hat[:dim*K].reshape([dim, K])
+
+    if average_with_Q:
+        alpha_hat = P_alpha_hat[dim*K:].reshape([K, K])
+        Q_hat1 = P_hat.T@P_hat
+        Q_hat2 = vh[:rankT_B,:].T@alpha_hat
+        Q_hat = Q_hat2 + vh[rankT_B:,:]@(Q_hat1-Q_hat2)
+        eigVals, eigVecs = np.linalg.eig(Q_hat)
+        P_hat = np.diag(np.sqrt(eigVals))@eigVecs.T
+        #tmp = np.diag(np.sqrt(eigVals[:d]))
+        #np.real(np.hstack((tmp, np.zeros([d, N - d]))) @ eigVecs.T)
+        #MIGHT NEED TO ENFORCE SYMMETRY ON Q
+
+        #TODO PROJECT ONTO AFFINE SUBSPACE
+
+    return P_hat
 
 
 def lowRankApproximation(anchors, r):
