@@ -24,7 +24,7 @@ def get_constraints_D(D, anchors, basis, linear=False, A=None, b=None):
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         a_m = np.reshape(anchors[:, m], (-1, 1))
-        f_n = basis[:,n].reshape(dim,1)
+        f_n = basis[:, n].reshape(dim, 1)
         t_mn = np.r_[a_m, -f_n]
 
         if linear:
@@ -115,8 +115,8 @@ def get_constraints_matrix(D_topright, anchors, basis):
     b = np.array(b)
     return A, b
 
+
 def alternative_constraints(D, anchors, basis):
-    n_positions, __ = D.shape
     W = D > 0
     Ns, Ms = np.where(W)
     dim, K = basis.shape
@@ -127,21 +127,21 @@ def alternative_constraints(D, anchors, basis):
     T_B = []
     b = []
 
-    for i, (m, n) in enumerate(zip(Ms, Ns)):
-        
-        a_m = np.reshape(anchors[:, m], (-1, 1))
-        f_n = basis[:,n].reshape(dim,1)
+    for (m, n) in zip(Ms, Ns):
 
-        tmp = a_m@f_n.T
+        a_m = np.reshape(anchors[:, m], (-1, 1))
+        f_n = basis[:, n].reshape(dim, 1)
+
+        tmp = a_m @ f_n.T
         T_A.append(tmp.flatten())
 
-        tmp = f_n@f_n.T
+        tmp = f_n @ f_n.T
         T_B.append(tmp.flatten())
 
-        b.append( (np.sum(a_m*a_m)-D[n, m])/2 )
+        b.append((np.sum(a_m * a_m) - D[n, m]) / 2)
 
-    T_A=np.array(T_A)
-    T_B=np.array(T_B)
-    b=np.array(b)
+    T_A = np.array(T_A)
+    T_B = np.array(T_B)
+    b = np.array(b)
 
     return T_A, T_B, b, Ns_that_see_an_anchor
