@@ -1,0 +1,19 @@
+{
+    "n_its": 10,
+    "type_missing": "uniform",
+    "sigmas_noise": [
+        0
+    ],
+    "n_complexity": [
+        4
+    ],
+    "n_anchors": [
+        6
+    ],
+    "values_missing": "range(0, 10)",
+    "time": 1544188844.4919043,
+    "n_samples": [
+        20
+    ],
+    "key": "testing"
+}
