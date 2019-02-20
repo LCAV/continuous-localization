@@ -8,4 +8,5 @@
 """
 global_variables.py: 
 """
-DIM = 2
+DIM = 2 # dimension of trajectory
+TMAX = 1.0 # maximum time

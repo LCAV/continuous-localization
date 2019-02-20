@@ -4,19 +4,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cvxpy
-import json
 import os
 import time
 import logging
 
 from trajectory import Trajectory
 from environment import Environment
-from global_variables import DIM
+from global_variables import DIM, TMAX
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
+from json_io import *
 """
 simulation.py: 
 """
-
 
 def robust_increment(arr, idx):
     """ increment value of array if inside bound, and set to 1 if previously nan. """
@@ -38,106 +37,83 @@ def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
     :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
-
     """
+
+    if outfolder is not None and not os.path.exists(outfolder):
+        os.makedirs(outfolder)
+
     if type(parameters) == str:
         fname = parameters + 'parameters.json'
-        parameters = read_params(fname)
+        p = read_json(fname)
         print('read parameters from file {}.'.format(fname))
-
+        print('parameters:', p)
     elif type(parameters) == dict:
-        parameters = parameters
-
-        # if we are trying new parameters and saving in a directory that already exists,
+        # If we are trying new parameters and saving in a directory that already exists,
         # we need to make sure that the saved parameters are actually the same.
+        p = parameters
         if outfolder is not None:
             try:
-                parameters_old = read_params(outfolder + 'parameters.json')
-                parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old, 'Found parameters file with different content than new parameters!'
+                
+                parameters_old = read_json(outfolder + 'parameters.json')
+                p['time'] = parameters_old['time']
+                assert p == parameters_old, 'Found parameters file with different content than new parameters!'
             except FileNotFoundError:
-                print('no conflicting parameters file found.')
+                print('Did not find existing parameters file.')
             except AssertionError as error:
                 raise (error)
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
-    complexities = parameters['complexities']
-    anchors = parameters['anchors']
-    positions = parameters['positions']
-    n_its = parameters['n_its']
-    noise_sigmas = parameters['noise_sigmas']
-    success_thresholds = parameters['success_thresholds']
-    assert len(success_thresholds) == len(noise_sigmas)
 
-    successes = np.full((len(complexities), len(anchors), len(positions), len(noise_sigmas),
-                         max(positions) * max(anchors)), np.nan)
-    errors = np.full(successes.shape, np.nan)
-    num_not_solved = np.full(successes.shape, np.nan)
-    num_not_accurate = np.full(successes.shape, np.nan)
+    out_shape = (len(p['n_complexity']), len(p['n_anchors']), len(p['n_samples']), 
+                 len(p['sigmas_noise']), len(p['values_missing']))
+    results_header = ['n_complexity', 'n_anchors', 'n_samples', 
+                       'sigmas_noise', 'values_missing']
 
-    for c_idx, n_complexity in enumerate(complexities):
+    keys = ['successes', 'errors', 'num_not_solved']
+    results = {k:np.full(out_shape, np.nan) for k in keys}
+
+    for c_idx, n_complexity in enumerate(p['n_complexity']):
         print('n_complexity', n_complexity)
+        tau = 1.0
+        trajectory = Trajectory(n_complexity, model='bandlimited', tau=tau)
 
-        for a_idx, n_anchors in enumerate(anchors):
+        for a_idx, n_anchors in enumerate(p['n_anchors']):
             print('n_anchors', n_anchors)
-
             environment = Environment(n_anchors)
 
-            for p_idx, n_positions in enumerate(positions):
-                print('n_positions', n_positions)
+            for p_idx, n_samples in enumerate(p['n_samples']):
+                #  print('n_samples', n_samples)
+                times = np.linspace(0, TMAX, n_samples)
 
-                trajectory = Trajectory(n_positions, n_complexity)
+                trajectory.set_coeffs(seed=None)
+                traj = trajectory.get_trajectory(times=times)
 
-                trajectory.set_trajectory(seed=None)
                 environment.set_random_anchors(seed=None)
-                environment.set_D(trajectory)
-                # remove some measurements
+                environment.set_D(traj)
 
-                n_measurements = n_positions * n_anchors
-
-                pairs = np.array(np.meshgrid(range(n_positions), range(n_anchors)))
-                pairs.resize((2, n_positions * n_anchors))
-                for m_idx, n_missing in enumerate(range(n_measurements)):
-
-                    for noise_idx, noise_sigma in enumerate(noise_sigmas):
-
-                        indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
+                for noise_idx, noise_sigma in enumerate(p['sigmas_noise']):
+                    for m_idx, value_missing in enumerate(p['values_missing']):
+                        index_slice = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
 
                         # set all values to 0 since we have visited them.
-                        if np.isnan(successes[indexes]):
-                            successes[indexes] = 0.0
-                        if np.isnan(num_not_solved[indexes]):
-                            num_not_solved[indexes] = 0.0
-                        if np.isnan(num_not_accurate[indexes]):
-                            num_not_accurate[indexes] = 0.0
-                        if np.isnan(errors[indexes]):
-                            num_not_accurate[indexes] = 0.0
+                        results['errors'][index_slice] = 0.0
+                        results['successes'][index_slice] = 0.0
+                        results['num_not_solved'][index_slice] = 0.0
 
-                        for n_it in range(n_its):
+                        for n_it in range(p['n_its']):
 
-                            environment.add_noise(noise_sigma, seed=None)
+                            D_noisy = environment.get_noisy(noise_sigma, seed=None)
 
-                            # print('n_misisng', n_missing)
-                            D_topright = environment.D[:n_positions, n_positions:].copy()
-                            indices = np.random.choice(
-                                n_measurements, size=n_missing, replace=False)
-                            xs = pairs[0, indices]
-                            ys = pairs[1, indices]
-                            assert len(xs) == n_missing
-                            assert len(ys) == n_missing
-                            D_topright[xs, ys] = 0.0
-
-                            # assert correct number of missing measurements
-                            idx = np.where(D_topright == 0.0)
-                            assert n_missing == len(idx[0])
+                            D_topright = D_noisy[:n_samples, n_samples:].copy()
+                            mask = environment.get_mask(p['type_missing'], n=value_missing)
+                            D_topright[~mask] = 0.0
 
                             try:
-                                if (solver == None) or (solver == semidefRelaxationNoiseless):
+                                if (solver == None) or (solver == 'semidefRelaxationNoiseless'):
                                     X = semidefRelaxationNoiseless(
                                         D_topright,
-                                        environment.anchors,
-                                        trajectory.basis,
+                                        environment.anchors, trajectory.basis,
                                         chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
@@ -146,109 +122,84 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
                                     P_hat = alternativePseudoInverse(D_topright, environment.anchors,
-                                                                  trajectory.basis)
+                                                                     trajectory.basis)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
+                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
                                     )
 
-                                robust_add(errors, indexes,
+                                robust_add(results['errors'], index_slice,
                                            np.mean(np.abs(P_hat - trajectory.coeffs)))
 
-                                assert not np.any(
-                                    np.abs(P_hat-trajectory.coeffs) > success_thresholds[noise_idx])
-
-                                robust_increment(successes, indexes)
-
-                                # TODO: why does this not work?
-                                # assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
+                                robust_increment(results['successes'], index_slice)
 
                             except cvxpy.SolverError:
-                                logging.info("could not solve n_positions={}, n_missing={}".format(
-                                    n_positions, n_missing))
-                                robust_increment(num_not_solved, indexes)
+                                logging.info("could not solve n_samples={}, n_missing={}".format(
+                                    n_samples, n_missing))
+                                robust_increment(results['num_not_solved'], index_slice)
 
                             except ZeroDivisionError:
-                                logging.info("could not solve n_positions={}, n_missing={}".format(
-                                    n_positions, n_missing))
-                                robust_increment(num_not_solved, indexes)
+                                logging.info("could not solve.")
+                                robust_increment(results['num_not_solved'], index_slice)
 
                             except np.linalg.LinAlgError:
-                                robust_increment(num_not_solved, indexes)
+                                robust_increment(results['num_not_solved'], index_slice)
 
-                            except AssertionError:
-                                logging.info(
-                                    "result not accurate n_positions={}, n_missing={}".format(
-                                        n_positions, n_missing))
-                                robust_increment(num_not_accurate, indexes)
-
-                            errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
-
-    results = {
-        'successes': successes,
-        'num-not-solved': num_not_solved,
-        'num-not-accurate': num_not_accurate,
-        'errors': errors
-    }
+                        results['errors'][index_slice] = results['errors'][index_slice] / (p['n_its'] - results['num_not_solved'][index_slice])
 
     if outfolder is not None:
         print('Done with simulation. Saving results...')
 
-        parameters['time'] = time.time()
+        parameters['time'] = int(time.time())
 
-        if not os.path.exists(outfolder):
-            os.makedirs(outfolder)
-
-        save_params(outfolder + 'parameters.json', **parameters)
-        save_results(outfolder + 'result_{}_{}.csv', results)
+        write_json(outfolder + 'parameters.json', parameters)
+        # TODO actually save results as csv file, including results_header.
+        save_results(outfolder + 'result_{}_{}', results, results_header)
+        return results, results_header
     else:
-        return results
+        return results, results_header
 
 
-def save_results(filename, results):
+def save_results(filename, results, results_header):
     """ Save results in with increasing number in filename. """
+    use_i = 0
     for key, array in results.items():
         for i in range(100):
-            try_name = filename.format(key, i)
+            try_name = filename.format(key, i) + '.npy'
             if not os.path.exists(try_name):
-                try_name = filename.format(key, i)
                 np.save(try_name, array, allow_pickle=False)
                 print('saved as', try_name)
                 break
             else:
                 print('exists:', try_name)
 
+    fname = filename.format('header', i) + '.txt'
+    with open(fname, 'w') as f:
+        for name in results_header:
+            f.write(name + '\t')
+        print('saved as', fname)
+
 
 def read_results(filestart):
     """ Read all results saved with above save_results function. """
     results = {}
     dirname = os.path.dirname(filestart)
+    results_header = None
     for filename in os.listdir(dirname):
         full_path = os.path.join(dirname, filename)
         if os.path.isfile(full_path) and filestart in full_path:
             print('reading', full_path)
             key = filename.split('_')[-2]
-            new_array = np.load(full_path, allow_pickle=False)
             if key in results.keys():
+                new_array = np.load(full_path, allow_pickle=False)
                 results[key] += new_array
+            elif key == 'header':
+                assert full_path[-3:] == 'txt', 'Wrong extension: {}'.format(full_path[-3:])
+                results_header = list(np.loadtxt(full_path, dtype='str'))
             else:
+                new_array = np.load(full_path, allow_pickle=False)
                 print('new key:', key)
                 results[key] = new_array
-    return results
-
-
-def save_params(filename, **kwargs):
-    for key in kwargs.keys():
-        try:
-            kwargs[key] = kwargs[key].tolist()
-        except AttributeError as e:
-            pass
-    with open(filename, 'w') as fp:
-        json.dump(kwargs, fp, indent=4)
-        print('saved as', filename)
-
-
-def read_params(filename):
-    with open(filename, 'r') as fp:
-        param_dict = json.load(fp)
-    return param_dict
+    if results_header is None:
+        raise FileNotFoundError('Did not find header file under {} '.format(dirname + '*_header.txt'))
+    return results, results_header
