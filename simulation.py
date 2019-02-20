@@ -17,6 +17,7 @@ from json_io import *
 simulation.py: 
 """
 
+
 def robust_increment(arr, idx):
     """ increment value of array if inside bound, and set to 1 if previously nan. """
     if idx < arr.shape:
@@ -53,7 +54,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
         p = parameters
         if outfolder is not None:
             try:
-                
+
                 parameters_old = read_json(outfolder + 'parameters.json')
                 p['time'] = parameters_old['time']
                 assert p == parameters_old, 'Found parameters file with different content than new parameters!'
@@ -64,14 +65,12 @@ def run_simulation(parameters, outfolder=None, solver=None):
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
-
-    out_shape = (len(p['n_complexity']), len(p['n_anchors']), len(p['n_samples']), 
+    out_shape = (len(p['n_complexity']), len(p['n_anchors']), len(p['n_samples']),
                  len(p['sigmas_noise']), len(p['values_missing']))
-    results_header = ['n_complexity', 'n_anchors', 'n_samples', 
-                       'sigmas_noise', 'values_missing']
+    results_header = ['n_complexity', 'n_anchors', 'n_samples', 'sigmas_noise', 'values_missing']
 
     keys = ['successes', 'errors', 'num_not_solved']
-    results = {k:np.full(out_shape, np.nan) for k in keys}
+    results = {k: np.full(out_shape, np.nan) for k in keys}
 
     for c_idx, n_complexity in enumerate(p['n_complexity']):
         print('n_complexity', n_complexity)
@@ -113,7 +112,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 if (solver == None) or (solver == 'semidefRelaxationNoiseless'):
                                     X = semidefRelaxationNoiseless(
                                         D_topright,
-                                        environment.anchors, trajectory.basis,
+                                        environment.anchors,
+                                        trajectory.basis,
                                         chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
@@ -121,7 +121,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                                                   trajectory.basis)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors,
+                                    P_hat = alternativePseudoInverse(D_topright,
+                                                                     environment.anchors,
                                                                      trajectory.basis)
                                 else:
                                     raise ValueError(
@@ -145,7 +146,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             except np.linalg.LinAlgError:
                                 robust_increment(results['num_not_solved'], index_slice)
 
-                        results['errors'][index_slice] = results['errors'][index_slice] / (p['n_its'] - results['num_not_solved'][index_slice])
+                        results['errors'][index_slice] = results['errors'][index_slice] / (
+                            p['n_its'] - results['num_not_solved'][index_slice])
 
     if outfolder is not None:
         print('Done with simulation. Saving results...')
@@ -201,5 +203,6 @@ def read_results(filestart):
                 print('new key:', key)
                 results[key] = new_array
     if results_header is None:
-        raise FileNotFoundError('Did not find header file under {} '.format(dirname + '*_header.txt'))
+        raise FileNotFoundError(
+            'Did not find header file under {} '.format(dirname + '*_header.txt'))
     return results, results_header

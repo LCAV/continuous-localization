@@ -9,13 +9,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from global_variables import DIM, TMAX
-
 """
 trajectory.py: 
 """
 
+
 class Trajectory(object):
     """ Create a trajectory of n_positions positions, and complexity n_complexity. """
+
     def __init__(self, n_complexity=3, model='polynomial', tau=None):
         self.n_complexity = n_complexity
         self.coeffs = None
@@ -43,10 +44,10 @@ class Trajectory(object):
         elif self.model == 'bandlimited':
             times = np.linspace(0, self.params['tau'] / 2.0, self.n_complexity)
         else:
-            raise NotImplementedError(self.model); 
+            raise NotImplementedError(self.model)
 
     def get_basis(self, times):
-        """ Evaluate the basis (polynomial or bandlimited) at the specified time. """ 
+        """ Evaluate the basis (polynomial or bandlimited) at the specified time. """
         k = np.arange(self.n_complexity)
         self.basis = np.zeros((self.n_complexity, len(times)))
         for n, time in enumerate(times):
@@ -55,13 +56,13 @@ class Trajectory(object):
             elif self.model == 'bandlimited':
                 self.basis[:, n] = np.cos(2 * np.pi * k * time / self.params['tau'])
             else:
-                raise NotImplementedError(self.model); 
+                raise NotImplementedError(self.model)
         return self.basis
 
     def get_trajectory(self, times=None):
         """ Evaluate trajectory at given times. """
         if times is None:
-            sampling_freq=0.001
+            sampling_freq = 0.001
             times = np.arange(0, TMAX, sampling_freq)
 
         trajectory = np.zeros((DIM, len(times)))
@@ -69,12 +70,14 @@ class Trajectory(object):
         for n, time in enumerate(times):
             basis_n = basis[:, n]
             position_n = self.coeffs @ basis_n
-            trajectory[:, n] = position_n.reshape((-1,))
+            trajectory[:, n] = position_n.reshape((-1, ))
         return trajectory
 
     def set_Z_opt(self):
-        self.Z_opt = np.vstack([np.hstack([np.eye(DIM), self.coeffs]),
-                                np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
+        self.Z_opt = np.vstack([
+            np.hstack([np.eye(DIM), self.coeffs]),
+            np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])
+        ])
 
     def plot(self, times=None, **kwargs):
         # plot smooth trajectory.

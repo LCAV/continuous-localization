@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from global_variables import DIM
 from plotting_tools import get_n_colors
 from plotting_tools import plot_point_with_name
-
 """
 environment.py: 
 """
@@ -32,7 +31,6 @@ class Environment(object):
             plot_point_with_name(a, "$a_{}$".format(i), color=col)
             #plt.scatter(a[0], a[1], color=col)
             i += 1
-                                       
 
     def set_D(self, traj):
         ''' get all distances between trajectory and anchors. '''
@@ -48,7 +46,7 @@ class Environment(object):
         if seed is not None:
             np.random.seed(seed)
 
-        if noise_sigma>0:
+        if noise_sigma > 0:
             noise_vector = noise_sigma * np.random.normal(size=D_noisy.shape)
 
             if noise_to_square:
@@ -74,9 +72,7 @@ class Environment(object):
             n_missing = kwargs.get('n', 0)
             pairs = np.array(np.meshgrid(range(n_positions), range(self.n_anchors)))
             pairs.resize((2, n_measurements))
-            indices = np.random.choice(n_measurements, 
-                                       size=n_missing, 
-                                       replace=False)
+            indices = np.random.choice(n_measurements, size=n_missing, replace=False)
             xs = pairs[1, indices]
             ys = pairs[0, indices]
             assert len(xs) == n_missing

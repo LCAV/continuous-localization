@@ -4,19 +4,20 @@
 import numpy as np
 import json
 import os
-
 """
 json_io.py: Read and write json files in good formats.  
 """
 
+
 def write_json(filename, param_dict):
     param_writable = {}
     for key, val in param_dict.items():
-        # save range as readable format. this avoids having super long lists in the param_dict file. 
-        if type(val) == range: 
+        # save range as readable format. this avoids having super long lists in the param_dict file.
+        if type(val) == range:
             val = str(val)
         elif type(val) == np.ndarray:
-            raise TypeError('Parameter {}: use range instead of np.ndarrays instead of processing'.format(key))
+            raise TypeError(
+                'Parameter {}: use range instead of np.ndarrays instead of processing'.format(key))
         param_writable[key] = val
     with open(filename, 'w') as fp:
         json.dump(param_writable, fp, indent=4)
@@ -31,7 +32,7 @@ def read_json(filename):
         param_dict = json.load(fp)
 
     for key, val in param_dict.items():
-        # save range as python range instead of string. 
+        # save range as python range instead of string.
         if type(val) == str and val[:5] == "range":
             val = eval(val)
             param_dict[key] = val

@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 test_json_io.py: 
 """
@@ -9,7 +8,8 @@ import pytest
 import numpy as np
 import os
 
-import json_io 
+import json_io
+
 
 def test_exceptions():
     params = {"test": np.arange(4)}
@@ -20,11 +20,11 @@ def test_exceptions():
     with pytest.raises(FileNotFoundError):
         json_io.read_json(testfile)
 
+
 def test_io():
     testfile = "params.test"
-    params = {"range":range(4), "string":"test", "float":0.1, "int":1}
+    params = {"range": range(4), "string": "test", "float": 0.1, "int": 1}
     json_io.write_json(testfile, params)
     params2 = json_io.read_json(testfile)
     os.remove(testfile)
-    assert params == params2 
-
+    assert params == params2
