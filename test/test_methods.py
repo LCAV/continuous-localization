@@ -1,6 +1,9 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.append('../')
+
 import numpy as np
 import unittest
 from cvxpy import CVXOPT
@@ -18,10 +21,12 @@ class TestMethods(unittest.TestCase):
         self.D_topright = []
 
     def set_measurements(self, seed=1):
-        self.traj.set_trajectory(seed=seed)
+        self.traj.set_coeffs(seed=seed)
+        times = self.traj.get_times()
+        self.traj.set_basis(times)
         self.env.set_random_anchors(seed=seed)
-        self.env.set_D(self.traj)
-        self.D_topright = self.env.D[:self.traj.n_positions, self.traj.n_positions:]
+        self.env.set_D(self.traj.coeffs)
+        self.D_topright = self.env.get_D_topright()
 
     def improve_with_gradientDescent(self, coeffs_est):
         """ Make sure result gets better after running a few iters of grad descent. """
@@ -79,12 +84,13 @@ class TestMethods(unittest.TestCase):
         parameters = {
             'key': 'test',
             'n_its': 2,
+            'type_missing': 'uniform',
             'time': 'undefined',
-            'positions': [6, 7],
-            'complexities': [4, 5],
-            'anchors': [3],
-            'noise_sigmas': [0],
-            'success_thresholds': [0]
+            'n_samples': [6, 7],
+            'n_complexity': [4, 5],
+            'n_anchors': [3],
+            'sigmas_noise': [0],
+            'values_missing': [0]
         }
         outfolder = 'results/{}/'.format(parameters['key'])
         try:

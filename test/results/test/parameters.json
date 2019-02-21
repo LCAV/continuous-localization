@@ -1,0 +1,23 @@
+{
+    "key": "test",
+    "n_samples": [
+        6,
+        7
+    ],
+    "values_missing": [
+        0
+    ],
+    "n_its": 2,
+    "type_missing": "uniform",
+    "time": 1550739472,
+    "n_complexity": [
+        4,
+        5
+    ],
+    "sigmas_noise": [
+        0
+    ],
+    "n_anchors": [
+        3
+    ]
+}

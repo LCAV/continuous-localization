@@ -34,6 +34,7 @@ def robust_add(arr, idx, value):
         arr[idx] += value
 
 
+# TODO(FD) change the signature of this function.
 def run_simulation(parameters, outfolder=None, solver=None):
     """ Run simulation. 
 
@@ -54,12 +55,12 @@ def run_simulation(parameters, outfolder=None, solver=None):
         p = parameters
         if outfolder is not None:
             try:
-
-                parameters_old = read_json(outfolder + 'parameters.json')
+                outfile = outfolder + 'parameters.json'
+                parameters_old = read_json(outfile)
                 p['time'] = parameters_old['time']
                 assert p == parameters_old, 'Found parameters file with different content than new parameters!'
             except FileNotFoundError:
-                print('Did not find existing parameters file.')
+                print('Did not find existing parameters file: ', outfile)
             except AssertionError as error:
                 raise (error)
     else:
@@ -104,7 +105,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                             D_noisy = environment.get_noisy(noise_sigma, seed=None)
 
-                            D_topright = D_noisy[:n_samples, n_samples:].copy()
+                            D_topright = environment.get_D_topright().copy()
                             mask = environment.get_mask(p['type_missing'], n=value_missing)
                             D_topright[~mask] = 0.0
 

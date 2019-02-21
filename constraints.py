@@ -1,12 +1,11 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+constraints.py: Generate constraints for semidefinite relaxations. 
+"""
 
 from global_variables import DIM
 import numpy as np
-"""
-constraints.py: Generate constraints for semidefinite relaxations. 
-
-"""
 
 
 def get_constraints_D(D, anchors, basis, linear=False, A=None, b=None):
@@ -43,7 +42,6 @@ def get_constraints_D(D, anchors, basis, linear=False, A=None, b=None):
 
 
 def get_constraints_identity(n_complexity, linear=False, A=None, b=None):
-
     if not linear:
         e_ds = []
         e_dprimes = []
