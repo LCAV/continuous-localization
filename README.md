@@ -58,6 +58,14 @@ To run tests go to folder 'test' and type in terminal
 
    pytest .
 
+## Documentation
+
+To look at documentation locally, run 
+
+   make html
+
+and then open the file `build/html/index.html` in a browser. 
+
 ## License
 
 ```

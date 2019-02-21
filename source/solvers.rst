@@ -1,0 +1,5 @@
+Solvers
+=======
+
+.. automodule:: solvers
+  :members: 
