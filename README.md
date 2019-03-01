@@ -52,6 +52,20 @@ If you want to contribute to this repository, you should run:
 after downloading the repository, in order to set up `yapf` formatter
 and git hook for removing non important changes form Jupyter Notebooks. 
 
+## Test Suite
+
+To run tests, type in terminal
+
+   pytest test/
+
+## Documentation
+
+To look at documentation locally, run 
+
+   make html
+
+and then open the file `build/html/index.html` in a browser. 
+
 ## License
 
 ```
