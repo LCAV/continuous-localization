@@ -42,12 +42,15 @@ OPTIONS = {
 def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
     """ Solve semidefinite feasibility problem of sensor localization problem. 
 
-    find Z 
+    .. centered::
+        find :math:`Z` 
 
-    s.t.
-    ed.T * Z * edprime == delta_dd_prime
-    ti.T * Z * ti = di**2
-    Z >= 0
+    .. math::
+        s.t. \quad e_d^T  Z  e_{d'} = \delta_{d d'}
+
+        t_i^T  Z  t_i = di^2
+
+        Z \succeq 0
 
     parameters are same as for semidefRelaxation. 
     """
@@ -87,21 +90,28 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
 def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     """ Solve semidefinite relaxation of sensor localization problem (SDP). 
 
-    Z, D = argmin sum_i(epsilon_i)
+    .. centered::
+        :math:`Z, D` = argmin :math:`\sum_i(\epsilon_i)`
 
-    s.t.
-    [-d_i 1] D_i [-d_i 1]^T = epsilon_i
-    [a_m -f_n] Z [a_m -f_n]^T = v_i
-    D_i >= 0
-    Z >= 0 
+    .. math::
+        s.t. \quad -(d_i, 1) D_i (-d_i, 1)^T = \epsilon_i
+
+        (a_m, -f_n) Z (a_m, -f_n)^T = v_i
+
+        D_i \succeq 0
+
+        Z \succeq 0 
     
-    D_i = [1 u_i; u_i v_i] (u_i**2 = v_i)
+    with 
+
+    .. math::
+        D_i = (1, u_i; u_i, v_i) \quad u_i^2 = v_i
 
     :param D_topright: NxM matrix of distance measurements between M anchors and N positions (zero when no measurement available) 
     :param anchors: DxM matrix of anchor positions. 
-    :param basis: KxN matrix of basis vectors for bandlimited trajectories. 
+    :param basis: KxN matrix of basis vectors f_n. 
 
-    :return: Z, the matrix composed of [I, P; P^T, Pbar]. 
+    :return: Z, the matrix composed of [I, P; P^T, Pbar], of size (DIM + K) x (DIM + K)
     """
     # TODO this part and the one of the noiseless function could be combined in one.
 
@@ -184,14 +194,9 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     else:
         return None
 
+
 def rightInverseOfConstraints(D_topright, anchors, basis):
     """ Solve linearised sensor localization problem. 
-
-    find Z 
-
-    s.t.
-    ed.T * Z * edprime == delta_dd_prime
-    ti.T * Z * ti = di**2
 
     parameters are same as for semidefRelaxation. 
     """
@@ -201,15 +206,17 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
 
     #get constraints
     ConstraintsMat, ConstraintsVec = get_constraints_matrix(D_topright, anchors, basis)
-    ConstraintsMat=np.array(ConstraintsMat)
-    ConstraintsVec=np.array(ConstraintsVec)
+    ConstraintsMat = np.array(ConstraintsMat)
+    ConstraintsVec = np.array(ConstraintsVec)
 
     #apply right inverse
     u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
-    num_zero_SVs = len(np.where(s<1e-10)[0])
-    Z_hat = vh[:-num_zero_SVs,:].T@np.diag(1/s[:-num_zero_SVs])@u[:,:len(s)-num_zero_SVs].T@ConstraintsVec #right inverse
-    Z_hat = Z_hat.reshape([dim + K,dim + K])
+    num_zero_SVs = len(np.where(s < 1e-10)[0])
+    Z_hat = vh[:-num_zero_SVs, :].T @ np.diag(
+        1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T @ ConstraintsVec  #right inverse
+    Z_hat = Z_hat.reshape([dim + K, dim + K])
     return Z_hat
+
 
 def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     """ Solve linearised sensor localization problem. 
@@ -225,25 +232,25 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     T_A, T_B, b, Ns_that_see_an_anchor = alternative_constraints(D_topright, anchors, basis)
 
     #reduce dimension T_B to its rank
-    rankT_B = min(2*K-1, Ns_that_see_an_anchor)
+    rankT_B = min(2 * K - 1, Ns_that_see_an_anchor)
     u, s, vh = np.linalg.svd(T_B, full_matrices=False)
-    num_zero_SVs = len(np.where(s<1e-10)[0])
-    if len(s)-num_zero_SVs!=rankT_B: #This if can be cut, it was just useful for debugging
+    num_zero_SVs = len(np.where(s < 1e-10)[0])
+    if len(s) - num_zero_SVs != rankT_B:  #This if can be cut, it was just useful for debugging
         raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
 
     #solve with a left-inverse (requires enough measurements - see Thm)
-    T = np.hstack((T_A, -u[:,:rankT_B]@np.diag(s[:rankT_B])/2))
-    
-    P_alpha_hat = np.linalg.inv(T.T@T)@T.T@b
-    P_hat = P_alpha_hat[:dim*K].reshape([dim, K])
+    T = np.hstack((T_A, -u[:, :rankT_B] @ np.diag(s[:rankT_B]) / 2))
+
+    P_alpha_hat = np.linalg.inv(T.T @ T) @ T.T @ b
+    P_hat = P_alpha_hat[:dim * K].reshape([dim, K])
 
     if average_with_Q:
-        alpha_hat = P_alpha_hat[dim*K:].reshape([K, K])
-        Q_hat1 = P_hat.T@P_hat
-        Q_hat2 = vh[:rankT_B,:].T@alpha_hat
-        Q_hat = Q_hat2 + vh[rankT_B:,:]@(Q_hat1-Q_hat2)
+        alpha_hat = P_alpha_hat[dim * K:].reshape([K, K])
+        Q_hat1 = P_hat.T @ P_hat
+        Q_hat2 = vh[:rankT_B, :].T @ alpha_hat
+        Q_hat = Q_hat2 + vh[rankT_B:, :] @ (Q_hat1 - Q_hat2)
         eigVals, eigVecs = np.linalg.eig(Q_hat)
-        P_hat = np.diag(np.sqrt(eigVals))@eigVecs.T
+        P_hat = np.diag(np.sqrt(eigVals)) @ eigVecs.T
         #tmp = np.diag(np.sqrt(eigVals[:d]))
         #np.real(np.hstack((tmp, np.zeros([d, N - d]))) @ eigVecs.T)
         #MIGHT NEED TO ENFORCE SYMMETRY ON Q
@@ -254,12 +261,14 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
 
 
 def lowRankApproximation(anchors, r):
+    """ Return approximation of matrix of rank r. """
     U, s, VT = np.linalg.svd(anchors, full_matrices=False)
     s[r:] = 0
     return U @ np.diag(s) @ VT
 
 
 def reconstructD_topright(X_0, basis, anchors):
+    """ Construct D_topright from X_0 (coefficients), basis vectors and anchors."""
     N = basis.shape[1]
     M = anchors.shape[1]
     return np.outer(np.ones(N), np.diag(
@@ -268,6 +277,7 @@ def reconstructD_topright(X_0, basis, anchors):
 
 
 def customMDS(D_topright, basis, anchors):
+    """ Custom MDS for matrix of shape M, N. """
     [d, M] = anchors.shape
     N = basis.shape[1]
     JM = np.eye(M) - np.ones([M, M]) / M
@@ -278,11 +288,13 @@ def customMDS(D_topright, basis, anchors):
 
 
 def SRLS(anchors, basis, X_0, D_topright):
+    """ Return SRLS cost function. """
     D_topright_hat = reconstructD_topright(X_0, basis, anchors)
     return np.linalg.norm(D_topright - D_topright_hat, 2)
 
 
 def getSRLSGrad(anchors, basis, X_0, D_topright):
+    """ Get gradient of SRLS function. """
     [K, N] = basis.shape
     M = anchors.shape[1]
     LHS = anchors @ (
@@ -298,11 +310,8 @@ def getSRLSGrad(anchors, basis, X_0, D_topright):
     return RHS - LHS
 
 
-def checkStationaryPointSRLS(anchors, basis, X_0, D_topright):
-    return np.isclose(getSRLSGrad(anchors, basis, X_0, D_topright), 0)
-
-
 def gradientStep(anchors, basis, X_0, D_topright, maxIters=10):
+    """ Do gradient step for SRLS. """
     grad = getSRLSGrad(anchors, basis, X_0, D_topright)
     bestX_0ost = SRLS(anchors, basis, X_0, D_topright)
     X_0_hat = X_0
@@ -320,10 +329,11 @@ def gradientStep(anchors, basis, X_0, D_topright, maxIters=10):
         else:
             maxStep = step
             minStep = minStep / 2
-    return X_0_hat, bestX_0ost
+    return X_0_hat, best_cost
 
 
 def gradientDescent(anchors, basis, X_0, D_topright, maxIters=10):
+    """ Do finite number of gradient descent steps. """
     X_0_hat = X_0
     costs = [SRLS(anchors, basis, X_0, D_topright)]
     for i in range(maxIters):
@@ -333,6 +343,7 @@ def gradientDescent(anchors, basis, X_0, D_topright, maxIters=10):
 
 
 def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, print_out=False, DR_true=None):
+    """ Alternate between gradient descent and MDS. """
     d = anchors.shape[0]
     N = basis.shape[1]
     DR_complete = DR_missing.copy()
