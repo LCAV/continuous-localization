@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 constraints.py: Generate constraints for semidefinite relaxations. 
 
@@ -14,12 +13,14 @@ For Z:
 from global_variables import DIM
 import numpy as np
 
+
 def verify_dimensions(D_topright, anchors, basis):
     n_positions, n_anchors = D_topright.shape
     n_complexity = basis.shape[0]
     dim = anchors.shape[0]
 
-    assert n_positions > n_complexity, 'Cannot compute {} coeffs with only {} measurements.'.format(n_complexity, n_positions)
+    assert n_positions > n_complexity, 'Cannot compute {} coeffs with only {} measurements.'.format(
+        n_complexity, n_positions)
     assert n_anchors > dim, 'Cannot localize in {}D with only {} anchors.'.format(dim, n_anchors)
 
     assert basis.shape[1] == n_positions
@@ -157,7 +158,7 @@ def get_constraints_matrix(D_topright, anchors, basis):
     """
     A = []
     b = []
-    
+
     n_complexity = basis.shape[0]
 
     get_constraints_D(D_topright, anchors, basis, vectorized=True, A=A, b=b)
@@ -197,4 +198,4 @@ def get_C_constraints(D_topright, anchors, basis):
     T_B = np.array(T_B)
     b = np.array(b)
 
-    return T_A, T_B, b 
+    return T_A, T_B, b

@@ -212,7 +212,8 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     #apply right inverse
     u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
     num_zero_SVs = len(np.where(s < 1e-10)[0])
-    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
+    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(
+        1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
     Z_hat = ConstraintsMat_inv @ ConstraintsVec  #right inverse
     Z_hat = Z_hat.reshape([dim + K, dim + K])
     return Z_hat

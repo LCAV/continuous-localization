@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from global_variables import DIM, TMAX
-
 """
 trajectory.py: 
 """
@@ -20,7 +19,8 @@ class Trajectory(object):
     :member trajectory: list of points (dim x n_positions)
 
     """
-    # TODO remove n_positions from trajectory class. 
+
+    # TODO remove n_positions from trajectory class.
     def __init__(self, n_positions=8, n_complexity=3, dim=DIM):
         self.n_positions = n_positions
         self.n_complexity = n_complexity
@@ -60,8 +60,10 @@ class Trajectory(object):
         else:
             self.coeffs = coeffs
 
-        self.Z_opt = np.vstack([np.hstack([np.eye(DIM), self.coeffs]),
-                                np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
+        self.Z_opt = np.vstack([
+            np.hstack([np.eye(DIM), self.coeffs]),
+            np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])
+        ])
 
         self.set_basis()
         self.trajectory = self.coeffs @ self.basis
@@ -73,8 +75,7 @@ class Trajectory(object):
         trajectory_cont = self.coeffs @ basis_cont
 
         if mask is not None:
-            trajectory = self.trajectory[:, np.any(
-                mask[:self.n_positions, :] != 0, axis=1)]
+            trajectory = self.trajectory[:, np.any(mask[:self.n_positions, :] != 0, axis=1)]
         else:
             trajectory = self.trajectory
 

@@ -70,11 +70,12 @@ class TestGeometry(unittest.TestCase):
         L = self.traj.coeffs.T.dot(self.traj.coeffs)
 
         T_A, T_B, b = get_C_constraints(D_topright, self.env.anchors, self.traj.basis)
-        T = np.c_[T_A, -T_B/2]
+        T = np.c_[T_A, -T_B / 2]
         x = np.r_[self.traj.coeffs.flatten(), L.flatten()]
 
         np.testing.assert_array_almost_equal(T @ x, b)
         print('ok')
-        
+
+
 if __name__ == "__main__":
     unittest.main()
