@@ -1,14 +1,14 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import cvxpy as cp
+    import numpy as np
+    import cvxpy as cp
 
-from constraints import *
-"""
-solvers.py: Algorithms used to estimate coefficients from distance measurements. 
+    from constraints import *
+    """
+    solvers.py: Algorithms used to estimate coefficients from distance measurements. 
 
-"""
+    """
 
 # Default solver options for CVXOPT.
 # Scroll down to "Setting solver options" for explanations here:
@@ -83,7 +83,6 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     prob.solve(solver=chosen_solver, **options)
     return Z.value
 
-
 def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     """ Solve semidefinite relaxation of sensor localization problem (SDP). 
 
@@ -103,13 +102,15 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
     :return: Z, the matrix composed of [I, P; P^T, Pbar]. 
     """
-    # TODO this part and the one of the noiseless function could be combined in one.
-
     print("Running with options:", OPTIONS[chosen_solver])
 
+    # TODO this part and the one of the noiseless function could be combined in one.
     K = basis.shape[0]
     [D, M] = anchors.shape
     N = D_topright.shape[0]
+
+    assert basis.shape[1] == N
+    assert D_topright.shape[1] == M
 
     constraints = []
 
@@ -134,10 +135,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     constraints.append(X[1, 1] == 1.0)
     constraints.append(X[0, 1] == 0.0)
 
-    test = np.ones((X_size, X_size))
-
-    constraints.append(X[D + K:, :D + K] == 0.0)
-    test[D + K:, :D + K] = 0
+   constraints.append(X[D + K:, :D + K] == 0.0)
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((N, 1))
@@ -166,7 +164,6 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
         for ys in range(D + K + 2 * (i + 1), X_size):
             for xs in range(D + K + 2 * i, D + K + 2 * (i + 1)):
                 constraints.append(X[ys, xs] == 0.0)
-                test[ys, xs] = 0.0
     print('Set up constraint {}/{}. Solving...'.format(i + 1, S))
 
     obj = cp.Minimize(cp.sum(Epsilon))
@@ -186,12 +183,6 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
 def rightInverseOfConstraints(D_topright, anchors, basis):
     """ Solve linearised sensor localization problem. 
-
-    find Z 
-
-    s.t.
-    ed.T * Z * edprime == delta_dd_prime
-    ti.T * Z * ti = di**2
 
     parameters are same as for semidefRelaxation. 
     """
