@@ -47,7 +47,7 @@ class TestMethods(unittest.TestCase):
 
         self.assertTrue((err_refined <= err_raw) or (abs(err_refined) < 1e-10))
 
-    def test_semidefRelaxation(self):
+    def test_semidefRelaxationNoiseless(self):
         """ Check noiseless error. """
 
         for i in range(10):

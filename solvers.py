@@ -111,14 +111,14 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     :param anchors: DxM matrix of anchor positions. 
     :param basis: KxN matrix of basis vectors f_n. 
 
-    :return: Z, the matrix composed of [I, P; P^T, Pbar], of size (DIM + K) x (DIM + K)
+    :return: Z, the matrix composed of [I, P; P^T, Pbar], of size (dim + K) x (dim + K)
     """
     # TODO this part and the one of the noiseless function could be combined in one.
 
     print("Running with options:", OPTIONS[chosen_solver])
 
     K = basis.shape[0]
-    [D, M] = anchors.shape
+    dim, M = anchors.shape
     N = D_topright.shape[0]
 
     constraints = []
@@ -129,7 +129,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
     # We introduce a big matrix consisting of Z and D_mn on the diagonal,
     # to bring the problem into a standard form with only one variable.
-    X_size = D + K + 2 * S
+    X_size = dim + K + 2 * S
     X = cp.Variable((X_size, X_size), PSD=True)
 
     # The error that we are minimizing (has to be of form "Variable" even though
@@ -146,8 +146,8 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
     test = np.ones((X_size, X_size))
 
-    constraints.append(X[D + K:, :D + K] == 0.0)
-    test[D + K:, :D + K] = 0
+    constraints.append(X[dim + K:, :dim + K] == 0.0)
+    test[dim + K:, :dim + K] = 0
 
     for i, (m, n) in enumerate(zip(Ms, Ns)):
         e_n = np.zeros((N, 1))
@@ -158,23 +158,23 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
 
         # express constraint on Z in terms of X.
         b = np.zeros((X_size, 1))
-        b[:D + K] = t_mn
-        b[D + K + 2 * i + 1] = -1.0
+        b[:dim + K] = t_mn
+        b[dim + K + 2 * i + 1] = -1.0
         tmp = b @ b.T
         constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == 0)
         #constraints.append(b.transpose() * X * b == 0)
 
         # Express constraint on D_i in terms of X.
         d = np.zeros((X_size, 1))
-        d[D + K + 2 * i] = -D_topright[n, m]  # multiplies 1
-        d[D + K + 2 * i + 1] = 1.0  # multiplies v_i
+        d[dim + K + 2 * i] = -D_topright[n, m]  # multiplies 1
+        d[dim + K + 2 * i + 1] = 1.0  # multiplies v_i
         tmp = d @ d.T
         constraints.append(
             cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
         #constraints.append(d.transpose() * X * d == Epsilon[n, m])
 
-        for ys in range(D + K + 2 * (i + 1), X_size):
-            for xs in range(D + K + 2 * i, D + K + 2 * (i + 1)):
+        for ys in range(dim + K + 2 * (i + 1), X_size):
+            for xs in range(dim + K + 2 * i, dim + K + 2 * (i + 1)):
                 constraints.append(X[ys, xs] == 0.0)
                 test[ys, xs] = 0.0
     print('Set up constraint {}/{}. Solving...'.format(i + 1, S))
@@ -189,7 +189,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
     prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
 
     if X.value is not None:
-        Z = X.value[:D + K, :D + K]
+        Z = X.value[:dim + K, :dim + K]
         return Z
     else:
         return None
@@ -212,8 +212,8 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     #apply right inverse
     u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
     num_zero_SVs = len(np.where(s < 1e-10)[0])
-    Z_hat = vh[:-num_zero_SVs, :].T @ np.diag(
-        1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T @ ConstraintsVec  #right inverse
+    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
+    Z_hat = ConstraintsMat_inv @ ConstraintsVec  #right inverse
     Z_hat = Z_hat.reshape([dim + K, dim + K])
     return Z_hat
 
@@ -221,15 +221,20 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
 def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     """ Solve linearised sensor localization problem. 
 
-    parameters are same as for semidefRelaxation. 
-    average_with_Q is an option to imporve noise robustness by averaging the estimate of P with the knowledge we have for Q=P^TP
+    First parameters are same as for :function:`semidefRelaxation`. 
+
+    :param average_with_Q: option to improve noise robustness by averaging the 
+                           estimate of P with the knowledge we have for Q=P^TP
     """
 
     dim, M = anchors.shape
     K = basis.shape[0]
 
     #get constraints
-    T_A, T_B, b, Ns_that_see_an_anchor = alternative_constraints(D_topright, anchors, basis)
+    T_A, T_B, b = get_C_constraints(D_topright, anchors, basis)
+
+    Ns, Ms = np.where(D_topright > 0)
+    Ns_that_see_an_anchor = len(np.unique(Ns))
 
     #reduce dimension T_B to its rank
     rankT_B = min(2 * K - 1, Ns_that_see_an_anchor)
@@ -238,11 +243,13 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     if len(s) - num_zero_SVs != rankT_B:  #This if can be cut, it was just useful for debugging
         raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
 
-    #solve with a left-inverse (requires enough measurements - see Thm)
-    T = np.hstack((T_A, -u[:, :rankT_B] @ np.diag(s[:rankT_B]) / 2))
+    T_B_fullrank = u[:, :rankT_B] @ np.diag(s[:rankT_B])
 
-    P_alpha_hat = np.linalg.inv(T.T @ T) @ T.T @ b
-    P_hat = P_alpha_hat[:dim * K].reshape([dim, K])
+    #solve with a left-inverse (requires enough measurements - see Thm)
+    T = np.hstack((T_A, -T_B_fullrank / 2))
+    C_hat = np.linalg.inv(T.T @ T) @ T.T @ b
+
+    P_hat = C_hat[:dim * K].reshape([dim, K])
 
     if average_with_Q:
         alpha_hat = P_alpha_hat[dim * K:].reshape([K, K])
@@ -313,7 +320,7 @@ def getSRLSGrad(anchors, basis, X_0, D_topright):
 def gradientStep(anchors, basis, X_0, D_topright, maxIters=10):
     """ Do gradient step for SRLS. """
     grad = getSRLSGrad(anchors, basis, X_0, D_topright)
-    bestX_0ost = SRLS(anchors, basis, X_0, D_topright)
+    best_cost = SRLS(anchors, basis, X_0, D_topright)
     X_0_hat = X_0
     minStep = 0
     maxStep = 0.01
@@ -321,8 +328,8 @@ def gradientStep(anchors, basis, X_0, D_topright, maxIters=10):
         step = (maxStep - minStep) / 2
         X_0_test = X_0_hat - step * grad
         cost = SRLS(anchors, basis, X_0_test, D_topright)
-        if cost < bestX_0ost:
-            bestX_0ost = cost
+        if cost < best_cost:
+            best_cost = cost
             X_0_hat = X_0_test
             minStep = step
             maxStep = 2 * maxStep

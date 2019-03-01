@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from global_variables import DIM
+from global_variables import DIM, TMAX
 
 """
 trajectory.py: 
@@ -12,19 +12,33 @@ trajectory.py:
 
 
 class Trajectory(object):
-    def __init__(self, n_positions=8, n_complexity=3):
+    """ Trajectory class.
+
+    :member n_complexity: complexity of trajectory. 
+    :member coeffs: coefficients of trajectory. (dim x n_complexity)
+    :member basis: basis vectors evaluated at different time instances. (n_complexity x n_positions)
+    :member trajectory: list of points (dim x n_positions)
+
+    """
+    # TODO remove n_positions from trajectory class. 
+    def __init__(self, n_positions=8, n_complexity=3, dim=DIM):
         self.n_positions = n_positions
         self.n_complexity = n_complexity
-        self.coeffs = np.zeros(n_complexity)
-        self.trajectory = []
+        self.coeffs = np.zeros((dim, n_complexity))
+        self.trajectory = np.zeros((dim, n_positions))
+        self.basis = np.zeros((n_complexity, n_positions))
 
-    def get_basis(self, n_samples=None):
-        if n_samples is None:
-            n_samples = self.n_positions
+    def get_basis(self, times=None):
+        """ Get basis vectors evaluated at specific times. 
+
+        :param times: vector of times. 
+        :return: basis vector matrix (n_complexity x n_positions)
+        """
+        if times is None:
+            times = np.linspace(0, TMAX, self.n_positions)
 
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-        n = np.reshape(np.linspace(0, self.n_positions,
-                                   n_samples), [1, n_samples])
+        n = np.reshape(times, [1, self.n_positions])
         return np.cos(np.pi * k * n / self.n_positions)
 
     def set_basis(self, n_samples=None):

@@ -9,3 +9,4 @@
 global_variables.py: 
 """
 DIM = 2
+TMAX = 2.0
