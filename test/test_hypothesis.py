@@ -1,3 +1,9 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from common import test_prepare
+test_prepare()
+
 import unittest
 from hypothesis import *
 

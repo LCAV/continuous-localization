@@ -54,7 +54,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
             try:
                 parameters_old = read_params(outfolder + 'parameters.json')
                 parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old, 'Found parameters file with different content than new parameters!'
+                assert parameters == parameters_old, 'found conflicting parameters file: {}'.format(outfolder + 'parameters.json')
             except FileNotFoundError:
                 print('no conflicting parameters file found.')
             except AssertionError as error:
