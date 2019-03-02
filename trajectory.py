@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 trajectory.py: Contains the Trajectory class. 
 """
@@ -22,7 +21,7 @@ class Trajectory(object):
 
     # TODO maybe remove n_positions, trajectory and basis from this class.
     # It should be possible to generate them using an independent vector
-    # of "times", of length n_positions. 
+    # of "times", of length n_positions.
     def __init__(self, n_positions=8, n_complexity=3, dim=DIM):
         self.n_positions = n_positions
         self.n_complexity = n_complexity
@@ -36,7 +35,7 @@ class Trajectory(object):
         :param times: vector of times. 
         :return: basis vector matrix (n_complexity x n_positions)
         """
-        if n_samples is None: 
+        if n_samples is None:
             n_samples = self.n_positions
 
         if times is None:
@@ -73,7 +72,7 @@ class Trajectory(object):
         :param coeffs: Matrix of coefficients, dim X n_complexity. If None, random coeffs are created. 
         :param seed: random seed.
         """
-        
+
         self.set_coeffs(seed, coeffs)
         self.set_basis(times=times)
         self.trajectory = self.coeffs @ self.basis
