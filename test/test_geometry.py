@@ -19,7 +19,6 @@ class TestGeometry(unittest.TestCase):
 
     def test_constraints(self):
         """ Check the correct trajectory satisfies constraints.  """
-
         for i in range(100):
             self.traj.set_trajectory(seed=i)
             self.env.set_random_anchors(seed=i)
@@ -42,18 +41,18 @@ class TestGeometry(unittest.TestCase):
                 A = tmp.flatten()
                 self.assertAlmostEqual(A @ (self.traj.Z_opt).flatten(), D_topright_mn)
 
-            # test linear form of both constraints
-            A, b = get_constraints_identity(self.traj.n_complexity, linear=True)
+            # test vectorized form of both constraints
+            A, b = get_constraints_identity(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
             A, b = get_constraints_D(
-                D_topright, self.env.anchors, self.traj.basis, linear=True, A=A, b=b)
+                D_topright, self.env.anchors, self.traj.basis, vectorized=True, A=A, b=b)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
-            A, b = get_constraints_symmetry(self.traj.n_complexity, linear=True)
+            A, b = get_constraints_symmetry(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
-    def test_all_linear(self):
+    def test_all_vectorized(self):
         self.traj.set_trajectory()
         self.env.set_random_anchors()
         self.env.set_D(self.traj)
@@ -61,6 +60,20 @@ class TestGeometry(unittest.TestCase):
 
         A, b = get_constraints_matrix(D_topright, self.env.anchors, self.traj.basis)
         np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
+
+    def test_C_constraints(self):
+        self.traj.set_trajectory()
+        self.env.set_random_anchors()
+        self.env.set_D(self.traj)
+        D_topright = self.env.D[:self.traj.n_positions, self.traj.n_positions:]
+
+        L = self.traj.coeffs.T.dot(self.traj.coeffs)
+
+        T_A, T_B, b = get_C_constraints(D_topright, self.env.anchors, self.traj.basis)
+        T = np.c_[T_A, -T_B / 2]
+        x = np.r_[self.traj.coeffs.flatten(), L.flatten()]
+
+        np.testing.assert_array_almost_equal(T @ x, b)
 
 
 if __name__ == "__main__":

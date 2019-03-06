@@ -6,15 +6,13 @@ test_prepare()
 
 import numpy as np
 import unittest
-from cvxpy import CVXOPT
 
-from solvers import *
+from baseline_solvers import *
 from trajectory import Trajectory
 from environment import Environment
-from simulation import run_simulation
 
 
-class TestMethods(unittest.TestCase):
+class TestBaselineSolvers(unittest.TestCase):
     def setUp(self):
         self.traj = Trajectory()
         self.env = Environment()
@@ -47,25 +45,6 @@ class TestMethods(unittest.TestCase):
 
         self.assertTrue((err_refined <= err_raw) or (abs(err_refined) < 1e-10))
 
-    def test_semidefRelaxation(self):
-        """ Check noiseless error. """
-
-        for i in range(10):
-            self.set_measurements(i)
-
-            # check noiseless methods.
-            X = semidefRelaxationNoiseless(
-                self.D_topright,
-                self.env.anchors,
-                self.traj.basis,
-                chosen_solver=CVXOPT,
-                verbose=False)
-            coeffs_est = X[:DIM:, DIM:]
-            np.testing.assert_array_almost_equal(X[:DIM:, :DIM], np.eye(DIM), decimal=1)
-            np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=1)
-
-            self.improve_with_gradientDescent(coeffs_est)
-
     def test_customMDS(self):
         """ Check noiseless error. """
 
@@ -77,23 +56,6 @@ class TestMethods(unittest.TestCase):
             np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=2)
 
             self.improve_with_gradientDescent(coeffs_est)
-
-    def test_simulations(self):
-        parameters = {
-            'key': 'test',
-            'n_its': 2,
-            'time': 'undefined',
-            'positions': [6, 7],
-            'complexities': [4, 5],
-            'anchors': [3],
-            'noise_sigmas': [0],
-            'success_thresholds': [0]
-        }
-        outfolder = 'results/{}/'.format(parameters['key'])
-        try:
-            run_simulation(parameters, outfolder, solver="rightInverseOfConstraints")
-        except RuntimeError as e:
-            self.fail("run_simulation raised exception: " + str(e))
 
 
 if __name__ == "__main__":
