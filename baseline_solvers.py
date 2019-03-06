@@ -9,7 +9,7 @@ import numpy as np
 
 
 def lowRankApproximation(anchors, r):
-    """ Return approximation of matrix of rank r. """
+    """ Return rank r approximation of a matrix. """
     U, s, VT = np.linalg.svd(anchors, full_matrices=False)
     s[r:] = 0
     return U @ np.diag(s) @ VT
