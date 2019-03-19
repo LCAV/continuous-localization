@@ -88,11 +88,11 @@ class Trajectory(object):
         return points
 
     def get_continuous_points(self):
-        times_cont = self.get_times(n_samples=1000)
-        trajectory_cont = self.get_sampling_points(times=times_cont)
+        basis_cont = self.get_basis(n_samples=1000)
+        trajectory_cont = self.get_sampling_points(basis=basis_cont)
         return trajectory_cont
 
-    def plot(self, times, mask=None, **kwargs):
+    def plot(self, basis, mask=None, **kwargs):
         """ Plot continuous and sampled version.
 
         :param times: times of sampling points.
@@ -102,7 +102,7 @@ class Trajectory(object):
         """
 
         trajectory_cont = self.get_continuous_points()
-        trajectory = self.get_sampling_points(times=times)
+        trajectory = self.get_sampling_points(basis=basis)
 
         if mask is not None:
             trajectory = trajectory[:, np.any(mask[:self.n_positions, :] != 0, axis=1)]
@@ -110,9 +110,9 @@ class Trajectory(object):
         plt.plot(*trajectory_cont, color='blue')
         plt.scatter(*trajectory, **kwargs)
 
-    def plot_number_measurements(self, times, mask=None, **kwargs):
+    def plot_number_measurements(self, basis, mask=None, **kwargs):
         trajectory_cont = self.get_continuous_points()
-        trajectory = self.get_sampling_points(times=times)
+        trajectory = self.get_sampling_points(basis=basis)
 
         plt.plot(*trajectory_cont, color='blue')
 
