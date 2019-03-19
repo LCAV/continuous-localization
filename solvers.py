@@ -168,8 +168,7 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
         d[dim + K + 2 * i] = -D_topright[n, m]  # multiplies 1
         d[dim + K + 2 * i + 1] = 1.0  # multiplies v_i
         tmp = d @ d.T
-        constraints.append(
-            cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
+        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
         #constraints.append(d.transpose() * X * d == Epsilon[n, m])
 
         for ys in range(dim + K + 2 * (i + 1), X_size):
@@ -211,8 +210,7 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     #apply right inverse
     u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
     num_zero_SVs = len(np.where(s < 1e-10)[0])
-    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(
-        1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
+    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
     Z_hat = ConstraintsMat_inv @ ConstraintsVec  #right inverse
     Z_hat = Z_hat.reshape([dim + K, dim + K])
     return Z_hat
@@ -245,9 +243,16 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
 
     T_B_fullrank = u[:, :rankT_B] @ np.diag(s[:rankT_B])
 
-    #solve with a left-inverse (requires enough measurements - see Thm)
     T = np.hstack((T_A, -T_B_fullrank / 2))
-    C_hat = np.linalg.inv(T.T @ T) @ T.T @ b
+    #solve with a left-inverse (requires enough measurements - see Thm)
+    if T.shape[0] >= T.shape[1]:
+        C_hat = np.linalg.inv(T.T @ T) @ T.T @ b
+    #solve with a right-inverse if we do not have enough measurements
+    else:
+        right_inv = T.T @ np.linalg.inv(T @ T.T)
+        C_hat = right_inv @ b
+
+    assert len(C_hat) == K * dim + rankT_B
 
     P_hat = C_hat[:dim * K].reshape([dim, K])
 
