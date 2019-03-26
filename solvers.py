@@ -219,7 +219,7 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
 def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     """ Solve linearised sensor localization problem. 
 
-    First parameters are same as for :function:`semidefRelaxation`. 
+    First parameters are same as for :func:`.semidefRelaxation`. 
 
     :param average_with_Q: option to improve noise robustness by averaging the 
                            estimate of P with the knowledge we have for Q=P^TP
@@ -270,6 +270,11 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
         #TODO PROJECT ONTO AFFINE SUBSPACE
 
     return P_hat
+
+
+def exactSolution(D_topright, anchors, basis, method='grid', verbose=False):
+    from exact_solution import compute_exact
+    return compute_exact(D_topright, anchors, basis, method=method, verbose=verbose)
 
 
 if __name__ == "__main__":
