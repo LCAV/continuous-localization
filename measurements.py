@@ -4,6 +4,7 @@
 measurements.py: Functions to generate measurements from setup. 
 """
 
+import math
 import numpy as np
 
 
@@ -29,6 +30,7 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
     - 'minimal': We randomly delete measures such that we only keep measurements from
     exactly dim+1 anchors, and we have measurements at at least n_complexity different time instances, 
     where dim is the dimension and n_complexity the complexity of the setup. 
+    - 'simple': The first point sees D+1 anchors, and the next K-1 points see only anchor 0 and 1. 
 
     '''
     if seed is not None:
@@ -80,6 +82,20 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
         indices = range(len(ns))
         chosen_indices = np.random.choice(indices, size=n_added, replace=False)
         mask[ns[chosen_indices], ms[chosen_indices]] = 1.0
+
+    elif strategy == 'simple':
+        dim = kwargs.get('dim')
+        n_complexity = kwargs.get('n_complexity')
+
+        mask[:, :] = 0.0
+        mask[0, :dim + 1] = 1.0
+        n = mask.shape[0]
+        delta = math.ceil(n / n_complexity)
+        indices = np.arange(0, n, delta)
+        assert len(indices) == n_complexity
+        mask[indices, :dim] = 1.0
+        mask[indices[-1], dim - 1] = 0.0
+        assert np.sum(mask) == dim * n_complexity
 
     elif strategy == 'uniform':
         mask[:, :] = 1.0
