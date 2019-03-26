@@ -24,9 +24,13 @@ class Trajectory(object):
         self.n_complexity = n_complexity
         self.coeffs = None
         self.model = model
-        if model == 'bandlimited':
-            assert tau is not None, 'Need to specify period tau when creating bandlimited trajectory.'
         self.params = {'tau': tau}
+        self.set_coeffs()
+
+    def copy(self):
+        new = Trajectory(self.n_complexity, self.dim, self.model, self.params['tau'])
+        new.set_coeffs(coeffs=self.coeffs)
+        return new
 
     def get_times(self, n_samples):
         """ Get times appropriate for this trajectory model. """
@@ -105,27 +109,38 @@ class Trajectory(object):
         trajectory = self.get_sampling_points(basis=basis)
 
         if mask is not None:
-            trajectory = trajectory[:, np.any(mask[:self.n_positions, :] != 0, axis=1)]
+            trajectory = trajectory[:, np.any(mask[:, :] != 0, axis=1)]
 
-        plt.plot(*trajectory_cont, color='blue')
+        plt.plot(*trajectory_cont, **kwargs)
         plt.scatter(*trajectory, **kwargs)
 
-    def plot_number_measurements(self, basis, mask=None, **kwargs):
-        trajectory_cont = self.get_continuous_points()
+    def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
+        ns, ms = np.where(mask)
+        for n, m in zip(ns, ms):
+            p1 = trajectory[:, n]
+            p2 = anchors[:, m]
+            plt.plot([p1[0], p2[0]], [p1[1], p2[1]], **kwargs)
 
-        plt.plot(*trajectory_cont, color='blue')
-
-        for i in range(len(times)):
+    def plot_number_measurements(self, basis, mask=None, legend=False):
+        #  mask is n_samples x n_anchors.
+        trajectory = self.get_sampling_points(basis=basis)
+        if legend:
+            label1 = '1'
+            label2 = '2'
+            label3 = '>2'
+        else:
+            label1 = label2 = label3 = None
+        for i in range(trajectory.shape[1]):
             point = trajectory[:, i]
             if np.sum(mask[i, :]) == 1:
-                plt.scatter(*point, color='orange')
-            if np.sum(mask[i, :]) == 2:
-                plt.scatter(*point, color='red')
-            if np.sum(mask[i, :]) > 2:
-                plt.scatter(*point, color='green')
-
-        plt.scatter(-2.8, 6)
-        plt.scatter(-2.8, 5, color='orange')
-        plt.scatter(-2.8, 4, color='red')
-        plt.scatter(-2.8, 3, color='green')
+                plt.scatter(*point, color='orange', label=label1)
+                label1 = None
+            elif np.sum(mask[i, :]) == 2:
+                plt.scatter(*point, color='red', label=label2)
+                label2 = None
+            elif np.sum(mask[i, :]) > 2:
+                plt.scatter(*point, color='green', label=label3)
+                label3 = None
+        if legend:
+            plt.legend(title='# measurements')
