@@ -105,7 +105,7 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
                 new_coeffs_hat = sol.x.reshape((dim, K))
                 if (coeffs_hat is not None) and not np.allclose(new_coeffs_hat, coeffs_hat):
                     pass
-                    print('Already found two plausible solutions while searching:', coeffs_hat, new_coeffs_hat)
+                    #print('Already found two plausible solutions while searching:', coeffs_hat, new_coeffs_hat)
                 coeffs_hat = new_coeffs_hat
 
         if coeffs_hat is not None:

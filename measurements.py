@@ -89,13 +89,23 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
 
         mask[:, :] = 0.0
         mask[0, :dim + 1] = 1.0
-        n = mask.shape[0]
-        delta = math.ceil(n / n_complexity)
-        indices = np.arange(0, n, delta)
-        assert len(indices) == n_complexity
-        mask[indices, :dim] = 1.0
-        mask[indices[-1], dim - 1] = 0.0
-        assert np.sum(mask) == dim * n_complexity
+        mask[1:n_complexity, :dim] = 1.0
+        mask[n_complexity - 1, dim - 1] = 0.0
+        assert np.sum(mask) == dim * n_complexity, np.sum(mask)
+
+    elif strategy == 'single':
+        mask[:, :] = 0.0
+        dim = kwargs.get('dim')
+
+        # the first d+1 points see d+1 different anchors.
+        mask[range(dim + 1), range(dim + 1)] = 1.0
+
+        # all following points see exactly one anchor.
+        choice = np.arange(mask.shape[1])
+        indices = np.random.choice(choice, size=mask.shape[0] - dim - 1, replace=True)
+        for i, idx in enumerate(indices):
+            mask[dim + 1 + i, idx] = 1.0
+        assert np.sum(mask) == mask.shape[0]
 
     elif strategy == 'uniform':
         mask[:, :] = 1.0
