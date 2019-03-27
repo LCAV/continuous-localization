@@ -96,20 +96,24 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
     if method == 'least_squares':
         kwargs = {'anchors': anchors, 'basis': basis, 'distance_measurements': D_topright}
         max_it = 100
-        coeffs_hat = None
+        coeffs_hat_list = []
         for i in range(max_it):
-            np.random.seed(i)
             x0 = np.random.randn(dim * K)
-            sol = opt.least_squares(objective_ls, x0=x0, method='lm', verbose=0, kwargs=kwargs)
+            sol = opt.least_squares(objective_ls, x0=x0, verbose=0, kwargs=kwargs)
+
             if np.all(np.abs(sol.fun) < 1e-10):
                 new_coeffs_hat = sol.x.reshape((dim, K))
-                if (coeffs_hat is not None) and not np.allclose(new_coeffs_hat, coeffs_hat):
-                    pass
-                    #print('Already found two plausible solutions while searching:', coeffs_hat, new_coeffs_hat)
-                coeffs_hat = new_coeffs_hat
+                already_present = False
+                for c in coeffs_hat_list:
+                    if np.allclose(c, new_coeffs_hat):
+                        already_present = True
+                        break
 
-        if coeffs_hat is not None:
-            return coeffs_hat
+                if not already_present:
+                    coeffs_hat_list.append(new_coeffs_hat)
+
+        if len(coeffs_hat_list) > 0:
+            return coeffs_hat_list
         else:
             raise ValueError('No exact solution found in {} random initializations'.format(max_it))
 
