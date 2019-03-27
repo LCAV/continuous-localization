@@ -111,7 +111,13 @@ class Trajectory(object):
         if mask is not None:
             trajectory = trajectory[:, np.any(mask[:, :] != 0, axis=1)]
 
-        plt.plot(*trajectory_cont, **kwargs)
+        cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
+        plt.plot(*trajectory_cont, **cont_kwargs)
+        # avoid having two labels of same thing.
+        pop_labels = ['label', 'linestyle']
+        for pop_label in pop_labels:
+            if pop_label in kwargs.keys():
+                kwargs.pop(pop_label)
         plt.scatter(*trajectory, **kwargs)
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
