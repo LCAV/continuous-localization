@@ -98,7 +98,7 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
         max_it = 100
         coeffs_hat_list = []
         for i in range(max_it):
-            x0 = np.random.randn(dim * K)
+            x0 = 2 * (np.random.rand(dim * K) - 0.5) * 10  # uniform between -10, 10
             sol = opt.least_squares(objective_ls, x0=x0, verbose=0, kwargs=kwargs)
 
             if np.all(np.abs(sol.fun) < 1e-10):
