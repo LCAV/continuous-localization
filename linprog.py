@@ -13,7 +13,7 @@ import numpy as np
 from scipy.optimize import linprog
 
 eps = 1e-3  #0.5
-c = 1
+c = 0.5
 
 
 def attempt_one():
@@ -60,6 +60,7 @@ def attempt_two():
         [5, 2, -1],  # fail
         [5, 1, -1],  # fail
         [-6, -1, 1],  # success
+        [-3, -4, 1],  # success
         [-1, 1, 0],  # a > b
         [0, -1, 0],  # b > c
     ]
@@ -72,6 +73,7 @@ def attempt_two():
         c,  # success
         -eps,  # fail
         -c - eps,  # fail
+        0,  # success
         0,  # success
         -eps,
         -c - eps,
@@ -103,7 +105,7 @@ if __name__ == "__main__":
         sys.exit
 
     a, b, K = res.x
-    print('a={:2.2f}, b={:2.2f}, K={:2.2f}'.format(a, b, K))
+    print('a={:2.2f}, b={:2.2f}, c={:2.2f}, K={:2.2f}'.format(a, b, c, K))
 
     A = np.array(A)
     x = np.array(res.x)
