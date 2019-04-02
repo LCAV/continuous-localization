@@ -6,5 +6,4 @@ python:
   - "3.5"
 script:
   - pytest test/
-  - python runner.py
   - make html
