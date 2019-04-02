@@ -90,6 +90,28 @@ def evaluate_constraints(constraints, x):
 
 
 def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares', verbose=False):
+    """ Function to compute exact solution to quadratically constrained problem. 
+
+    See also UniquenessStudies.ipynb for seeing how to use these methods. 
+
+    :param D_topright, anchors, basis: see :class:`solvers.semidefRelaxation` for explanation. 
+    :param guess: initial guess for coefficients (necessary for some methdos). 
+    :param method: Method to use to find exact solution. Currently implemented are 
+
+    - least_squares: do gradient descent on the least squares cost function. We do in total 100
+    random initializations in (-10, 10)^KD, and we keep all solutions where the cost function is zero, 
+    meaning that all constraints are satisfied. WORKING. 
+
+    - minimize: We setup a constrained minimization problem, and then try to minimize a banal cost function. It doesn't work well when first guess is not feasible, according to some online discussions. 
+
+    - grid: Do a simple grid search to find zeros of the least-squares cost function. Runs out of memory even for small model sizes. 
+
+    - roots: Find the roots of the cost function. Problem: this only allows us to add exactly K*D constraints, which is almost never enough. 
+
+    :return: list of solutions (least_squares) or single solution. 
+
+
+    """
     dim = anchors.shape[0]
     K = basis.shape[0]
 
@@ -116,7 +138,6 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
             return coeffs_hat_list
         else:
             raise ValueError('No exact solution found in {} random initializations'.format(max_it))
-
     elif method == 'minimize':
         if guess is None:
             guess = np.zeros((dim * K, ))
