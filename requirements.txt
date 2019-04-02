@@ -3,5 +3,7 @@ cvxopt>=1.1.9
 matplotlib>=3.0.2
 sphinx==1.8.4
 yapf>=0.26.0
+# for notebook testing.
 nbformat>=4.4.0
 nbconvert>=5.4.1
+jupyter_client>=5.2.4
