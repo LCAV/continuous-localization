@@ -58,6 +58,10 @@ To run tests, type in terminal
 
    pytest test/
 
+To see if important notebooks run without error, you can also run
+
+   python runner.py
+
 ## Documentation
 
 To look at documentation locally, run 

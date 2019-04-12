@@ -9,10 +9,11 @@ import os
 import time
 import logging
 
-from trajectory import Trajectory
 from environment import Environment
 from global_variables import DIM
+from measurements import get_measurements, create_mask
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
+from trajectory import Trajectory
 """
 simulation.py: 
 """
@@ -54,7 +55,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
             try:
                 parameters_old = read_params(outfolder + 'parameters.json')
                 parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old, 'found conflicting parameters file: {}'.format(outfolder + 'parameters.json')
+                assert parameters == parameters_old, 'found conflicting parameters file: {}'.format(outfolder +
+                                                                                                    'parameters.json')
             except FileNotFoundError:
                 print('no conflicting parameters file found.')
             except AssertionError as error:
@@ -70,14 +72,16 @@ def run_simulation(parameters, outfolder=None, solver=None):
     success_thresholds = parameters['success_thresholds']
     assert len(success_thresholds) == len(noise_sigmas)
 
-    successes = np.full((len(complexities), len(anchors), len(positions), len(noise_sigmas),
-                         max(positions) * max(anchors)), np.nan)
+    successes = np.full(
+        (len(complexities), len(anchors), len(positions), len(noise_sigmas), max(positions) * max(anchors)), np.nan)
     errors = np.full(successes.shape, np.nan)
     num_not_solved = np.full(successes.shape, np.nan)
     num_not_accurate = np.full(successes.shape, np.nan)
 
     for c_idx, n_complexity in enumerate(complexities):
         print('n_complexity', n_complexity)
+
+        trajectory = Trajectory(n_complexity)
 
         for a_idx, n_anchors in enumerate(anchors):
             print('n_anchors', n_anchors)
@@ -87,17 +91,12 @@ def run_simulation(parameters, outfolder=None, solver=None):
             for p_idx, n_positions in enumerate(positions):
                 print('n_positions', n_positions)
 
-                trajectory = Trajectory(n_positions, n_complexity)
-
-                trajectory.set_trajectory(seed=None)
+                trajectory.set_coeffs(seed=None)
                 environment.set_random_anchors(seed=None)
-                environment.set_D(trajectory)
-                # remove some measurements
 
+                # remove some measurements
                 n_measurements = n_positions * n_anchors
 
-                pairs = np.array(np.meshgrid(range(n_positions), range(n_anchors)))
-                pairs.resize((2, n_positions * n_anchors))
                 for m_idx, n_missing in enumerate(range(n_measurements)):
 
                     for noise_idx, noise_sigma in enumerate(noise_sigmas):
@@ -116,47 +115,30 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                         for n_it in range(n_its):
 
-                            environment.add_noise(noise_sigma, seed=None)
+                            basis, D_topright = get_measurements(
+                                trajectory, environment, n_samples=n_positions, noise=noise_sigma)
+                            mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
 
-                            # print('n_misisng', n_missing)
-                            D_topright = environment.D[:n_positions, n_positions:].copy()
-                            indices = np.random.choice(
-                                n_measurements, size=n_missing, replace=False)
-                            xs = pairs[0, indices]
-                            ys = pairs[1, indices]
-                            assert len(xs) == n_missing
-                            assert len(ys) == n_missing
-                            D_topright[xs, ys] = 0.0
-
-                            # assert correct number of missing measurements
-                            idx = np.where(D_topright == 0.0)
-                            assert n_missing == len(idx[0])
+                            D_topright = np.multiply(D_topright, mask)
 
                             try:
                                 if (solver == None) or (solver == semidefRelaxationNoiseless):
                                     X = semidefRelaxationNoiseless(
-                                        D_topright,
-                                        environment.anchors,
-                                        trajectory.basis,
-                                        chosen_solver=cvxpy.CVXOPT)
+                                        D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
-                                    X = rightInverseOfConstraints(D_topright, environment.anchors,
-                                                                  trajectory.basis)
+                                    X = rightInverseOfConstraints(D_topright, environment.anchors, basis)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors,
-                                                                  trajectory.basis)
+                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
+                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
                                     )
 
-                                robust_add(errors, indexes,
-                                           np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
 
-                                assert not np.any(
-                                    np.abs(P_hat-trajectory.coeffs) > success_thresholds[noise_idx])
+                                assert not np.any(np.abs(P_hat - trajectory.coeffs) > success_thresholds[noise_idx])
 
                                 robust_increment(successes, indexes)
 
@@ -177,9 +159,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 robust_increment(num_not_solved, indexes)
 
                             except AssertionError:
-                                logging.info(
-                                    "result not accurate n_positions={}, n_missing={}".format(
-                                        n_positions, n_missing))
+                                logging.info("result not accurate n_positions={}, n_missing={}".format(
+                                    n_positions, n_missing))
                                 robust_increment(num_not_accurate, indexes)
 
                             errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])

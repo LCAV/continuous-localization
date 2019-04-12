@@ -64,6 +64,7 @@ if [ "$PYTHON_FILES" ]; then
     for file in ${CHANGED_FILES[@]}; do
       echo "  $file"
     done
+    exit 1
   fi
 fi
 
