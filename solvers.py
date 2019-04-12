@@ -272,7 +272,11 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
     return P_hat
 
 
+# TODO(FD) This is actually just a wrapper of the function compute_exact from exact_solution.py, and
+# I don't remember why I added it here.
 def exactSolution(D_topright, anchors, basis, method='grid', verbose=False):
+    """ Compute the exact solution.  
+    """
     from exact_solution import compute_exact
     return compute_exact(D_topright, anchors, basis, method=method, verbose=verbose)
 

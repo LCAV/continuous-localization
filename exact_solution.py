@@ -100,7 +100,7 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
 
     - least_squares: do gradient descent on the least squares cost function. We do in total 100
     random initializations in (-10, 10)^KD, and we keep all solutions where the cost function is zero, 
-    meaning that all constraints are satisfied. WORKING. 
+    meaning that all constraints are satisfied.  
 
     - minimize: We setup a constrained minimization problem, and then try to minimize a banal cost function. It doesn't work well when first guess is not feasible, according to some online discussions. 
 
