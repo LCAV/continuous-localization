@@ -69,6 +69,34 @@ class Trajectory(object):
         elif self.model == 'polynomial':
             return np.power(n, k)
 
+    def get_basis_prime(self, times=None):
+        """ Get basis vector derivatives evaluated at specific times. 
+        :param times: vector of times of length n_samples
+        :return: 1st derivative (in time) of basis vector matrix (n_complexity x n_samples)
+        """
+        n_samples = len(times)
+        n = np.reshape(times, [1, n_samples])
+        if self.model == 'bandlimited':
+            k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
+            return -2 * np.pi * n / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
+        elif self.model == 'polynomial':
+            k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
+            return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
+
+    def get_basis_twoprime(self, times=None):
+        """ Get basis vector second derivatives evaluated at specific times. 
+        :param times: vector of times of length n_samples
+        :return: 2nd derivative (in time) of basis vector matrix (n_complexity x n_samples)
+        """
+        n_samples = len(times)
+        k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
+        n = np.reshape(times, [1, n_samples])
+        if self.model == 'bandlimited':
+            return -(2 * np.pi * n / self.params['tau'])**2 * np.sin(2 * np.pi * k * n / self.params['tau'])
+        elif self.model == 'polynomial':
+            k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
+            return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
+
     def set_coeffs(self, seed=None, coeffs=None):
         if seed is not None:
             np.random.seed(seed)
