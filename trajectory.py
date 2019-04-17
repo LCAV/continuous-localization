@@ -78,7 +78,7 @@ class Trajectory(object):
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -2 * np.pi * n / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
+            return -2 * np.pi * k / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
             return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
@@ -89,20 +89,20 @@ class Trajectory(object):
         :return: 2nd derivative (in time) of basis vector matrix (n_complexity x n_samples)
         """
         n_samples = len(times)
-        k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
-            return -(2 * np.pi * n / self.params['tau'])**2 * np.sin(2 * np.pi * k * n / self.params['tau'])
+            k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
+            return -(2 * np.pi * k / self.params['tau'])**2 * np.cos(2 * np.pi * k * n / self.params['tau'])
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
             return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
 
-    def set_coeffs(self, seed=None, coeffs=None):
+    def set_coeffs(self, seed=None, coeffs=None, dimension=5):
         if seed is not None:
             np.random.seed(seed)
 
         if coeffs is None:
-            self.coeffs = 5 * \
+            self.coeffs = dimension * \
                 np.random.rand(self.dim, self.n_complexity)
         else:
             self.coeffs = coeffs
