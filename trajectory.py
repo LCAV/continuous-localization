@@ -1,13 +1,15 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-trajectory.py: Contains the Trajectory class. 
+trajectory.py: Contains the Trajectory class.
+
+The units can be interpreted as 1m
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from global_variables import DIM, TMAX, TAU
+from matplotlib.patches import Circle
+from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH
 
 
 class Trajectory(object):
@@ -72,7 +74,8 @@ class Trajectory(object):
     def get_basis_prime(self, times=None):
         """ Get basis vector derivatives evaluated at specific times. 
         :param times: vector of times of length n_samples
-        :return: 1st derivative (in time) of basis vector matrix (n_complexity x n_samples)
+        :return: 1st derivative (in time) of basis vector matrix (n_complexity x 
+n_samples)
         """
         n_samples = len(times)
         n = np.reshape(times, [1, n_samples])
@@ -86,7 +89,8 @@ class Trajectory(object):
     def get_basis_twoprime(self, times=None):
         """ Get basis vector second derivatives evaluated at specific times. 
         :param times: vector of times of length n_samples
-        :return: 2nd derivative (in time) of basis vector matrix (n_complexity x n_samples)
+        :return: 2nd derivative (in time) of basis vector matrix (n_complexity x 
+n_samples)
         """
         n_samples = len(times)
         n = np.reshape(times, [1, n_samples])
@@ -178,3 +182,144 @@ class Trajectory(object):
                 label3 = None
         if legend:
             plt.legend(title='# measurements')
+
+    # TODO(michalina) should we scale the environment anchors to?
+    def scale_bounding_box(self, box_dims, keep_aspect_ratio=False):
+        """Scale trajectory to a given size.
+        
+        :param box_dims: the dimensions of the desired bounding box, 
+        the bounding box is assumed to begin at (0, 0)
+        :param keep_aspect_ratio: if true, the second dimension of the bounding 
+        box is ignored, and coefficients are scaled the same in both dimensions
+        
+        :return: true bounding box dimensions,
+        no mater if aspect ratio was preserved or not
+        """
+
+        points = self.get_continuous_points()
+        shift = np.min(points, axis=1)
+        points = points - shift[:, None]
+        self.coeffs[:, 0] -= shift
+        scale = box_dims / np.max(points, axis=1)
+        if keep_aspect_ratio:
+            self.coeffs = self.coeffs * scale[0]
+            box_dims[1] = np.max(points[1, :]) * scale[0]
+        else:
+            self.coeffs = self.coeffs * scale[:, None]
+        return box_dims
+
+    def get_times_unform_in_path(self, n_samples, time_steps=10000, plot=False):
+        """Calculate numerically times equivalent to uniform sampling in
+        distance travelled.
+        
+        It calculates the cumulative integral over small steps, and picks
+        as a sample time the first time after the integral reaches expected
+        distance at this step."""
+        times = self.get_times(n_samples=time_steps)
+        basis_prime = self.get_basis_prime(times=times)
+        velocities = self.coeffs.dot(basis_prime)
+
+        time_differences = times[1:] - times[:-1]
+        speeds = np.linalg.norm(velocities, axis=0)
+        distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
+
+        uniform_distances = np.arange(n_samples) * distances[-1] / (n_samples - 1)
+        uniform_path_times = []
+        errors = []
+        i = 0
+        for n in range(n_samples):
+            while i < len(distances) and distances[i] < uniform_distances[n]:
+                i = i + 1
+            errors.append(distances[i] - uniform_distances[n])
+            uniform_path_times.append(times[i])
+            i = i + 1
+
+        if plot:
+            plt.figure()
+            plt.plot(times[1:], distances, label="uniform in time")
+            plt.plot(uniform_path_times, uniform_distances, "-*", label="uniorm in distance")
+            plt.title("distance traveled")
+            plt.legend()
+            plt.show()
+
+        return np.array(uniform_path_times), uniform_distances, np.array(errors)
+
+    def get_local_frame(self, times):
+        """Calculate the local frame and the speeds.
+
+        The frame is defined like Darboux Frame,
+        https://en.wikipedia.org/wiki/Darboux_frame,
+        except we do not need the third "tangent normal" vector in 2D.
+
+        The speed is returned because it is useful
+        """
+
+        # compute derivatives of the basis vectors.
+        basis_prime = self.get_basis_prime(times=times)
+        velocities = self.coeffs.dot(basis_prime)
+        # avoid division by zero for small speeds
+        speeds = np.linalg.norm(velocities, axis=0) + 1e-16
+        tangents = velocities / speeds
+        normals = np.empty_like(tangents)
+
+        # Using the fact that we are in 2D and normal vectors are perpendicular
+        # to tangent vectors
+        normals[0, :] = -tangents[1, :]
+        normals[1, :] = tangents[0, :]
+        return tangents, normals, speeds
+
+    def get_curvatures(self, times, ax=None):
+        tangents, normal_vectors, speeds = self.get_local_frame(times)
+
+        basis_twoprime = self.get_basis_twoprime(times=times)
+        accelerations = self.coeffs.dot(basis_twoprime)
+
+        # https://en.wikipedia.org/wiki/Curvature
+        # Section: Local expressions
+        # We also use the fact that tangent * speed = velocity
+        curvature_values = np.sum(normal_vectors * accelerations, axis=0) / (speeds**2)
+        curvatures = curvature_values * normal_vectors
+
+        radii = 1.0 / curvature_values
+        radius_vectors = radii * normal_vectors
+
+        # plot
+        if ax is not None:
+            basis = self.get_basis(times=times)
+            sample_points = self.get_sampling_points(basis=basis)
+            for i in range(1, sample_points.shape[1] - 1):
+                s = sample_points[:, i]
+                t = s + tangents[:, i]
+                n = s + normal_vectors[:, i]
+                r = s + radius_vectors[:, i]
+                plt.plot([s[0], t[0]], [s[1], t[1]], ':', color='black')
+                plt.plot([s[0], n[0]], [s[1], n[1]], ':', color='orange')
+                plt.plot([s[0], r[0]], [s[1], r[1]], ':', color='blue')
+
+                radius = radii[i]
+                center = r
+                circ = Circle(xy=center, radius=radius, alpha=0.1, color='blue')
+                plt.scatter(*center, color='blue', marker='+')
+                plt.gca().add_artist(circ)
+
+        return radii, tangents, curvatures
+
+    def get_left_and_right_points(self, times, width=ROBOT_WIDTH, ax=None):
+
+        basis = self.get_basis(times=times)
+        sample_points = self.get_sampling_points(basis=basis)
+        tangents, normal_vectors, _ = self.get_local_frame(times)
+
+        points_left = sample_points - width / 2. * normal_vectors
+        points_right = sample_points + width / 2. * normal_vectors
+
+        label = 'left and right wheel'
+        if ax is not None:
+            for cl, cr in zip(points_left.T, points_right.T):
+                if all(np.isnan(cl)):
+                    continue
+                plt.scatter(*cl, color='red', marker='+', label=label)
+                label = None
+                plt.scatter(*cr, color='red', marker='+', label=label)
+
+        return points_left, points_right
