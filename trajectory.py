@@ -243,7 +243,7 @@ n_samples)
             self.coeffs = self.coeffs * scale[:, None]
         return box_dims
 
-    def get_times_unform_in_path(self, n_samples, time_steps=10000, plot=False):
+    def get_times_unform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
         """Calculate numerically times equivalent to uniform sampling in
         distance travelled.
         
@@ -258,16 +258,21 @@ n_samples)
         speeds = np.linalg.norm(velocities, axis=0)
         distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
 
-        uniform_distances = np.arange(n_samples) * distances[-1] / (n_samples - 1)
+        if n_samples is not None:
+            uniform_distances = np.arange(n_samples) * distances[-1] / (n_samples - 1)
+        elif step_distance is not None:
+            uniform_distances = np.arange(distances[-1], step=step_distance)
+        else:
+            raise ValueError("Either n_samples or step_distance has to be provided")
+
         uniform_path_times = []
         errors = []
         i = 0
-        for n in range(n_samples):
-            while i < len(distances) - 1 and distances[i] < uniform_distances[n]:
+        for next_distance in uniform_distances:
+            while i < len(distances) - 1 and (distances[i] < next_distance):
                 i = i + 1
-            errors.append(distances[i] - uniform_distances[n])
+            errors.append(distances[i] - next_distance)
             uniform_path_times.append(times[i])
-            i = i + 1
 
         if plot:
             plt.figure()
