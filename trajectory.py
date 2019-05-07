@@ -7,9 +7,10 @@ The units can be interpreted as 1m
 """
 
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH
+from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
 
 
 class Trajectory(object):
@@ -18,15 +19,18 @@ class Trajectory(object):
     :member dim: dimension (2 or 3)
     :member n_complexity: complexity of trajectory. 
     :member coeffs: coefficients of trajectory. (dim x n_complexity)
-    :member model: trajectory model, either bandlimited or polynomial. 
+    :member model: trajectory model,
+    either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
 
-    def __init__(self, n_complexity=3, dim=DIM, model='bandlimited', tau=TAU):
+    def __init__(self, n_complexity=3, dim=DIM, model='bandlimited', tau=TAU, full_period=False):
         self.dim = dim
         self.n_complexity = n_complexity
         self.coeffs = None
         self.model = model
-        self.params = {'tau': tau}
+        if self.model == 'full_bandlimited':
+            full_period = True
+        self.params = {'tau': tau, 'full_period': full_period}
         self.set_coeffs()
 
     def copy(self):
@@ -38,8 +42,9 @@ class Trajectory(object):
         """ Get times appropriate for this trajectory model. """
         if self.model == 'polynomial':
             times = np.linspace(0, TMAX, n_samples)
-        elif self.model == 'bandlimited':
-            times = np.linspace(0, self.params['tau'] / 2.0, n_samples)
+        elif self.model == 'bandlimited' or self.model == 'full_bandlimited':
+            part = 1.0 if self.params['full_period'] else 0.5
+            times = np.linspace(0, part * self.params['tau'], n_samples)
         else:
             raise NotImplementedError(self.model)
 
@@ -70,6 +75,16 @@ class Trajectory(object):
             return np.cos(2 * np.pi * k * n / self.params['tau'])
         elif self.model == 'polynomial':
             return np.power(n, k)
+        elif self.model == 'full_bandlimited':
+            assert self.n_complexity % 2 == 1, \
+                "full bandlimited model requires odd number of coefficients"
+            k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
+            basis = np.ones((self.n_complexity, n_samples))
+            basis[::2] = np.cos(2 * np.pi * k * n / self.params['tau'])
+            basis[1::2] = np.sin(2 * np.pi * k[1:] * n / self.params['tau'])
+            return basis
+        else:
+            raise NotImplementedError(self.model)
 
     def get_basis_prime(self, times=None):
         """ Get basis vector derivatives evaluated at specific times. 
@@ -85,6 +100,16 @@ n_samples)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
             return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
+        elif self.model == 'full_bandlimited':
+            assert self.n_complexity % 2 == 1, \
+                "full bandlimited model requires odd number of coefficients"
+            k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
+            basis = np.ones((self.n_complexity, n_samples))
+            basis[::2] = -2 * np.pi * k / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
+            basis[1::2] = 2 * np.pi * k[1:] / self.params['tau'] * np.cos(2 * np.pi * k[1:] * n / self.params['tau'])
+            return basis
+        else:
+            raise NotImplementedError(self.model)
 
     def get_basis_twoprime(self, times=None):
         """ Get basis vector second derivatives evaluated at specific times. 
@@ -100,6 +125,17 @@ n_samples)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
             return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
+        elif self.model == 'full_bandlimited':
+            assert self.n_complexity % 2 == 1, \
+                "full bandlimited model requires odd number of coefficients"
+            k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
+            basis = np.ones((self.n_complexity, n_samples))
+            basis[::2] = -(2 * np.pi * k / self.params['tau'])**2 * np.cos(2 * np.pi * k * n / self.params['tau'])
+            basis[1::2] = -(2 * np.pi * k[1:] / self.params['tau'])**2 * np.sin(
+                2 * np.pi * k[1:] * n / self.params['tau'])
+            return basis
+        else:
+            raise NotImplementedError(self.model)
 
     def set_coeffs(self, seed=None, coeffs=None, dimension=5):
         if seed is not None:
@@ -183,7 +219,6 @@ n_samples)
         if legend:
             plt.legend(title='# measurements')
 
-    # TODO(michalina) should we scale the environment anchors to?
     def scale_bounding_box(self, box_dims, keep_aspect_ratio=False):
         """Scale trajectory to a given size.
         
@@ -228,7 +263,7 @@ n_samples)
         errors = []
         i = 0
         for n in range(n_samples):
-            while i < len(distances) and distances[i] < uniform_distances[n]:
+            while i < len(distances) - 1 and distances[i] < uniform_distances[n]:
                 i = i + 1
             errors.append(distances[i] - uniform_distances[n])
             uniform_path_times.append(times[i])
@@ -258,7 +293,7 @@ n_samples)
         basis_prime = self.get_basis_prime(times=times)
         velocities = self.coeffs.dot(basis_prime)
         # avoid division by zero for small speeds
-        speeds = np.linalg.norm(velocities, axis=0) + 1e-16
+        speeds = np.linalg.norm(velocities, axis=0) + EPSILON
         tangents = velocities / speeds
         normals = np.empty_like(tangents)
 
@@ -287,7 +322,7 @@ n_samples)
         if ax is not None:
             basis = self.get_basis(times=times)
             sample_points = self.get_sampling_points(basis=basis)
-            for i in range(1, sample_points.shape[1] - 1):
+            for i in range(0, sample_points.shape[1]):
                 s = sample_points[:, i]
                 t = s + tangents[:, i]
                 n = s + normal_vectors[:, i]
