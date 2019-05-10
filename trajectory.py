@@ -243,7 +243,7 @@ n_samples)
             self.coeffs = self.coeffs * scale[:, None]
         return box_dims
 
-    def get_times_unform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
+    def get_times_uniform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
         """Calculate numerically times equivalent to uniform sampling in
         distance travelled.
         
