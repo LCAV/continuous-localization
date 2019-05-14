@@ -10,7 +10,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
+from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON, MM
 
 
 class Trajectory(object):
@@ -320,7 +320,7 @@ n_samples)
         curvature_values = np.sum(normal_vectors * accelerations, axis=0) / (speeds**2)
         curvatures = curvature_values * normal_vectors
 
-        radii = 1.0 / curvature_values
+        radii = 1.0 / (curvature_values + EPSILON)
         radius_vectors = radii * normal_vectors
 
         # plot
@@ -363,3 +363,77 @@ n_samples)
                 plt.scatter(*cr, color='red', marker='+', label=label)
 
         return points_left, points_right
+
+    def get_left_and_right_arcs(self,
+                                width=ROBOT_WIDTH,
+                                time_steps=100000,
+                                curvature_decimals=1,
+                                min_max_distance=0.05,
+                                plot=False):
+        """Get the distances for left and right wheel sampled at positions suitable for the robot.
+        If you need general method you may want to use get_left_and_right_points.
+
+        :param width: width of the robot (in meters) that defines the positions of the wheels
+        :param time_steps: to how many time steps discretize the trajectory during the calculation
+        :param curvature_decimals: to how many decimal places to round the curvature.
+        Curvature is used to decide where to give the robot new coordinates, and is not used directly in calculation
+        of the paths. We are rounding the curvature and not the radius, because a small change for a small radius
+        will lead to significant change in the trajectory. Rounding curvature at one decimal place corresponds to
+        allowing for the biggest radius of 10m.
+        :param min_max_distance: minimum distance (in meters) that at least one of the wheels have to travel in each
+        segment
+        :param plot: if true a plot is produced
+
+        :return: two arrays of corresponding left and right wheel distances
+
+        """
+        times = self.get_times(n_samples=time_steps)
+        points_left, points_right = self.get_left_and_right_points(times=times, width=width)
+
+        ds_left = np.linalg.norm(points_left[:, 1:] - points_left[:, :-1], axis=0)
+        ds_right = np.linalg.norm(points_right[:, 1:] - points_right[:, :-1], axis=0)
+        curvature = np.round((ds_right - ds_left) / (ds_right + ds_left) / width, decimals=curvature_decimals)
+
+        previous_c = curvature[0]
+        current_left = ds_left[0]
+        current_right = ds_right[0]
+        distances_left = []
+        distances_right = []
+        new_times = []
+        # Merge intervals that have similar curvature
+        for idx, c in enumerate(curvature[1:]):
+            # Merge intervals that are to short
+            if c == previous_c or max(current_left, current_right) < min_max_distance:
+                current_left += ds_left[idx]
+                current_right += ds_right[idx]
+            else:
+                previous_c = c
+                distances_left.append(current_left)
+                distances_right.append(current_right)
+                new_times.append(times[idx])
+                current_left = ds_left[idx]
+                current_right = ds_right[idx]
+        distances_right.append(current_right)
+        distances_left.append(current_left)
+        new_times.append(times[idx])
+
+        distances_left = np.array(distances_left)
+        distances_right = np.array(distances_right)
+        new_times = np.array(new_times)
+
+        if plot:
+            plt.figure()
+            plt.plot(np.cumsum(ds_left), np.cumsum(ds_right), label="continous")
+            plt.scatter(
+                np.cumsum(distances_left),
+                np.cumsum(distances_right),
+                label="discretized ({})".format(len(distances_left)),
+                marker='x',
+                color='C1')
+            plt.legend()
+            plt.show()
+            print("minimum distance traveled by center: {:.4f}m".format(np.min((distances_left + distances_right) / 2)))
+            print("minimum max distance: {:.4f}m".format(
+                np.min([max(l, r) for l, r in zip(distances_left, distances_right)])))
+
+        return distances_left, distances_right, new_times

@@ -108,3 +108,6 @@ ENV/
 
 Literature/
 results/test
+
+# images 
+*.png

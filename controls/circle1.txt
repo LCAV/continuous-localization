@@ -1,0 +1,2 @@
+i,left_arc,right_arc
+0,5900.21,6666.19
