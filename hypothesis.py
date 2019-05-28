@@ -20,7 +20,7 @@ def get_left_submatrix(idx_a, idx_f, anchors, frame):
 
 
 def get_reduced_right_submatrix(idx_f, frame):
-    vectors = frame[:, idx_f]
+    vectors = [frame[:, idx] for idx in idx_f]
     matrix = [f[1:] * f[-1] for f in vectors]
     return np.array(matrix).T
 
