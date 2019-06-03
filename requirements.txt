@@ -1,5 +1,5 @@
-scipy
-numpy
+scipy>=1.2.1
+numpy>=1.16.2
 cvxpy>=1.0.6
 cvxopt>=1.1.9
 matplotlib>=3.0.2
