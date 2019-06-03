@@ -1,4 +1,12 @@
 import matplotlib.pyplot as plt
+import os
+
+
+def make_dirs_safe(path):
+    """ Make directory of input path, if it does not exist yet. """
+    dirname = os.path.dirname(path)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 def generate_labels(dims, parameters, indices):
