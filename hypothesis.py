@@ -87,3 +87,69 @@ def probability_few_anchors_limit(n_dimensions, n_constrains):
     Based on binomial symbol limits for fixed k and large n."""
 
     return np.sqrt(n_dimensions + 1) / (np.sqrt(2 * np.pi * n_constrains)**n_dimensions)
+
+
+def left_independence_estimation(n_constrains, min_anchors, poisson_mean, repetitions=10000, use_limits=False):
+    """
+    Estimate joint and marginal probabilities of the left hand side matrix satisfying
+    certain anchor and positions conditions necessary for the matrix to be full rank
+
+
+    :param n_constrains: number of constrains K
+    :param min_anchors: minimum number of anchors (D+1)
+    :param poisson_mean: mean of the poisson variable added n_constrains
+    and min_anchors to obtain number of positions and number of anchors
+    :param repetitions: number of times to generate data
+    :param use_limits: if True uses new limit conditions, otherwise use two out of four old conditions
+    :return:
+        tuple (number of good row configurations, number of good row and column configurations,
+        number of entirely good row configurations, total number of tests made
+    """
+
+    def limit_condition(m, a, b, axis):
+        row_sum = np.sort(np.sum(m, axis=axis))
+        extra = row_sum[:-a]
+        missing = np.clip(b - row_sum[-a:], a_min=0, a_max=None)
+        return np.sum(extra) >= np.sum(missing)
+
+    anchors_ok = 0
+    positions_ok = 0
+    both_ok = 0
+    total = 0
+    for _ in range(repetitions):
+        n_anchors = min_anchors + np.random.poisson(poisson_mean)
+        n_positions = n_constrains + np.random.poisson(poisson_mean)
+        p = min(1, (min_anchors * n_constrains) / (n_anchors * n_positions))
+        matrix = np.random.binomial(1, p, size=(n_positions, n_anchors))
+        # Proceed only if we have enough measurements
+        if np.sum(matrix) >= n_constrains * min_anchors:
+            total += 1
+            positions_feasible = True
+            anchors_feasible = True
+            if use_limits:
+                anchors_feasible = limit_condition(matrix, min_anchors, n_constrains, axis=0)
+                positions_feasible = limit_condition(matrix, n_constrains, min_anchors, axis=1)
+            else:
+                for part_nr in range(2**n_positions):
+                    partition = np.unravel_index(part_nr, [2] * n_positions)
+                    if sum(partition) == (n_positions - (n_constrains - 1)):
+                        # it sets feasible to false!
+                        if np.sum(np.multiply(partition, np.sum(matrix, axis=1))) < min_anchors:
+                            positions_feasible = False
+                            break
+                for part_nr in range(2**n_anchors):
+                    partition = np.unravel_index(part_nr, [2] * n_anchors)
+                    if sum(partition) == (n_anchors - (min_anchors - 1)):
+                        # it sets feasible to false!
+                        if np.sum(np.multiply(partition, np.sum(matrix, axis=0))) < n_constrains:
+                            anchors_feasible = False
+                            break
+
+            if anchors_feasible:
+                anchors_ok += 1
+            if positions_feasible:
+                positions_ok += 1
+            if anchors_feasible and positions_feasible:
+                both_ok += 1
+
+    return anchors_ok, positions_ok, both_ok, total
