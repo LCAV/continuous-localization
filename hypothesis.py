@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.special as special
+import time
 
 
 def get_anchors(n_anchors, n_dimensions=2, scale=10):
@@ -81,12 +82,97 @@ def probability_few_anchors(n_dimensions, n_constrains, n_positions):
     return full / total
 
 
-def probability_few_anchors_limit(n_dimensions, n_constrains):
+def probability_few_anchors_limit(n_dimensions, n_constrains, anchors_limit=False):
     """Calculate analytical limit of probability_few_anchors.
 
-    Based on binomial symbol limits for fixed k and large n."""
+    Based on known binomial symbol limits for minimum number of anchors, fixed number of constrains and large number of
+    positions.
+    Can be also used to calculate limit for minimum number of positions, fixed number of dimensions and large number
+    of anchors.
+
+    :param n_dimensions: number of dimensions D
+    :param n_constrains: number of constrains K
+    :param anchors_limit: if true, calculate limit for many anchors, not for many measurements
+    :return:
+        float: a limit of probability of the left hand side matrix being full rank, as number of positions (or number of
+        constrains) goes to infinity
+    """
+    if anchors_limit:
+        (n_dimensions, n_constrains) = (n_constrains - 1, n_dimensions + 1)
 
     return np.sqrt(n_dimensions + 1) / (np.sqrt(2 * np.pi * n_constrains)**n_dimensions)
+
+
+def probability_upper_bound(n_dimensions, n_constrains, n_positions, n_anchors, position_wise=False):
+    """Calculate upper bound on the probability of matrix being full rank,
+    assuming that the number of measurements is exactly n_constrains * (n_dimensions + 1).
+    This assumption allows for speed up calculations.
+
+    :param n_dimensions: number of dimensions D
+    :param n_constrains: number of constrains K
+    :param n_positions: number of positions along trajectory N
+    :param n_anchors: number of anchors M
+    :param position_wise: if True, calculates the upper bound based on partitions of positions and not anchors.
+    The equations are the same for both cases, but for readability purposes the naming convention for partition of
+    anchors is used rather than abstract notation
+    :return:
+        float: upper bound on probability of the left hand side of the matrix being full rank
+    """
+
+    if position_wise:
+        (n_dimensions, n_constrains) = (n_constrains - 1, n_dimensions + 1)
+        (n_anchors, n_positions) = (n_positions, n_anchors)
+
+    start = time.time()
+
+    max_index = n_constrains + 1
+    n_measurements = n_constrains * (n_dimensions + 1)
+    upper_bound_combinations = 0
+
+    for part_nr in range(max_index**n_anchors):
+        partition = np.unravel_index(part_nr, [max_index] * n_anchors)
+        if sum(partition) == n_measurements:  # go through all partition of measurements between anchors
+            new_combinations = 1
+            for k in partition:
+                new_combinations *= special.binom(n_positions, k)
+            upper_bound_combinations += new_combinations
+
+    total_combinations = special.binom(n_positions * n_anchors, n_measurements)
+    end = time.time()
+    print("Upper bound, position {}, elapsed time: {:.2f}s".format(position_wise, end - start))
+    return upper_bound_combinations / total_combinations
+
+
+# TODO from the plots this lower bound does not seem to be lower.
+# It seems to calculate the upper bound minus a constant?
+def probability_lower_bound(n_dimensions, n_constrains, n_positions, n_anchors):
+
+    start = time.time()
+    max_index = n_constrains + 1
+    n_measurements = n_constrains * (n_dimensions + 1)
+    upper_bound_combinations = 0
+
+    bad_combinations = 0
+    for part_nr in range(max_index**n_anchors):
+        partition = np.unravel_index(part_nr, [max_index] * n_anchors)
+        if sum(partition) == n_measurements:  # go through all partition of measurements between anchors
+            for subset_nr in range(2**n_anchors):
+                subset = np.unravel_index(subset_nr, [2] * n_anchors)
+                if sum(subset) == n_dimensions + 2:  # look for size D+2 clashes
+                    new_bad_combinations = n_positions
+                    for k, i in zip(partition, subset):
+                        new_bad_combinations *= special.binom(n_positions, k - i)
+                    bad_combinations += new_bad_combinations
+
+            new_combinations = 1
+            for k in partition:
+                new_combinations *= special.binom(n_positions, k)
+            upper_bound_combinations += new_combinations
+
+    end = time.time()
+    print("lower time: {:.2f}s".format(end - start))
+    total_combinations = special.binom(n_positions * n_anchors, n_measurements)
+    return (upper_bound_combinations - bad_combinations) / total_combinations
 
 
 def left_independence_estimation(n_constrains, min_anchors, poisson_mean, repetitions=10000, use_limits=False):
