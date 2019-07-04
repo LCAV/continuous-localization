@@ -6,8 +6,19 @@ import matplotlib.ticker as tck
 from plotting_tools import make_dirs_safe
 
 
-def get_anchors(n_anchors, n_dimensions=2, scale=10):
-    return scale * np.random.rand(n_dimensions, n_anchors)
+def get_anchors(n_anchors, n_dimensions=2, check=True):
+    full_rank = False
+    extension = np.ones((1, n_anchors))
+    anchors = np.zeros((n_dimensions, n_anchors))
+    if check:
+        while not full_rank:
+            # TODO we would ideally like to check if any subset of anchors of the size
+            #  n_dimensions+1 is full rank, but it probably does not matter in the end
+            anchors = np.random.rand(n_dimensions, n_anchors)
+            extended = np.concatenate([anchors, extension])
+            if np.linalg.matrix_rank(extended) > n_dimensions:
+                full_rank = True
+    return anchors
 
 
 def get_frame(n_constraints, n_positions):
@@ -46,12 +57,17 @@ def get_reduced_right_submatrix(idx_f, frame):
     which means that the size of the submatrix is (n_constraints - 1) x n_measurements.
 
     :param idx_f: list of frame indexes for each measurement
-    :param frame: matrix of all frame vectors, of size n_points x n_constraints
+    :param frame: matrix of all frame vectors, of size n_points x n_constraints TODO
 
     :return: right part of the constrain matrix
     """
-    vectors = [frame[:, idx] for idx in idx_f]
-    matrix = [f[1:] * f[-1] for f in vectors]
+
+    n_positions, n_constraints = frame.shape
+    Ks = np.arange(n_constraints, 2 * n_constraints - 1).reshape((n_constraints - 1, 1))
+    Ns = np.arange(n_positions).reshape((n_positions, 1))
+    extended_frame = np.cos(Ks @ Ns.T * np.pi / n_positions)
+    vectors = [extended_frame[:, idx] for idx in idx_f]
+    matrix = np.array(vectors)
     return np.array(matrix).T
 
 
@@ -347,6 +363,9 @@ def matrix_rank_experiment(params):
     params["second_list"] = second_list
 
     ranks = np.zeros((len(second_list), len(n_anchors_list), params["n_repetitions"]))
+    anchor_condition = np.zeros_like(ranks)
+    frame_condition = np.zeros_like(ranks)
+    wrong_matrices = []
     for a_idx, n_anchors in enumerate(n_anchors_list):
         anchors = get_anchors(n_anchors, params["n_dimensions"])
         for second_idx, second_param in enumerate(second_list):
@@ -363,19 +382,32 @@ def matrix_rank_experiment(params):
                     else:
                         constraints = get_left_submatrix(idx_a, idx_f, anchors, frame)
                     ranks[second_idx, a_idx, r] = np.linalg.matrix_rank(constraints)
-                    # measurement_matrix = indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions) # to remove
-                    # if limit_condition(np.sort(np.sum(measurement_matrix, axis=0)), params["n_dimensions"] + 1,
-                    #                    params["n_constraints"]):
-                    #     if limit_condition(np.sort(np.sum(measurement_matrix, axis=1)), params["n_dimensions"] + 1,
-                    #                        params["n_constraints"]):
-                    #         print("rank: ", ranks[second_idx, a_idx, r])
-                    #         print(measurement_matrix)
-                    #         print(np.sum(measurement_matrix, axis=0))
-                    #         print(np.sum(measurement_matrix, axis=1))
+                    measurement_matrix = indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions)
+                    if limit_condition(
+                            np.sort(np.sum(measurement_matrix, axis=0)), params["n_constraints"],
+                            params["n_dimensions"] + 1):
+                        anchor_condition[second_idx, a_idx, r] = 1
+                    if limit_condition(
+                            np.sort(np.sum(measurement_matrix, axis=1)), params["n_dimensions"] + 1,
+                            params["n_constraints"]):
+                        frame_condition[second_idx, a_idx, r] = 1
+                    if ranks[second_idx, a_idx, r] < params["n_constraints"] * (params["n_dimensions"] + 1):
+                        if frame_condition[second_idx, a_idx, r] * anchor_condition[second_idx, a_idx, r] == 1:
+                            wrong_matrices.append({
+                                "constraints": constraints,
+                                "measurements": measurement_matrix,
+                                "second_idx": second_idx,
+                                "a_idx": a_idx
+                            })
+
                 except ValueError as e:
                     ranks[second_idx, a_idx, r] = np.NaN
                     print(e)
                     break
+
+    params["anchor_condition"] = anchor_condition
+    params["frame_condition"] = frame_condition
+    params["wrong_matrices"] = wrong_matrices
 
     return ranks, params
 
