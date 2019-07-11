@@ -113,3 +113,5 @@ results/ranks
 # images 
 *.png
 
+# Gcode 
+*.gcode
