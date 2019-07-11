@@ -11,6 +11,7 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON, MM
+from utils import scale_points
 
 
 class Trajectory(object):
@@ -177,7 +178,7 @@ n_samples)
         trajectory = self.get_sampling_points(basis=basis)
 
         if mask is not None:
-            trajectory = trajectory[:, np.any(mask[:, :] != 0, axis=1)]
+            trajectory = trajectory[:, np.any(mask != 0, axis=1)]
 
         cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
         plt.plot(*trajectory_cont, **cont_kwargs)
@@ -195,6 +196,19 @@ n_samples)
             p1 = trajectory[:, n]
             p2 = anchors[:, m]
             plt.plot([p1[0], p2[0]], [p1[1], p2[1]], **kwargs)
+
+    def plot_noisy_connections(self, basis, anchors, mask, D_noisy, **kwargs):
+        trajectory = self.get_sampling_points(basis=basis)
+        ns, ms = np.where(mask)
+        for n, m in zip(ns, ms):
+            d = np.sqrt(D_noisy[n, m])
+            p1 = trajectory[:, n]
+            p2 = anchors[:, m]
+            v = p1 - p2
+            alpha = np.arctan2(v[1], v[0])
+            p3 = p2 + d * np.array((np.cos(alpha), np.sin(alpha)))
+            plt.plot([p1[0], p2[0]], [p1[1], p2[1]], marker='o', **kwargs)
+            plt.plot([p3[0], p2[0]], [p3[1], p2[1]], marker='o', **kwargs)
 
     def plot_number_measurements(self, basis, mask=None, legend=False):
         #  mask is n_samples x n_anchors.
@@ -222,7 +236,7 @@ n_samples)
     def scale_bounding_box(self, box_dims, keep_aspect_ratio=False):
         """Scale trajectory to a given size.
         
-        :param box_dims: the dimensions of the desired bounding box, 
+        :param box_dims: the dimensions of the desired bounding box (x, y), 
         the bounding box is assumed to begin at (0, 0)
         :param keep_aspect_ratio: if true, the second dimension of the bounding 
         box is ignored, and coefficients are scaled the same in both dimensions
@@ -232,16 +246,8 @@ n_samples)
         """
 
         points = self.get_continuous_points()
-        shift = np.min(points, axis=1)
-        points = points - shift[:, None]
-        self.coeffs[:, 0] -= shift
-        scale = box_dims / np.max(points, axis=1)
-        if keep_aspect_ratio:
-            self.coeffs = self.coeffs * scale[0]
-            box_dims[1] = np.max(points[1, :]) * scale[0]
-        else:
-            self.coeffs = self.coeffs * scale[:, None]
-        return box_dims
+
+        return scale_points(points, self.coeffs, box_dims, keep_aspect_ratio)
 
     def get_times_uniform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
         """Calculate numerically times equivalent to uniform sampling in

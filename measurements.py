@@ -128,6 +128,13 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
     return mask
 
 
+def create_mask_in_range(D, range_limit=5):
+    ''' Create mask where only points in range are seen.'''
+    mask = np.zeros(D.shape)
+    mask[np.sqrt(D) <= range_limit] = 1.0
+    return mask
+
+
 def calculate_snr(D, D_noisy):
     noise_vector = D_noisy - D
     snr = np.var(D.flatten()) / np.var(noise_vector.flatten())
@@ -164,6 +171,7 @@ def get_measurements(traj, env, seed=1, n_samples=20, noise=None):
     :return: basis and distance matrix
     """
     # get measurements
+    np.random.seed(seed)
     basis = traj.get_basis(n_samples=n_samples)
     points = traj.get_sampling_points(basis=basis)
     D_topright = get_D_topright(env.anchors, points)

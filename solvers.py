@@ -86,111 +86,60 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     return Z.value
 
 
-def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS):
-    """ Solve semidefinite relaxation of sensor localization problem (SDP). 
+def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
+    """ Solve semidefinite feasibility problem of sensor localization problem. 
 
     .. centered::
-        :math:`Z, D` = argmin :math:`\sum_i(\epsilon_i)`
+        :math:`Z` =  argmin :math:`eps` 
 
     .. math::
-        s.t. \quad -(d_i, 1) D_i (-d_i, 1)^T = \epsilon_i
+        s.t. \quad e_d^T  Z  e_{d'} = \delta_{d d'}
 
-        (a_m, -f_n) Z (a_m, -f_n)^T = v_i
+        t_i^T  Z  t_i <= di^2 + eps
+        t_i^T  Z  t_i <= di^2 - eps
 
-        D_i \succeq 0
+        Z \succeq 0
 
-        Z \succeq 0 
-    
-    with 
-
-    .. math::
-        D_i = (1, u_i; u_i, v_i) \quad u_i^2 = v_i
-
-    :param D_topright: NxM matrix of distance measurements between M anchors and N positions (zero when no measurement available) 
-    :param anchors: DxM matrix of anchor positions. 
-    :param basis: KxN matrix of basis vectors f_n. 
-
-    :return: Z, the matrix composed of [I, P; P^T, Pbar], of size (dim + K) x (dim + K)
+    parameters are same as for semidefRelaxation. 
     """
-    # TODO this part and the one of the noiseless function could be combined in one.
 
-    print("Running with options:", OPTIONS[chosen_solver])
+    # overwrite predefined options with kwargs.
+    options = OPTIONS[chosen_solver]
+    options.update(kwargs)
 
-    K = basis.shape[0]
+    if options["verbose"]:
+        print("Running with options:", OPTIONS[chosen_solver])
+
     dim, M = anchors.shape
+    K = basis.shape[0]
     N = D_topright.shape[0]
+
+    Z = cp.Variable((dim + K, dim + K), PSD=True)
+    eps = cp.Variable((1))
+
+    e_ds, e_dprimes, deltas = get_constraints_identity(K)
+    t_mns, D_mns = get_constraints_D(D_topright, anchors, basis)
 
     constraints = []
 
-    W = D_topright > 0
-    Ns, Ms = np.where(W)
-    S = len(Ms)
+    for e_d, e_dprime, delta in zip(e_ds, e_dprimes, deltas):
+        constraints.append(e_d.T * Z * e_dprime == delta)
 
-    # We introduce a big matrix consisting of Z and D_mn on the diagonal,
-    # to bring the problem into a standard form with only one variable.
-    X_size = dim + K + 2 * S
-    X = cp.Variable((X_size, X_size), PSD=True)
+    for t_mn, D_topright_mn in zip(t_mns, D_mns):
+        t_mn = np.array(t_mn)
+        constraints.append(t_mn.T * Z * t_mn <= D_topright_mn + eps)
+        constraints.append(t_mn.T * Z * t_mn >= D_topright_mn - eps)
 
-    # The error that we are minimizing (has to be of form "Variable" even though
-    # we are not really interested in its value in the end.
-    Epsilon = cp.Variable(shape=(N, M), nonneg=True)
+    constraints.append(eps >= 0)
 
-    # DEBUGGING
-    constraints.append(X == X.T)
-
-    # impose form
-    constraints.append(X[0, 0] == 1.0)
-    constraints.append(X[1, 1] == 1.0)
-    constraints.append(X[0, 1] == 0.0)
-
-    test = np.ones((X_size, X_size))
-
-    constraints.append(X[dim + K:, :dim + K] == 0.0)
-    test[dim + K:, :dim + K] = 0
-
-    for i, (m, n) in enumerate(zip(Ms, Ns)):
-        e_n = np.zeros((N, 1))
-        e_n[n] = 1.0
-        a_m = np.reshape(anchors[:, m], (-1, 1))
-        f_n = basis @ e_n
-        t_mn = np.r_[a_m, -f_n]
-
-        # express constraint on Z in terms of X.
-        b = np.zeros((X_size, 1))
-        b[:dim + K] = t_mn
-        b[dim + K + 2 * i + 1] = -1.0
-        tmp = b @ b.T
-        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == 0)
-        #constraints.append(b.transpose() * X * b == 0)
-
-        # Express constraint on D_i in terms of X.
-        d = np.zeros((X_size, 1))
-        d[dim + K + 2 * i] = -D_topright[n, m]  # multiplies 1
-        d[dim + K + 2 * i + 1] = 1.0  # multiplies v_i
-        tmp = d @ d.T
-        constraints.append(cp.atoms.affine.vec.vec(tmp).T * cp.atoms.affine.vec.vec(X) == Epsilon[n, m])
-        #constraints.append(d.transpose() * X * d == Epsilon[n, m])
-
-        for ys in range(dim + K + 2 * (i + 1), X_size):
-            for xs in range(dim + K + 2 * i, dim + K + 2 * (i + 1)):
-                constraints.append(X[ys, xs] == 0.0)
-                test[ys, xs] = 0.0
-    print('Set up constraint {}/{}. Solving...'.format(i + 1, S))
-
-    obj = cp.Minimize(cp.sum(Epsilon))
+    obj = cp.Minimize(eps)
     prob = cp.Problem(obj, constraints)
 
-    # TODO for debugging only
-    #print("Standard form:")
-    #print(prob.get_problem_data(chosen_solver))
-
-    prob.solve(solver=chosen_solver, **OPTIONS[chosen_solver])
-
-    if X.value is not None:
-        Z = X.value[:dim + K, :dim + K]
-        return Z
-    else:
-        return None
+    #options['reltol'] = 1e-5
+    #options['feastol'] = 1e-5
+    prob.solve(solver=chosen_solver, **options)
+    print('final tolerance', prob.value)
+    return Z.value
 
 
 def rightInverseOfConstraints(D_topright, anchors, basis):
