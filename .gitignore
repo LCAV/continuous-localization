@@ -109,9 +109,11 @@ ENV/
 Literature/
 results/test
 results/ranks
+fitting/
 
 # images 
 *.png
 
 # Gcode 
 *.gcode
+
