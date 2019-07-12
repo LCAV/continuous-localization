@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from global_variables import DIM
-from utils import scale_points
 """
 environment.py: 
 """

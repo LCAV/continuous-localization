@@ -11,7 +11,6 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON, MM
-from utils import scale_points
 
 
 class Trajectory(object):
@@ -246,8 +245,16 @@ n_samples)
         """
 
         points = self.get_continuous_points()
-
-        return scale_points(points, self.coeffs, box_dims, keep_aspect_ratio)
+        shift = np.min(points, axis=1)
+        points = points - shift[:, None]
+        self.coeffs[:, 0] -= shift
+        scale = box_dims / np.max(points, axis=1)
+        if keep_aspect_ratio:
+            self.coeffs = self.coeffs * scale[0]
+            box_dims[1] = np.max(points[1, :]) * scale[0]
+        else:
+            self.coeffs = self.coeffs * scale[:, None]
+        return box_dims
 
     def get_times_uniform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
         """Calculate numerically times equivalent to uniform sampling in
