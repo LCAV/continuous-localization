@@ -56,3 +56,22 @@ Can calculate the parameter from those two lengths
 11. Drag n drop or upload file to "Files on server"
 12. Select file
 13. Press print
+
+Before each experiment
+
+$1=254 to shut off motor after each run
+G91 X10 Y10 to turn motor off
+
+$1=255 turn motors on
+G91 X10 Y10 to turn motor on
+
+## Logging
+
+Filezilla: port 22
+/home/pi/.octoprint/logs/serial.log
+send ?$G, look for answer "Run" 
+
+
+M114 command 
+
+
