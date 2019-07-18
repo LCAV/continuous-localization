@@ -23,7 +23,17 @@ class Trajectory(object):
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
 
-    def __init__(self, n_complexity=3, dim=DIM, model='bandlimited', tau=TAU, full_period=False):
+    def __init__(self,
+                 n_complexity=3,
+                 dim=DIM,
+                 model='bandlimited',
+                 tau=TAU,
+                 full_period=False,
+                 seed=None,
+                 coeffs=None,
+                 name=None):
+        if coeffs is not None:
+            dim, n_complexity = coeffs.shape
         self.dim = dim
         self.n_complexity = n_complexity
         self.coeffs = None
@@ -31,7 +41,9 @@ class Trajectory(object):
         if self.model == 'full_bandlimited':
             full_period = True
         self.params = {'tau': tau, 'full_period': full_period}
-        self.set_coeffs()
+        if name is not None:
+            self.params["name"] = name
+        self.set_coeffs(seed=seed, coeffs=coeffs)
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.params['tau'])
@@ -450,3 +462,9 @@ n_samples)
                 np.min([max(l, r) for l, r in zip(distances_left, distances_right)])))
 
         return distances_left, distances_right, new_times
+
+    def get_name(self):
+        """Gets name of the trajectory to for example display on plots"""
+        if 'name' in self.params:
+            return self.params['name']
+        return self.model
