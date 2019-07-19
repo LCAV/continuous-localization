@@ -109,6 +109,7 @@ ENV/
 Literature/
 results/test
 results/ranks
+test/results
 fitting/
 
 # images 

@@ -23,7 +23,17 @@ class Trajectory(object):
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
 
-    def __init__(self, n_complexity=3, dim=DIM, model='bandlimited', tau=TAU, full_period=False):
+    def __init__(self,
+                 n_complexity=3,
+                 dim=DIM,
+                 model='bandlimited',
+                 tau=TAU,
+                 full_period=False,
+                 seed=None,
+                 coeffs=None,
+                 name=None):
+        if coeffs is not None:
+            dim, n_complexity = coeffs.shape
         self.dim = dim
         self.n_complexity = n_complexity
         self.coeffs = None
@@ -31,7 +41,9 @@ class Trajectory(object):
         if self.model == 'full_bandlimited':
             full_period = True
         self.params = {'tau': tau, 'full_period': full_period}
-        self.set_coeffs()
+        if name is not None:
+            self.params["name"] = name
+        self.set_coeffs(seed=seed, coeffs=coeffs)
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.params['tau'])
@@ -256,46 +268,70 @@ n_samples)
             self.coeffs = self.coeffs * scale[:, None]
         return box_dims
 
-    def get_times_uniform_in_path(self, n_samples=None, step_distance=None, time_steps=10000, plot=False):
+    def get_times_from_distances(self,
+                                 n_samples=None,
+                                 step_distance=None,
+                                 time_steps=10000,
+                                 plot=False,
+                                 arbitrary_distances=None):
         """Calculate numerically times equivalent to uniform sampling in
         distance travelled.
         
         It calculates the cumulative integral over small steps, and picks
         as a sample time the first time after the integral reaches expected
-        distance at this step."""
+        distance at this step.
+
+        :param arbitrary_distances: if provided, returns times for those distances
+        :param n_samples: if provided, n_samples distances are generated uniformly along the trajectory
+        :param plot: if true, plot the distance against the (in model) time
+        :param time_steps: number of steps for numerical integration
+        :param step_distance: if provided, samples are generated step_distance apart through trajectory
+
+        :return:
+            triple:
+            times at which samples have to be taken from model trajectory,
+            distances at travelled in those times
+            and approximation errors
+        """
         times = self.get_times(n_samples=time_steps)
         basis_prime = self.get_basis_prime(times=times)
         velocities = self.coeffs.dot(basis_prime)
 
         time_differences = times[1:] - times[:-1]
         speeds = np.linalg.norm(velocities, axis=0)
-        distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
+        cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
 
-        if n_samples is not None:
-            uniform_distances = np.arange(n_samples) * distances[-1] / (n_samples - 1)
+        if arbitrary_distances is not None:
+            if np.max(arbitrary_distances) > cumulative_distances[-1]:
+                arbitrary_distances = arbitrary_distances[arbitrary_distances <= cumulative_distances[-1]]
+                print("Some requested distances exceed the maximum possible distance. Discarding to big distances.")
+            distances = arbitrary_distances
+        elif n_samples is not None:
+            distances = np.arange(n_samples) * cumulative_distances[-1] / (n_samples - 1)
         elif step_distance is not None:
-            uniform_distances = np.arange(distances[-1], step=step_distance)
+            distances = np.arange(cumulative_distances[-1], step=step_distance)
         else:
-            raise ValueError("Either n_samples or step_distance has to be provided")
+            raise ValueError("Either n_samples or step_distance or arbitrary distances has to be provided")
 
-        uniform_path_times = []
+        new_times = []
         errors = []
         i = 0
-        for next_distance in uniform_distances:
-            while i < len(distances) - 1 and (distances[i] < next_distance):
+        for next_distance in distances:
+            while i < len(cumulative_distances) - 1 and (cumulative_distances[i] < next_distance):
                 i = i + 1
-            errors.append(distances[i] - next_distance)
-            uniform_path_times.append(times[i])
+            errors.append(cumulative_distances[i] - next_distance)
+            new_times.append(times[i])
 
         if plot:
             plt.figure()
-            plt.plot(times[1:], distances, label="uniform in time")
-            plt.plot(uniform_path_times, uniform_distances, "-*", label="uniorm in distance")
+            plt.plot(times[1:], cumulative_distances, label="smooth")
+            plt.plot(new_times, distances, "*", label="requested distances")
+            plt.xlabel("time")
             plt.title("distance traveled")
             plt.legend()
             plt.show()
 
-        return np.array(uniform_path_times), uniform_distances, np.array(errors)
+        return np.array(new_times), distances, np.array(errors)
 
     def get_local_frame(self, times):
         """Calculate the local frame and the speeds.
@@ -450,3 +486,9 @@ n_samples)
                 np.min([max(l, r) for l, r in zip(distances_left, distances_right)])))
 
         return distances_left, distances_right, new_times
+
+    def get_name(self):
+        """Gets name of the trajectory to for example display on plots"""
+        if 'name' in self.params:
+            return self.params['name']
+        return self.model
