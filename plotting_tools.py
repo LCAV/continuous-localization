@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
 
@@ -32,3 +33,17 @@ def add_plot_decoration(label, parameters):
     y_val = parameters[label[0]]
     plt.yticks(range(len(y_val)), y_val)
     plt.gca().xaxis.tick_bottom()
+
+
+def plot_cdf_raw(values, ax, **kwargs):
+    ''' Plot the cdf of values. 
+
+    :param values: values to plot. 
+    :param ax: axis to plot.
+    :param kwargs: any other kwargs that are passed to plot function. 
+    '''
+    probabilities = np.linspace(0, 1, len(values))
+    ax.plot(np.sort(values), probabilities, **kwargs)
+    ax.yaxis.set_major_locator(plt.FixedLocator(np.linspace(0, 1, 5)))
+    ax.set_ylabel('cdf')
+    ax.grid(True)

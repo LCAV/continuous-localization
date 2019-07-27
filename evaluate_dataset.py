@@ -45,7 +45,7 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
         for t in uniform_times:
             if i % 100 == 0:
                 print('{}/{}'.format(i, len_new_df))
-            valid_data = df_anchor[np.abs(df_anchor.seconds - t) <= (t_window / 0.2)]
+            valid_data = df_anchor[np.abs(df_anchor.timestamp - t) <= (t_window / 0.2)]
             if len(valid_data) > 0:
                 new_df.loc[i, fields] = valid_data.loc[:, fields].median().values
             else:
@@ -57,7 +57,11 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
 
 
 def add_gt_resampled(new_df, anchors_df, gt_system_id=None, label='distance_tango'):
-    """ This takes less than 0.08 seconds on 4000 rows!! """
+    """ This takes less than 0.08 seconds on 4000 rows!! 
+    
+    It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
+    
+    """
     ground_truths = new_df.loc[new_df.system_id == gt_system_id, ["timestamp", "px", "py", "pz"]].values.astype(
         np.float32)
     for anchor_id in new_df.anchor_id.unique():
@@ -83,11 +87,11 @@ def add_median_raw(df, t_window=1.0):
     for a_id in df[df.system_id == 'RTT'].anchor_id.unique():
         print('processing', a_id)
         anchor_df = df[df.anchor_id == a_id]
-        for t in anchor_df.seconds:
+        for t in anchor_df.timestamp:
             # we want to take into account all measurements that lie within the specified window.
-            allowed = anchor_df.loc[np.abs(anchor_df.seconds - t) <= t_window, "distance"]
-            df.loc[(df.seconds == t) & (df.anchor_id == a_id), "distance_median"] = allowed.median()
-            df.loc[(df.seconds == t) & (df.anchor_id == a_id), "distance_mean"] = allowed.mean()
+            allowed = anchor_df.loc[np.abs(anchor_df.timestamp - t) <= t_window, "distance"]
+            df.loc[(df.timestamp == t) & (df.anchor_id == a_id), "distance_median"] = allowed.median()
+            df.loc[(df.timestamp == t) & (df.anchor_id == a_id), "distance_mean"] = allowed.mean()
     return df
 
 
@@ -105,7 +109,7 @@ def add_gt_raw(df, t_window=0.1):
         if row.system_id == 'Tango':
             continue
         elif row.system_id == 'RTT':
-            allowed = df_gt.loc[np.abs(df_gt.seconds - row.seconds) <= t_window, ['px', 'py', 'pz']]
+            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, ['px', 'py', 'pz']]
             df.loc[i, ['px', 'py', 'pz']] = allowed.median()
         else:
             raise ValueError(row.system_id)
