@@ -176,7 +176,7 @@ n_samples)
         trajectory_cont = self.get_sampling_points(basis=basis_cont)
         return trajectory_cont
 
-    def plot(self, basis, mask=None, **kwargs):
+    def plot(self, basis=None, mask=None, **kwargs):
         """ Plot continuous and sampled version.
 
         :param times: times of sampling points.
@@ -186,19 +186,23 @@ n_samples)
         """
 
         trajectory_cont = self.get_continuous_points()
-        trajectory = self.get_sampling_points(basis=basis)
 
-        if mask is not None:
-            trajectory = trajectory[:, np.any(mask != 0, axis=1)]
+        if basis is not None:
+            trajectory = self.get_sampling_points(basis=basis)
+
+            if mask is not None:
+                trajectory = trajectory[:, np.any(mask != 0, axis=1)]
 
         cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
         plt.plot(*trajectory_cont, **cont_kwargs)
-        # avoid having two labels of same thing.
-        pop_labels = ['label', 'linestyle']
-        for pop_label in pop_labels:
-            if pop_label in kwargs.keys():
-                kwargs.pop(pop_label)
-        plt.scatter(*trajectory, **kwargs)
+
+        if basis is not None:
+            # avoid having two labels of same thing.
+            pop_labels = ['label', 'linestyle']
+            for pop_label in pop_labels:
+                if pop_label in kwargs.keys():
+                    kwargs.pop(pop_label)
+            plt.scatter(*trajectory, **kwargs)
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
@@ -274,8 +278,7 @@ n_samples)
                                  time_steps=10000,
                                  plot=False,
                                  arbitrary_distances=None):
-        """Calculate numerically times equivalent to uniform sampling in
-        distance travelled.
+        """Calculate numerically times equivalent to given distances travelled.
         
         It calculates the cumulative integral over small steps, and picks
         as a sample time the first time after the integral reaches expected

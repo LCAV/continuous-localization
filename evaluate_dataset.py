@@ -56,7 +56,7 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
     return new_df
 
 
-def add_gt_resampled(new_df, anchors_df, gt_system_id=None, label='distance_tango'):
+def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_tango'):
     """ This takes less than 0.08 seconds on 4000 rows!! 
     
     It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
@@ -95,18 +95,18 @@ def add_median_raw(df, t_window=1.0):
     return df
 
 
-def add_gt_raw(df, t_window=0.1):
+def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
     """ add median over t_window at each measurement point. 
 
     :param df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
 
     """
-    assert ('Tango' in df.system_id.values), 'did not find any tango measurements in dataset.'
+    assert (gt_system_id in df.system_id.values), 'did not find any gt measurements in dataset.'
     df_gt = df[df.system_id == 'Tango']
 
     for i, row in df.iterrows():
-        if row.system_id == 'Tango':
+        if row.system_id == gt_system_id:
             continue
         elif row.system_id == 'RTT':
             allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, ['px', 'py', 'pz']]
