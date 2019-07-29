@@ -11,6 +11,7 @@ import datetime
 
 import numpy as np
 import pandas as pd
+import matplotlib.pylab as plt
 
 tango_system_id = 7585
 rtt_system_id = 7592
@@ -248,10 +249,10 @@ def get_length(pos_df, plot=False):
     if plot:
         # TODO this is numerically bad, velocities are extremely noisy...
         # That's why we are not using velocities but lengths.
-        #d_times = d_t.values.astype(np.float32).reshape((-1,))
-        #velocities = lengths / d_times
-        #median = np.median(velocities[d_times >= np.median(d_times)])
-        #velocities[d_times < np.median(d_times)] = median
+        d_times = d_t.values.astype(np.float32).reshape((-1, ))
+        velocities = lengths / d_times
+        median = np.median(velocities[d_times >= np.median(d_times)])
+        velocities[d_times < np.median(d_times)] = median
         fig, axs = plt.subplots(3, 1)
         fig.set_size_inches(15, 5)
         axs[0].plot(d_times, label='d_times')
@@ -344,10 +345,10 @@ def find_end_times(tango_df, plot=False):
     return end_times, end_indices
 
 
-def find_calibration_indices(tango_df, start_times, start_indices, max_length=0.01):
-    # Find calibration indices
+def find_calibration_data(tango_df, start_times, start_indices, max_length=0.01):
+    # Find calibration data
     # valid indices are close-to-zero length indices before the start times.
-    calibration_indices = {}
+    calibration_data = {}
 
     # weird name inconsistency because in terms of calibration start_time is the end-time.
     for end_time, end_index in zip(start_times, start_indices):
@@ -359,5 +360,5 @@ def find_calibration_indices(tango_df, start_times, start_indices, max_length=0.
 
         start_index = end_index - num_indices
         start_time = tango_df.iloc[start_index].timestamp
-        calibration_indices[start_index] = [start_time, end_time]
-    return calibration_indices
+        calibration_data[start_index] = [start_time, end_time]
+    return calibration_data
