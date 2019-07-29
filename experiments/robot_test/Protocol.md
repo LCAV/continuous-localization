@@ -50,3 +50,8 @@ In the end I did a few walking trajectories which are probably out of model, and
 - stopping: walking in straight lines and stopping between them
 - pentagone: make the robot move in a pentagon shape. #TODO need to recover the exact parameters for ground truth.  
 
+## Unused trajectories
+
+The following trajectories are not used anymore: 
+
+- static#.csv: some tests with different heights z, at the origin (coord_robot=[0, 0, z]).

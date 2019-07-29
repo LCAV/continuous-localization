@@ -179,7 +179,7 @@ n_samples)
     def plot(self, basis=None, mask=None, **kwargs):
         """ Plot continuous and sampled version.
 
-        :param times: times of sampling points.
+        :param basis: basis of sampling points. Only plot continuous version if not given.
         :param mask: optional measurements mask (to plot missing measurements)
         :param kwargs: any additional kwargs passed to plt.scatter()
 
