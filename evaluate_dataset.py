@@ -13,8 +13,86 @@ import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 
+# These system_ids are used by the python pipeline, but will be changed to human-readable
+# "Tango" and "RTT".
 tango_system_id = 7585
 rtt_system_id = 7592
+
+#### Geometry.
+
+
+def convert_room_to_robot(x_room):
+    """ Convert coordinates in room reference to robot reference. 
+    """
+    assert x_room.shape[0] == 3
+    assert x_room.ndim > 1 and x_room.shape[1] >= 1
+
+    from math import cos, sin, pi
+
+    theta = pi / 2.0
+    R = np.array([[cos(theta), -sin(theta), 0], [sin(theta), cos(theta), 0], [0, 0, 1]])
+    #origin = np.array([3.4, 3.58, 0.0]).reshape((3, 1))
+    origin = np.array([3.58, 3.4, 0.0]).reshape((3, 1))
+    x_robot = R.dot(x_room - origin)
+    return x_robot
+
+
+#### Dataset processing.
+
+
+def read_anchors_df(anchorsfile):
+    """ Read and preprocess the anchors file. """
+
+    def apply_add_name(row, rtt_, tango_):
+        if row.system_id == 'Tango':
+            tango_[0] += 1
+            return 'Tango {}'.format(tango_[0])
+        elif row.system_id == 'RTT':
+            rtt_[0] += 1
+            return 'RTT {}'.format(rtt_[0])
+
+    def apply_system_id(row):
+        if row.system_id == tango_system_id:
+            return 'Tango'
+        elif row.system_id == rtt_system_id:
+            return 'RTT'
+
+    def apply_anchor_id(row):
+        return row.anchor_id.strip()
+
+    rtt_ = [-1]  # using lists so that we can change them inplace.
+    tango_ = [-1]
+
+    anchors_df = pd.read_csv(anchorsfile)
+    anchors_df.loc[:, 'anchor_id'] = anchors_df.apply(lambda row: apply_anchor_id(row), axis=1)
+    anchors_df.loc[:, 'system_id'] = anchors_df.apply(lambda row: apply_system_id(row), axis=1)
+    anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, rtt_, tango_), axis=1)
+    return anchors_df
+
+
+def read_dataset(datafile, anchors_df):
+    """ Read and preprocess the measurement dataset, a .csv file. """
+
+    def apply_system_id(row):
+        if row.system_id == rtt_system_id:
+            return 'RTT'
+        elif row.system_id == tango_system_id:
+            return 'Tango'
+        else:
+            raise NameError(row.system_id)
+
+    def filter_columns(data_df):
+        all_columns = set(data_df.columns)
+        keep_columns = set(['timestamp', 'system_id', 'anchor_id', 'px', 'py', 'pz', 'distance', 'rssi', 'seconds'])
+        drop_columns = all_columns - keep_columns  # this is a set difference
+        data_df.drop(drop_columns, axis=1, inplace=True)
+
+    data_df = pd.read_csv(datafile)
+    filter_columns(data_df)
+    data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
+    data_df.loc[:, 'anchor_name'] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
+    data_df.loc[:, 'system_id'] = data_df.apply(lambda row: apply_system_id(row), axis=1)
+    return data_df
 
 
 def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
@@ -24,7 +102,7 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
     :param t_range: tuple of min and max time, in seconds.
     :param t_delta: sampling interval, in seconds.
     :param t_window: window width used for median calculation, in seconds.
-
+    :param system_id: which system to resample.
     """
     uniform_times = np.arange(*t_range, t_delta)
 
@@ -58,10 +136,10 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
 
 
 def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_tango'):
-    """ This takes less than 0.08 seconds on 4000 rows!! 
-    
+    """ Add ground truth distances to new_df as a new column.
+
     It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
-    
+    Therefore it takes less than 0.08 seconds on 4000 rows!! 
     """
     ground_truths = new_df.loc[new_df.system_id == gt_system_id, ["timestamp", "px", "py", "pz"]].values.astype(
         np.float32)
@@ -81,39 +159,44 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_t
 
 
 def add_median_raw(df, t_window=1.0):
-    """ Add median over t_window at each measurement point. 
+    """ Add (centered) median over t_window at each measurement point. 
 
     :param df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
 
     """
-    for a_id in df[df.system_id == 'RTT'].anchor_id.unique():
-        print('processing', a_id)
-        anchor_df = df[df.anchor_id == a_id]
+    for anchor_id, anchor_df in df[df.system_id == 'RTT'].groupby("anchor_id"):
+        print('processing', anchor_id)
         for t in anchor_df.timestamp:
             # we want to take into account all measurements that lie within the specified window.
             allowed = anchor_df.loc[np.abs(anchor_df.timestamp - t) <= t_window, "distance"]
-            df.loc[(df.timestamp == t) & (df.anchor_id == a_id), "distance_median"] = allowed.median()
-            df.loc[(df.timestamp == t) & (df.anchor_id == a_id), "distance_mean"] = allowed.mean()
+            df.loc[(df.timestamp == t) & (df.anchor_id == anchor_id), "distance_median"] = allowed.median()
+            df.loc[(df.timestamp == t) & (df.anchor_id == anchor_id), "distance_mean"] = allowed.mean()
     return df
 
 
-def add_median_raw_rolling(data_df):
-    """ IMPORTANT: this is not centered. Our own implementation add_median_raw is centered. 
-     However ours is much much slower...
-     """
-    data_df.sort_values("timestamp", inplace=True)
-    datetimes = [datetime.datetime.fromtimestamp(t / 1000.0) for t in data_df.timestamp]
-    data_df.index = [pd.Timestamp(datetime) for datetime in datetimes]
-    for anchor_id, anchor_df in data_df.groupby('anchor_id'):
-        rolling_data = anchor_df['distance'].rolling('1s', min_periods=1, center=False)
-        data_df.loc[data_df.anchor_id == anchor_id, "distance_mean"] = rolling_data.mean()
-        data_df.loc[data_df.anchor_id == anchor_id, "distance_median"] = rolling_data.median()
-    data_df.index = range(len(data_df))
+def add_median_raw_rolling(df, t_window=1):
+    """ Add (non-cenetered) rolling median over t_window at each measurement point. 
+    
+    IMPORTANT: this is not centered. Our own implementation add_median_raw is centered. 
+    However ours is much much slower...
+
+    """
+
+    df.sort_values("timestamp", inplace=True)
+    datetimes = [datetime.datetime.fromtimestamp(t / 1000.0) for t in df.timestamp]
+    df.index = [pd.Timestamp(datetime) for datetime in datetimes]
+    for anchor_id, anchor_df in df.groupby('anchor_id'):
+        print('processing', anchor_id)
+        rolling_data = anchor_df['distance'].rolling('{}s'.format(t_window), min_periods=1, center=False)
+        df.loc[df.anchor_id == anchor_id, "distance_mean"] = rolling_data.mean()
+        df.loc[df.anchor_id == anchor_id, "distance_median"] = rolling_data.median()
+    df.index = range(len(df))
+    return df
 
 
 def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
-    """ Add median over t_window at each measurement point. 
+    """ Add median over t_window of ground truth position at each measurement point. 
 
     :param df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
@@ -133,65 +216,12 @@ def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
     return df
 
 
-def read_anchors_df(anchorsfile):
-    def apply_add_name(row, rtt_, tango_):
-        if row.system_id == 'Tango':
-            tango_[0] += 1
-            return 'Tango {}'.format(tango_[0])
-        elif row.system_id == 'RTT':
-            rtt_[0] += 1
-            return 'RTT {}'.format(rtt_[0])
-
-    def apply_system_id(row):
-        if row.system_id == tango_system_id:
-            return 'Tango'
-        elif row.system_id == rtt_system_id:
-            return 'RTT'
-
-    def apply_anchor_id(row):
-        return row.anchor_id.strip()
-
-    rtt_ = [-1]
-    tango_ = [-1]
-
-    anchors_df = pd.read_csv(anchorsfile)
-    anchors_df.loc[:, 'anchor_id'] = anchors_df.apply(lambda row: apply_anchor_id(row), axis=1)
-    anchors_df.loc[:, 'system_id'] = anchors_df.apply(lambda row: apply_system_id(row), axis=1)
-    anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, rtt_, tango_), axis=1)
-    return anchors_df
-
-
 def apply_name(row, anchors_df):
     return anchors_df.loc[anchors_df.anchor_id == row.anchor_id, "anchor_name"].values[0]
 
 
-def read_dataset(datafile, anchors_df):
-    def apply_system_id(row):
-        if row.system_id == rtt_system_id:
-            return 'RTT'
-        elif row.system_id == tango_system_id:
-            return 'Tango'
-        else:
-            raise NameError(row.system_id)
-
-    def filter_columns(data_df):
-        all_columns = set(data_df.columns)
-        keep_columns = set([
-            'timestamp', 'system_id', 'anchor_id', 'px', 'py', 'pz', 'theta_x', 'theta_y', 'theta_z', 'distance',
-            'rssi', 'seconds'
-        ])
-        drop_columns = all_columns - keep_columns  # this is a set difference
-        data_df.drop(drop_columns, axis=1, inplace=True)
-
-    data_df = pd.read_csv(datafile)
-    filter_columns(data_df)
-    data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
-    data_df.loc[:, 'anchor_name'] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
-    data_df.loc[:, 'system_id'] = data_df.apply(lambda row: apply_system_id(row), axis=1)
-    return data_df
-
-
 def apply_distance_gt(row, anchors_df, gt_system_id="Tango"):
+    """ Return the ground truth distance between the measured anchor and the current ground truth. """
     if row.system_id == gt_system_id:
         return 0.0
     anchor_coord = anchors_df.loc[anchors_df.anchor_id == row.anchor_id, ['px', 'py', 'pz']].values.astype(np.float32)
@@ -204,23 +234,6 @@ def apply_calibrate(row, calib_dict, calib_type):
         return 0.0
     offset = calib_dict[row.anchor_name][calib_type]
     return row.distance - offset
-
-
-def convert_room_to_robot(x_room):
-    """
-    Convert coordinates in room reference to robot reference. 
-    """
-    assert x_room.shape[0] == 3
-    assert x_room.ndim > 1 and x_room.shape[1] >= 1
-
-    from math import cos, sin, pi
-
-    theta = pi / 2.0
-    R = np.array([[cos(theta), -sin(theta), 0], [sin(theta), cos(theta), 0], [0, 0, 1]])
-    #origin = np.array([3.4, 3.58, 0.0]).reshape((3, 1))
-    origin = np.array([3.58, 3.4, 0.0]).reshape((3, 1))
-    x_robot = R.dot(x_room - origin)
-    return x_robot
 
 
 #### Detect start end end times.
@@ -263,7 +276,8 @@ def get_length(pos_df, plot=False):
 
 
 def find_times(tango_df):
-    """ This was an attempt at a more straight forward way to find calibraiton
+    """ 
+    This was an attempt at a more straight forward way to find calibraiton
     or movement times. After all, find_start_times worked better.
 
     """
@@ -305,7 +319,23 @@ def find_times(tango_df):
 
 
 def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1], plot=False):
-    def find_edge(window, pattern=[1, 1, -1]):
+    """ Find the times at which the trajectory started. Can be multiple in one dataset.
+
+    We find start times by fitting an "edge-detection" filter to the function of recorded traveled lengths over time.
+    This way we (hopefully) reduce false starts triggered by spurious measurements.  
+
+    :param tango_df: dataset with position estimates.
+    :param thresh_filter: float, tuning parameter. if the response of the find_edge filter at a time is below this, it is considered a start.
+    :param pattern: the pattern used in the find_edge function. 
+
+    :return: two lists:
+        - start_times: times at which movement starts.
+        - start_indices:  indices at which movement starts.
+
+    """
+
+    def find_edge(window, pattern):
+        """ Calculate the inner product of the pattern with the given window. """
         if len(window) < len(pattern):
             pattern = pattern[:-len(window)]
         sum_ = np.sum([a * b for (a, b) in zip(pattern, window)])
@@ -314,21 +344,26 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
     if "length" not in tango_df.columns:
         tango_df.loc[:, "length"] = get_length(tango_df)
 
+    # compute the rolling inner product between pattern and the length in tango_df.
     tango_df.index = [datetime.datetime.fromtimestamp(t) for t in tango_df.timestamp]
     normalized_series = tango_df.loc[:, "length"] / tango_df.length.max()
     df = normalized_series.rolling(
-        window=6, center=False, min_periods=1).apply(
+        window=len(pattern), center=False, min_periods=1).apply(
             find_edge, raw=True, kwargs={'pattern': pattern})
     tango_df.reset_index(inplace=True, drop=True)
 
     if plot:
         plt.figure()
         plt.plot(df.values, label='filter output')
-        #plt.plot([thresh_filter]*len(df), label='thresh_filterold')
+        plt.plot([thresh_filter] * len(df), label='thresh_filterold')
 
     # find start indices
     all_indices = np.where(df.values < thresh_filter)[0]
     all_times = [tango_df.timestamp[i] for i in all_indices]
+
+    # there were no calibration periods in this dataset.
+    if len(all_indices) == 0:
+        return [], []
 
     start_times = [all_times[0]]
     start_indices = [all_indices[0]]
@@ -340,25 +375,35 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
 
 
 def find_end_times(tango_df, plot=False):
+    """ Find the tines at which movement ends. """
     # TODO There is a shift of two here but it doesn't matter for now.
     end_times, end_indices = find_start_times(tango_df, thresh_filter=-0.2, pattern=[-1, -1, 1, 1, 1, 1], plot=plot)
     return end_times, end_indices
 
 
-def find_calibration_data(tango_df, start_times, start_indices, max_length=0.01):
+def find_calibration_data(tango_df, start_move_times, start_move_indices, max_length=0.01):
+    """ For each movement period, find the admissible calibration period before it. 
+    
+    :param tango_df: dataset with position estimates.
+    :param start_move_times, start_move_indices: output of find_start_times. 
+    :param max_length: if the travelled length is above this threshold, we consider that we moved.
+
+    """
     # Find calibration data
     # valid indices are close-to-zero length indices before the start times.
     calibration_data = {}
 
     # weird name inconsistency because in terms of calibration start_time is the end-time.
-    for end_time, end_index in zip(start_times, start_indices):
-        num_min = 5
-        num_max = min(100, end_index)
+    for start_move_time, start_move_index in zip(start_move_times, start_move_indices):
+        print(start_move_time, start_move_index)
+        num_min = 3  # min number of calibration samples
+        num_max = min(100, start_move_index)  # max number of calibration samples.
+        num_indices = 0
         for num_indices in range(num_min, num_max):
-            if tango_df.iloc[end_index - num_indices].length > max_length:
+            if tango_df.iloc[start_move_index - num_indices].length > max_length:
                 break
 
-        start_index = end_index - num_indices
-        start_time = tango_df.iloc[start_index].timestamp
-        calibration_data[start_index] = [start_time, end_time]
+        start_calib_index = start_move_index - num_indices
+        start_calib_time = tango_df.iloc[start_calib_index].timestamp
+        calibration_data[start_move_index] = [start_calib_time, start_move_time]
     return calibration_data
