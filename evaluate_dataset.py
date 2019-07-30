@@ -12,6 +12,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
+import scipy as sp
 
 # These system_ids are used by the python pipeline, but will be changed to human-readable
 # "Tango" and "RTT".
@@ -407,3 +408,22 @@ def find_calibration_data(tango_df, start_move_times, start_move_indices, max_le
         start_calib_time = tango_df.iloc[start_calib_index].timestamp
         calibration_data[start_move_index] = [start_calib_time, start_move_time]
     return calibration_data
+
+
+def match_reference(reference, points):
+    """ Rotate and shift points to mach reference positions as closely as possible.
+    Note that the order of points matters, not only their position.
+
+    :param reference: 2D array of size (dimension, number of points), that does not change
+    :param points: 2D array of points to rotate, the same size as reference
+    :return:
+        a pair (rotated points, rotation matrix)
+    """
+    assert reference.shape == points.shape
+    reference_center = np.mean(reference, axis=1)
+    reference = reference - reference_center[:, None]
+    points = points - np.mean(points, axis=1)[:, None]
+    rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
+    points = np.dot(rotation, points)
+    points += reference_center[:, None]
+    return points, rotation
