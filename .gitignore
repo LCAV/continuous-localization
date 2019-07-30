@@ -109,7 +109,14 @@ ENV/
 Literature/
 results/test
 results/ranks
+test/results
+fitting/
+experiments/robot_test/plots
+experiments/robot_test/*.pkl
+experiments/robot_test/*.json
 
 # images 
 *.png
 
+# Gcode 
+*.gcode
