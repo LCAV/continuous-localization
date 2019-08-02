@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 from plotting_tools import make_dirs_safe
 
+# TODO change the diemsions so the matrices dont need to be transposed
+
 
 def get_anchors(n_anchors, n_dimensions=2, check=True):
     full_rank = False
@@ -62,7 +64,7 @@ def get_reduced_right_submatrix(idx_f, frame):
     :return: right part of the constrain matrix
     """
 
-    n_positions, n_constraints = frame.shape
+    n_constraints, n_positions = frame.shape
     Ks = np.arange(n_constraints, 2 * n_constraints - 1).reshape((n_constraints - 1, 1))
     Ns = np.arange(n_positions).reshape((n_positions, 1))
     extended_frame = np.cos(Ks @ Ns.T * np.pi / n_positions)
