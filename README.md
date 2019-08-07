@@ -20,7 +20,12 @@ Install all standard python requirements using `pip`:
 
     pip install -r requirements.txt
 
-If you want to use `conda`, you might need to run:
+If are using `conda`, we recomend to add `conda-forge` channel and istall all requirements by:
+
+    conda config --add channels conda-forge
+    conda install --file requirements.txt
+
+If you don't want to add new channels, you can run:
 
     conda install -c omnia cvxpy
     conda install -c conda-forge cvxopt
