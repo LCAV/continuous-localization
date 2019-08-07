@@ -64,6 +64,9 @@ def run_simulation(parameters, outfolder=None, solver=None):
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
+    if "noise_to_square" not in parameters:
+        parameters["noise_to_square"] = False
+
     complexities = parameters['complexities']
     anchors = parameters['anchors']
     positions = parameters['positions']
@@ -116,7 +119,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
                         for n_it in range(n_its):
 
                             basis, D_topright = get_measurements(
-                                trajectory, environment, n_samples=n_positions, noise=noise_sigma)
+                                trajectory, environment, n_samples=n_positions, noise=noise_sigma, noise_to_square=parameters["noise_to_square"])
                             mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
 
                             D_topright = np.multiply(D_topright, mask)

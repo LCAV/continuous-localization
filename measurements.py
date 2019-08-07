@@ -160,7 +160,7 @@ def get_D_topright(anchors, samples):
     return D[:n_positions, n_positions:]
 
 
-def get_measurements(traj, env, seed=1, n_samples=20, noise=None):
+def get_measurements(traj, env, seed=None, n_samples=20, noise=None, noise_to_square=False):
     """ Get measurements from setup.
 
     :param traj: Trajectory instance.
@@ -171,10 +171,11 @@ def get_measurements(traj, env, seed=1, n_samples=20, noise=None):
     :return: basis and distance matrix
     """
     # get measurements
-    np.random.seed(seed)
+    if seed is not None:
+        np.random.seed(seed)
     basis = traj.get_basis(n_samples=n_samples)
     points = traj.get_sampling_points(basis=basis)
     D_topright = get_D_topright(env.anchors, points)
     if noise is not None:
-        D_topright = add_noise(D_topright, noise)
+        D_topright = add_noise(D_topright, noise, noise_to_square)
     return basis, D_topright
