@@ -190,7 +190,8 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False, w
     u, s, vh = np.linalg.svd(T_B, full_matrices=False)
     num_zero_SVs = len(np.where(s < 1e-10)[0])
     if len(s) - num_zero_SVs != rankT_B:  #This if can be cut, it was just useful for debugging
-        raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
+        pass
+        # raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
 
     T_B_fullrank = u[:, :rankT_B] @ np.diag(s[:rankT_B])
 

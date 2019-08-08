@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+from matplotlib import ticker
+from simulation import read_results, read_params
+from global_variables import DIM
 import numpy as np
 import os
 
@@ -67,3 +70,60 @@ def plot_distances(data_df):
         ax.plot(data.seconds, data.distance_gt, linestyle=':', label=anchor_name, color=color)
         ax.plot(data.seconds, data.distance, linestyle='-', color=color)
         ax.set_ylim(0, 15)
+
+
+def plot_noise(key, save_figures, noise_index=0):
+
+    resultfolder = 'results/{}/'.format(key)
+    results = read_results(resultfolder + 'result_')
+    parameters = read_params(resultfolder + 'parameters.json')
+
+    absolute_error = results['absolute-errors'].squeeze()
+    relative_error = results['relative-errors'].squeeze()
+    dimensions = absolute_error.shape
+    min_measurements = (DIM + 2) * parameters["complexities"][0] - 1
+    measurements = np.arange(min_measurements, dimensions[1])
+    noise_sigmas = parameters['noise_sigmas']
+
+    fig1, ax1 = plt.subplots()
+    for idx, _ in enumerate(noise_sigmas):
+        base_line = plt.loglog(measurements[::-1],
+                               absolute_error.T[:len(measurements), idx],
+                               label="absolute {}".format(noise_sigmas[idx]))
+        plt.loglog(measurements[::-1],
+                   relative_error.T[:len(measurements), idx],
+                   ":",
+                   color=base_line[0].get_color(),
+                   label="relative {}".format(noise_sigmas[idx]))
+    plt.xlabel("number of measurements")
+    plt.ylabel("error")
+    ax1.legend(loc='center left', bbox_to_anchor=(1., 0.5))
+    ax1.set_xticks(measurements[::int(len(measurements) / 5)])
+    ax1.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+    ax1.get_xaxis().set_minor_formatter(ticker.NullFormatter())
+    plt.grid()
+    plt.title(key)
+    if save_figures:
+        plt.savefig(resultfolder + "oversapling_normalised_all.pdf", bbox_inches="tight")
+    plt.show()
+
+    fig2, ax2 = plt.subplots()
+    base_line = plt.loglog(measurements[::-1],
+                           absolute_error.T[:len(measurements), noise_index],
+                           label="absolute {}".format(noise_sigmas[noise_index]))
+    plt.loglog(measurements[::-1],
+               relative_error.T[:len(measurements), noise_index],
+               ":",
+               color=base_line[0].get_color(),
+               label="relative {}".format(noise_sigmas[noise_index]))
+    plt.xlabel("number of measurements")
+    plt.ylabel("error")
+    plt.legend(loc=1)
+    ax2.set_xticks(measurements[::int(len(measurements) / 5)])
+    ax2.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+    plt.grid()
+    plt.title(key)
+    if save_figures:
+        plt.savefig(resultfolder + "oversapling_normalised_" + str(noise_sigmas[noise_index]) + ".pdf",
+                    bbox_inches="tight")
+    plt.show()

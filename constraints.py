@@ -187,7 +187,7 @@ def get_C_constraints(D_topright, anchors, basis, weighted=False):
     b = []
 
     for (m, n) in zip(Ms, Ns):
-        weight = 1.0/(D_topright[n, m] + 1e-5) if weighted else 1.0
+        weight = 1.0 / np.sqrt((D_topright[n, m]) + 1e-3) if weighted else 1.0
         a_m = np.reshape(anchors[:, m], (-1, 1))
         f_n = basis[:, n].reshape(dim, 1)
 
