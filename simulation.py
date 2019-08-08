@@ -78,32 +78,23 @@ def run_simulation(parameters, outfolder=None, solver=None):
     successes = np.full(
         (len(complexities), len(anchors), len(positions), len(noise_sigmas), max(positions) * max(anchors)), np.nan)
     errors = np.full(successes.shape, np.nan)
+    relative_errors = np.full(successes.shape, np.nan)
     num_not_solved = np.full(successes.shape, np.nan)
     num_not_accurate = np.full(successes.shape, np.nan)
 
     for c_idx, n_complexity in enumerate(complexities):
         print('n_complexity', n_complexity)
 
-        trajectory = Trajectory(n_complexity)
-
         for a_idx, n_anchors in enumerate(anchors):
             print('n_anchors', n_anchors)
-
-            environment = Environment(n_anchors)
 
             for p_idx, n_positions in enumerate(positions):
                 print('n_positions', n_positions)
 
-                trajectory.set_coeffs(seed=None)
-                environment.set_random_anchors(seed=None)
-
-                # remove some measurements
                 n_measurements = n_positions * n_anchors
-
                 for m_idx, n_missing in enumerate(range(n_measurements)):
 
                     for noise_idx, noise_sigma in enumerate(noise_sigmas):
-
                         indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
 
                         # set all values to 0 since we have visited them.
@@ -117,6 +108,11 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             num_not_accurate[indexes] = 0.0
 
                         for n_it in range(n_its):
+
+                            trajectory = Trajectory(n_complexity)
+                            environment = Environment(n_anchors)
+                            trajectory.set_coeffs(seed=None)
+                            environment.set_random_anchors(seed=None)
 
                             basis, D_topright = get_measurements(
                                 trajectory, environment, n_samples=n_positions, noise=noise_sigma, noise_to_square=parameters["noise_to_square"])
@@ -134,14 +130,18 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
                                     P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
+                                elif solver == 'weightedPseudoInverse':
+                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis,
+                                                                     weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
                                     )
 
                                 robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                robust_add(relative_errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)/(trajectory.coeffs + 1e-10)))
 
-                                assert not np.any(np.abs(P_hat - trajectory.coeffs) > success_thresholds[noise_idx])
+                                assert not np.mean(np.abs(P_hat - trajectory.coeffs)) > success_thresholds[noise_idx]
 
                                 robust_increment(successes, indexes)
 
@@ -167,12 +167,14 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 robust_increment(num_not_accurate, indexes)
 
                             errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
+                            relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
 
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
         'num-not-accurate': num_not_accurate,
-        'errors': errors
+        'errors': errors,
+        'relative-errors': relative_errors,
     }
 
     if outfolder is not None:

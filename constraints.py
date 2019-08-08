@@ -170,8 +170,12 @@ def get_constraints_matrix(D_topright, anchors, basis):
     return A, b
 
 
-def get_C_constraints(D_topright, anchors, basis):
-    """ Return constraints TA, TB, and vector b as defined in paper. """
+def get_C_constraints(D_topright, anchors, basis, weighted=False):
+    """ Return constraints TA, TB, and vector b as defined in paper.
+
+    :param weighted: bool, if true return measurements and constraints divided by the weight depended on the distance,
+    in order to normalise errors. Makes sense only when errors are added to distances
+    """
 
     verify_dimensions(D_topright, anchors, basis)
 
@@ -183,16 +187,17 @@ def get_C_constraints(D_topright, anchors, basis):
     b = []
 
     for (m, n) in zip(Ms, Ns):
+        weight = 1.0/(D_topright[n, m] + 1e-5) if weighted else 1.0
         a_m = np.reshape(anchors[:, m], (-1, 1))
         f_n = basis[:, n].reshape(dim, 1)
 
         tmp = a_m @ f_n.T
-        T_A.append(tmp.flatten())
+        T_A.append(weight * tmp.flatten())
 
         tmp = f_n @ f_n.T
-        T_B.append(tmp.flatten())
+        T_B.append(weight * tmp.flatten())
 
-        b.append((np.sum(a_m * a_m) - D_topright[n, m]) / 2)
+        b.append(weight * (np.sum(a_m * a_m) - D_topright[n, m]) / 2)
 
     T_A = np.array(T_A)
     T_B = np.array(T_B)

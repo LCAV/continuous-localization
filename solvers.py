@@ -165,20 +165,22 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     return Z_hat
 
 
-def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False):
+def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False, weighted=False):
     """ Solve linearised sensor localization problem. 
 
     First parameters are same as for :func:`.semidefRelaxation`. 
 
     :param average_with_Q: option to improve noise robustness by averaging the 
                            estimate of P with the knowledge we have for Q=P^TP
+    :param weighted: bool, if true use an equivalent of weighted least squares
+                    (assuming gaussian noise added to distances)
     """
 
     dim, M = anchors.shape
     K = basis.shape[0]
 
     #get constraints
-    T_A, T_B, b = get_C_constraints(D_topright, anchors, basis)
+    T_A, T_B, b = get_C_constraints(D_topright, anchors, basis, weighted=weighted)
 
     Ns, Ms = np.where(D_topright > 0)
     Ns_that_see_an_anchor = len(np.unique(Ns))
