@@ -98,9 +98,11 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                 n_measurements = n_positions * n_anchors
                 for m_idx, n_missing in enumerate(range(n_measurements)):
+                    print('measurements idx', m_idx)
 
                     for noise_idx, noise_sigma in enumerate(noise_sigmas):
                         indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
+                        print("noise", noise_sigma)
 
                         # set all values to 0 since we have visited them.
                         if np.isnan(successes[indexes]):
@@ -118,6 +120,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             environment.set_random_anchors(seed=None)
 
                             basis, D_topright = get_measurements(trajectory, environment, n_samples=n_positions)
+                            distances = np.sqrt(D_topright)
                             D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
                             mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
                             if parameters['measure_distances']:
@@ -125,7 +128,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
-                                if (solver == None) or (solver == semidefRelaxationNoiseless):
+                                if (solver is None) or (solver == semidefRelaxationNoiseless):
                                     X = semidefRelaxationNoiseless(D_topright,
                                                                    environment.anchors,
                                                                    basis,
@@ -148,7 +151,6 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
-                                distances = np.sqrt(D_topright)
                                 _, D_estimated = get_measurements(trajectory_estimated,
                                                                   environment,
                                                                   n_samples=n_positions)
