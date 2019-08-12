@@ -309,9 +309,6 @@ n_samples)
         cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
 
         if arbitrary_distances is not None:
-            if np.max(arbitrary_distances) > cumulative_distances[-1]:
-                arbitrary_distances = arbitrary_distances[arbitrary_distances <= cumulative_distances[-1]]
-                print("Some requested distances exceed the maximum possible distance. Discarding to big distances.")
             distances = arbitrary_distances
         elif n_samples is not None:
             distances = np.arange(n_samples) * cumulative_distances[-1] / (n_samples - 1)
@@ -323,9 +320,20 @@ n_samples)
         new_times = []
         errors = []
         i = 0
+        extra_distance = cumulative_distances[-1]
+        extra_time = times[-1]
+
         for next_distance in distances:
-            while i < len(cumulative_distances) - 1 and (cumulative_distances[i] < next_distance):
-                i = i + 1
+            while cumulative_distances[i] < next_distance:
+                i += 1
+                if i == len(cumulative_distances):
+                    basis_prime = self.get_basis_prime(times=times + extra_time)
+                    velocities = self.coeffs.dot(basis_prime)
+                    speeds = np.linalg.norm(velocities, axis=0)
+                    cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences) + extra_distance
+                    i = 0
+                    extra_time += times[-1]
+                    extra_distance = cumulative_distances[-1]
             errors.append(cumulative_distances[i] - next_distance)
             new_times.append(times[i])
 
@@ -337,6 +345,8 @@ n_samples)
             plt.title("distance traveled")
             plt.legend()
             plt.show()
+
+        assert len(new_times) == len(distances)
 
         return np.array(new_times), distances, np.array(errors)
 
