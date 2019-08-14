@@ -1,9 +1,13 @@
+from itertools import cycle
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-from simulation import read_results, read_params
-from global_variables import DIM
 import numpy as np
 import os
+import pandas as pd
+import seaborn as sns
+
+from simulation import read_results, read_params
+from global_variables import DIM, RTT_SYSTEM_ID
 
 
 def make_dirs_safe(path):
@@ -44,12 +48,12 @@ def add_plot_decoration(label, parameters):
 
 
 def plot_cdf_raw(values, ax, **kwargs):
-    ''' Plot the cdf of values. 
+    """Plot the cdf of values.
 
     :param values: values to plot. 
     :param ax: axis to plot.
     :param kwargs: any other kwargs that are passed to plot function. 
-    '''
+    """
     probabilities = np.linspace(0, 1, len(values))
     ax.plot(np.sort(values), probabilities, **kwargs)
     ax.yaxis.set_major_locator(plt.FixedLocator(np.linspace(0, 1, 5)))
@@ -57,10 +61,10 @@ def plot_cdf_raw(values, ax, **kwargs):
     ax.grid(True)
 
 
-def plot_distances(data_df):
+def plot_distances(data_df, anchors_df):
     import itertools
     colors = itertools.cycle(plt.get_cmap('tab10').colors)
-    rtt_ids = anchors_df[anchors_df.system_id == rtt_system_id].anchor_id.unique()
+    rtt_ids = anchors_df[anchors_df.system_id == RTT_SYSTEM_ID].anchor_id.unique()
     fig, axs = plt.subplots(1, len(rtt_ids), sharey=True)
     fig.set_size_inches(15, 5)
     for ax, anchor_id in zip(axs, rtt_ids):
@@ -91,9 +95,8 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
 
         fig1, ax1 = plt.subplots()
         for idx, _ in enumerate(noise_sigmas[min_noise:max_noise]):
-            base_line = plt.loglog(measurements[::-1],
-                                   error.T[:len(measurements), idx],
-                                   label="noise: {}".format(noise_sigmas[idx]))
+            plt.loglog(
+                measurements[::-1], error.T[:len(measurements), idx], label="noise: {}".format(noise_sigmas[idx]))
         plt.xlabel("number of measurements")
         if error_type == "errors":
             plt.ylabel("errors on coefficients")
@@ -108,3 +111,143 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
         if save_figures:
             plt.savefig(resultfolder + "oversapling_" + error_type + ".pdf", bbox_inches="tight")
         plt.show()
+
+
+def read_plot_df(name):
+    '''
+    read dataset of given name.
+
+    :param name: name of dataset, for example circle2_double.csv
+    :return:
+        - data_df: calibrated dataset, with columns [distance, distance_mean_0, ...]
+        - plot_df: same dataset with one column distance, and one column distance_type.
+    '''
+    datafile = 'experiments/robot_test/' + name
+    datafile_name = datafile.split('.')[0]
+    calibrate_name = datafile_name + '_calibrated.pkl'
+
+    data_df = pd.read_pickle(calibrate_name)
+
+    data_df = data_df.drop(columns=['theta_x', 'theta_y', 'theta_z'], errors='ignore')
+    print('read', calibrate_name)
+
+    id_vars = [c for c in data_df.columns if c[:8] != 'distance']
+    plot_df = data_df.melt(id_vars=id_vars, var_name="distance_type", value_name="distance")
+    plot_df = plot_df[plot_df.system_id == 'RTT']
+    plot_df.sort_values(['timestamp', 'anchor_name'], inplace=True)
+    plot_df.reset_index(inplace=True, drop=True)
+    plot_df.loc[:, 'distance'] = plot_df.distance.astype(np.float32)
+    plot_df.loc[:, 'timestamp'] = plot_df.timestamp.astype(np.float32)
+
+    return data_df, plot_df
+
+
+def plot_cdfs(plot_df, filename=''):
+    colors = sns.color_palette('deep')
+
+    fig, axarr = plt.subplots(2, 4)
+    fig.set_size_inches(15, 10)
+    axarr = axarr.reshape((-1, ))
+    for i, (anchor_name, df) in enumerate(plot_df.sort_values("anchor_name").groupby("anchor_name")):
+
+        axarr[i].set_title(anchor_name)
+        df = df.sort_values("timestamp")
+        gt_df = df[df.distance_type == "distance_tango"]
+
+        color_cycle = cycle(colors)
+        for distance_type in sorted(df.distance_type.unique()):
+            if distance_type == "distance_tango" or distance_type == "distance_gt":
+                continue
+            meas_df = df[df.distance_type == distance_type]
+
+            np.testing.assert_allclose(meas_df.timestamp.values, gt_df.timestamp.values)
+
+            errors = np.abs(meas_df.distance.values - gt_df.distance.values)
+            plot_cdf_raw(errors, ax=axarr[i], color=next(color_cycle), label=distance_type)
+            axarr[i].set_ylabel('')
+    axarr[i].legend(loc='lower left', bbox_to_anchor=[1.0, 0])
+    axarr[0].set_ylabel('cdf [-]')
+    axarr[4].set_ylabel('cdf [-]')
+    for j in range(i + 1, len(axarr)):
+        axarr[j].axis('off')
+    [axarr[i].set_xlabel('absolute distance error [m]') for i in range(4, len(axarr))]
+
+    if filename != '':
+        savefig(fig, filename)
+
+
+def plot_times(plot_df, filename=''):
+    colors = sns.color_palette('deep')
+
+    fig, axarr = plt.subplots(2, 4)
+    fig.set_size_inches(15, 10)
+    axarr = axarr.reshape((-1, ))
+    for i, (anchor_name, df) in enumerate(plot_df.sort_values("anchor_name").groupby("anchor_name")):
+        axarr[i].set_title(anchor_name)
+        df = df.sort_values("timestamp")
+
+        color_cycle = cycle(colors)
+        for distance_type in sorted(df.distance_type.unique()):
+            meas_df = df[df.distance_type == distance_type]
+            axarr[i].plot(
+                meas_df.timestamp.values, meas_df.distance.values, color=next(color_cycle), label=distance_type)
+    axarr[i].legend(loc='lower left', bbox_to_anchor=[1.0, 0])
+    for j in range(i + 1, len(axarr)):
+        axarr[j].axis('off')
+
+    if filename != '':
+        savefig(fig, filename)
+
+
+def plot_rssis(plot_df, filename=''):
+
+    fig, axarr = plt.subplots(2, 4, sharey=True, sharex=True)
+    fig.set_size_inches(15, 10)
+    axarr = axarr.reshape((-1, ))
+    for i, (anchor_name, df) in enumerate(plot_df.sort_values("anchor_name").groupby("anchor_name")):
+        axarr[i].set_title(anchor_name)
+        df = df.sort_values("timestamp")
+        gt_df = df[df.distance_type == "distance_tango"]
+
+        meas_df = df[df.distance_type == "distance_median_all"]
+
+        assert np.allclose(meas_df.timestamp.values, gt_df.timestamp.values)
+
+        errors = np.abs(meas_df.distance.values - gt_df.distance.values)
+        rssis = meas_df.rssi.values
+
+        axarr[i].scatter(rssis, errors, alpha=0.2)
+    for j in range(i + 1, len(axarr)):
+        axarr[j].axis('off')
+
+    if filename != '':
+        savefig(fig, filename)
+
+
+def plot_tango_components(data_df, filename=''):
+    fig = plt.figure()
+    data = data_df[data_df.system_id == "Tango"]
+    sns.scatterplot(data=data, x='timestamp', y='px', linewidth=0.0, label='x')
+    sns.scatterplot(data=data, x='timestamp', y='py', linewidth=0.0, label='y')
+    sns.scatterplot(data=data, x='timestamp', y='pz', linewidth=0.0, label='z')
+    plt.legend()
+
+    if filename != '':
+        savefig(fig, filename)
+
+
+def plot_tango_2d(data_df, anchors_df, filename=''):
+    tango_df = data_df.loc[data_df.system_id == "Tango"]
+
+    fig = plt.figure()
+    sns.scatterplot(data=tango_df, x='px', y='py', hue='timestamp', linewidth=0.0)
+    sns.scatterplot(data=anchors_df, x='px', y='py', hue='anchor_name', linewidth=0.0, style='system_id', legend=False)
+    plt.arrow(0, 0, 1, 0, color='red', head_width=0.2)
+    plt.arrow(0, 0, 0, 1, color='green', head_width=0.2)
+    delta = 0.1
+    for i, a in anchors_df.iterrows():
+        plt.annotate(a.anchor_name, (a.px + delta, a.py + delta))
+    plt.legend()
+    plt.axis('equal')
+    if filename != '':
+        savefig(fig, filename)
