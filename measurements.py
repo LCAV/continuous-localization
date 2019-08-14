@@ -145,7 +145,7 @@ def get_D(anchors, samples):
     ''' Create squared distance matrix with 
 
     :param samples: n_positions x dim trajectory points.
-    :return D: matrix of squared distances (n_positions + n_anchors) x (n_positions + n_anchors)
+    :return D: matrix of squared distances (n_positions + n_anchors) x (n_positions + n_anchors) #TODO why +?
 
     '''
     X = np.hstack([samples, anchors])
@@ -160,21 +160,20 @@ def get_D_topright(anchors, samples):
     return D[:n_positions, n_positions:]
 
 
-def get_measurements(traj, env, seed=1, n_samples=20, noise=None):
+def get_measurements(traj, env, seed=None, n_samples=20):
     """ Get measurements from setup.
 
     :param traj: Trajectory instance.
     :param env: Environment instance.
     :param n_samples: number of samples
-    :param seed: random seed. 
+    :param seed: random seed
 
     :return: basis and distance matrix
     """
     # get measurements
-    np.random.seed(seed)
+    if seed is not None:
+        np.random.seed(seed)
     basis = traj.get_basis(n_samples=n_samples)
     points = traj.get_sampling_points(basis=basis)
     D_topright = get_D_topright(env.anchors, points)
-    if noise is not None:
-        D_topright = add_noise(D_topright, noise)
     return basis, D_topright

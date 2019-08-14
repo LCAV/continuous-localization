@@ -22,7 +22,6 @@ class Trajectory(object):
     :member model: trajectory model,
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
-
     def __init__(self,
                  n_complexity=3,
                  dim=DIM,
@@ -272,6 +271,11 @@ n_samples)
             self.coeffs = self.coeffs * scale[:, None]
         return box_dims
 
+    def center(self):
+        """Center trajectory so that the center of mass is at (0,0)"""
+        points = self.get_continuous_points()
+        self.coeffs[:, 0] -= np.mean(points, axis=1)
+
     def get_times_from_distances(self,
                                  n_samples=None,
                                  step_distance=None,
@@ -476,12 +480,11 @@ n_samples)
         if plot:
             plt.figure()
             plt.plot(np.cumsum(ds_left), np.cumsum(ds_right), label="continous")
-            plt.scatter(
-                np.cumsum(distances_left),
-                np.cumsum(distances_right),
-                label="discretized ({})".format(len(distances_left)),
-                marker='x',
-                color='C1')
+            plt.scatter(np.cumsum(distances_left),
+                        np.cumsum(distances_right),
+                        label="discretized ({})".format(len(distances_left)),
+                        marker='x',
+                        color='C1')
             plt.legend()
             plt.show()
             print("minimum distance traveled by center: {:.4f}m".format(np.min((distances_left + distances_right) / 2)))

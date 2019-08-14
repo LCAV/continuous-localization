@@ -11,7 +11,7 @@ import logging
 
 from environment import Environment
 from global_variables import DIM
-from measurements import get_measurements, create_mask
+from measurements import get_measurements, create_mask, add_noise
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 from trajectory import Trajectory
 """
@@ -64,6 +64,12 @@ def run_simulation(parameters, outfolder=None, solver=None):
     else:
         raise TypeError('parameters needs to be folder name or dictionary.')
 
+    if 'noise_to_square' not in parameters:
+        parameters['noise_to_square'] = False
+
+    if 'measure_distances' not in parameters:
+        parameters['measure_distances'] = False
+
     complexities = parameters['complexities']
     anchors = parameters['anchors']
     positions = parameters['positions']
@@ -75,33 +81,28 @@ def run_simulation(parameters, outfolder=None, solver=None):
     successes = np.full(
         (len(complexities), len(anchors), len(positions), len(noise_sigmas), max(positions) * max(anchors)), np.nan)
     errors = np.full(successes.shape, np.nan)
+    relative_errors = np.full(successes.shape, np.nan)
+    absolute_errors = np.full(successes.shape, np.nan)
     num_not_solved = np.full(successes.shape, np.nan)
     num_not_accurate = np.full(successes.shape, np.nan)
+    squared_distances = []
 
     for c_idx, n_complexity in enumerate(complexities):
         print('n_complexity', n_complexity)
 
-        trajectory = Trajectory(n_complexity)
-
         for a_idx, n_anchors in enumerate(anchors):
             print('n_anchors', n_anchors)
-
-            environment = Environment(n_anchors)
 
             for p_idx, n_positions in enumerate(positions):
                 print('n_positions', n_positions)
 
-                trajectory.set_coeffs(seed=None)
-                environment.set_random_anchors(seed=None)
-
-                # remove some measurements
                 n_measurements = n_positions * n_anchors
-
                 for m_idx, n_missing in enumerate(range(n_measurements)):
+                    print('measurements idx', m_idx)
 
                     for noise_idx, noise_sigma in enumerate(noise_sigmas):
-
                         indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
+                        print("noise", noise_sigma)
 
                         # set all values to 0 since we have visited them.
                         if np.isnan(successes[indexes]):
@@ -110,35 +111,57 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             num_not_solved[indexes] = 0.0
                         if np.isnan(num_not_accurate[indexes]):
                             num_not_accurate[indexes] = 0.0
-                        if np.isnan(errors[indexes]):
-                            num_not_accurate[indexes] = 0.0
 
                         for n_it in range(n_its):
 
-                            basis, D_topright = get_measurements(
-                                trajectory, environment, n_samples=n_positions, noise=noise_sigma)
-                            mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
+                            trajectory = Trajectory(n_complexity)
+                            environment = Environment(n_anchors)
+                            trajectory.set_coeffs(seed=None)
+                            environment.set_random_anchors(seed=None)
 
+                            basis, D_topright = get_measurements(trajectory, environment, n_samples=n_positions)
+                            distances = np.sqrt(D_topright)
+                            D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
+                            mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
+                            if parameters['measure_distances']:
+                                squared_distances.extend(D_topright.flatten().tolist())
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
-                                if (solver == None) or (solver == semidefRelaxationNoiseless):
-                                    X = semidefRelaxationNoiseless(
-                                        D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
+                                if (solver is None) or (solver == semidefRelaxationNoiseless):
+                                    X = semidefRelaxationNoiseless(D_topright,
+                                                                   environment.anchors,
+                                                                   basis,
+                                                                   chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
                                     X = rightInverseOfConstraints(D_topright, environment.anchors, basis)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
                                     P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
+                                elif solver == 'weightedPseudoInverse':
+                                    P_hat = alternativePseudoInverse(D_topright,
+                                                                     environment.anchors,
+                                                                     basis,
+                                                                     weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
                                     )
 
-                                robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                # calculate reconstruction error with respect to distances
+                                trajectory_estimated = Trajectory(coeffs=P_hat)
+                                _, D_estimated = get_measurements(trajectory_estimated,
+                                                                  environment,
+                                                                  n_samples=n_positions)
+                                estimated_distances = np.sqrt(D_estimated)
 
-                                assert not np.any(np.abs(P_hat - trajectory.coeffs) > success_thresholds[noise_idx])
+                                robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                robust_add(relative_errors, indexes,
+                                           np.mean(np.abs(distances - estimated_distances) / (distances + 1e-10)))
+                                robust_add(absolute_errors, indexes, np.mean(np.abs(distances - estimated_distances)))
+
+                                assert not np.mean(np.abs(P_hat - trajectory.coeffs)) > success_thresholds[noise_idx]
 
                                 robust_increment(successes, indexes)
 
@@ -164,12 +187,16 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 robust_increment(num_not_accurate, indexes)
 
                             errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
+                            relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
 
     results = {
         'successes': successes,
         'num-not-solved': num_not_solved,
         'num-not-accurate': num_not_accurate,
-        'errors': errors
+        'errors': errors,
+        'relative-errors': relative_errors,
+        'absolute-errors': absolute_errors,
+        'distances': squared_distances
     }
 
     if outfolder is not None:
