@@ -114,6 +114,8 @@ fitting/
 experiments/robot_test/plots
 experiments/robot_test/*.pkl
 experiments/robot_test/*.json
+results/*/*.pdf
+results/get_distances/
 
 # images 
 *.png
