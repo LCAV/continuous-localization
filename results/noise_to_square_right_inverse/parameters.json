@@ -1,0 +1,37 @@
+{
+    "time": 1565801208.5680523,
+    "n_its": 500,
+    "anchors": [
+        8
+    ],
+    "noise_sigmas": [
+        1e-05,
+        0.0001,
+        0.001,
+        0.01,
+        0.1,
+        1.0,
+        10.0,
+        100.0
+    ],
+    "success_thresholds": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "complexities": [
+        5
+    ],
+    "noise_to_square": true,
+    "measure_distances": false,
+    "positions": [
+        20
+    ],
+    "solver": "alternativePseudoInverse",
+    "key": "noise_to_square_right_inverse"
+}
