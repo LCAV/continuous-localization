@@ -22,6 +22,7 @@ class Trajectory(object):
     :member model: trajectory model,
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
+
     def __init__(self,
                  n_complexity=3,
                  dim=DIM,
@@ -306,6 +307,8 @@ n_samples)
 
         time_differences = times[1:] - times[:-1]
         speeds = np.linalg.norm(velocities, axis=0)
+        # generate distances only in the "natural" time of the trajectory
+        # longer distances are generated on the fly
         cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
 
         if arbitrary_distances is not None:
@@ -326,6 +329,9 @@ n_samples)
         for next_distance in distances:
             while cumulative_distances[i] < next_distance:
                 i += 1
+                # if we run out of precomputed distances, generate new ones
+                # this requires basis at new times (starting where the previous times ended)
+                # and the new distances have to be added on top of the distance traveled so far
                 if i == len(cumulative_distances):
                     basis_prime = self.get_basis_prime(times=times + extra_time)
                     velocities = self.coeffs.dot(basis_prime)
@@ -490,11 +496,12 @@ n_samples)
         if plot:
             plt.figure()
             plt.plot(np.cumsum(ds_left), np.cumsum(ds_right), label="continous")
-            plt.scatter(np.cumsum(distances_left),
-                        np.cumsum(distances_right),
-                        label="discretized ({})".format(len(distances_left)),
-                        marker='x',
-                        color='C1')
+            plt.scatter(
+                np.cumsum(distances_left),
+                np.cumsum(distances_right),
+                label="discretized ({})".format(len(distances_left)),
+                marker='x',
+                color='C1')
             plt.legend()
             plt.show()
             print("minimum distance traveled by center: {:.4f}m".format(np.min((distances_left + distances_right) / 2)))
