@@ -427,3 +427,19 @@ def match_reference(reference, points):
     points = np.dot(rotation, points)
     points += reference_center[:, None]
     return points, rotation
+
+
+def read_correct_dataset(datafile, anchors_df, use_raw=False):
+
+    if use_raw:
+        data_df = read_dataset(datafile, anchors_df)
+        data_df = add_gt_raw(data_df, t_window=0.1)
+        data_df.loc[:, 'distance_tango'] = data_df.apply(lambda row: apply_distance_gt(row, anchors_df), axis=1)
+    else:
+        datafile_root = datafile.split('.')[0]
+        resample_name = datafile_root + '_resampled.pkl'
+        print('reading', resample_name)
+        data_df = pd.read_pickle(resample_name)
+        data_df = add_gt_resampled(data_df, anchors_df)
+        data_df.loc[:, "anchor_name"] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
+    return data_df

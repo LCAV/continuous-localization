@@ -22,6 +22,7 @@ class Trajectory(object):
     :member model: trajectory model,
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
+
     def __init__(self,
                  n_complexity=3,
                  dim=DIM,
@@ -306,12 +307,11 @@ n_samples)
 
         time_differences = times[1:] - times[:-1]
         speeds = np.linalg.norm(velocities, axis=0)
+        # generate distances only in the "natural" time of the trajectory
+        # longer distances are generated on the fly
         cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
 
         if arbitrary_distances is not None:
-            if np.max(arbitrary_distances) > cumulative_distances[-1]:
-                arbitrary_distances = arbitrary_distances[arbitrary_distances <= cumulative_distances[-1]]
-                print("Some requested distances exceed the maximum possible distance. Discarding to big distances.")
             distances = arbitrary_distances
         elif n_samples is not None:
             distances = np.arange(n_samples) * cumulative_distances[-1] / (n_samples - 1)
@@ -323,9 +323,23 @@ n_samples)
         new_times = []
         errors = []
         i = 0
+        extra_distance = cumulative_distances[-1]
+        extra_time = times[-1]
+
         for next_distance in distances:
-            while i < len(cumulative_distances) - 1 and (cumulative_distances[i] < next_distance):
-                i = i + 1
+            while cumulative_distances[i] < next_distance:
+                i += 1
+                # if we run out of precomputed distances, generate new ones
+                # this requires basis at new times (starting where the previous times ended)
+                # and the new distances have to be added on top of the distance traveled so far
+                if i == len(cumulative_distances):
+                    basis_prime = self.get_basis_prime(times=times + extra_time)
+                    velocities = self.coeffs.dot(basis_prime)
+                    speeds = np.linalg.norm(velocities, axis=0)
+                    cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences) + extra_distance
+                    i = 0
+                    extra_time += times[-1]
+                    extra_distance = cumulative_distances[-1]
             errors.append(cumulative_distances[i] - next_distance)
             new_times.append(times[i])
 
@@ -337,6 +351,8 @@ n_samples)
             plt.title("distance traveled")
             plt.legend()
             plt.show()
+
+        assert len(new_times) == len(distances)
 
         return np.array(new_times), distances, np.array(errors)
 
@@ -480,11 +496,12 @@ n_samples)
         if plot:
             plt.figure()
             plt.plot(np.cumsum(ds_left), np.cumsum(ds_right), label="continous")
-            plt.scatter(np.cumsum(distances_left),
-                        np.cumsum(distances_right),
-                        label="discretized ({})".format(len(distances_left)),
-                        marker='x',
-                        color='C1')
+            plt.scatter(
+                np.cumsum(distances_left),
+                np.cumsum(distances_right),
+                label="discretized ({})".format(len(distances_left)),
+                marker='x',
+                color='C1')
             plt.legend()
             plt.show()
             print("minimum distance traveled by center: {:.4f}m".format(np.min((distances_left + distances_right) / 2)))
