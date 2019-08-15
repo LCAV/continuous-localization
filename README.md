@@ -20,7 +20,7 @@ Install all standard python requirements using `pip`:
 
     pip install -r requirements.txt
 
-If are using `conda`, we recomend to add `conda-forge` channel and istall all requirements by:
+If are using `conda`, we recomend to add `conda-forge` channel and install all requirements by:
 
     conda config --add channels conda-forge
     conda install --file requirements.txt
