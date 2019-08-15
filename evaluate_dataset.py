@@ -383,22 +383,24 @@ def find_end_times(tango_df, plot=False):
 
 
 def find_calibration_data(tango_df, start_move_times, start_move_indices, max_length=0.01):
-    """ For each movement period, find the admissible calibration period before it. 
+    """ Find calibration and trajectory times.
     
     :param tango_df: dataset with position estimates.
     :param start_move_times, start_move_indices: output of find_start_times. 
     :param max_length: if the travelled length is above this threshold, we consider that we moved.
 
+    :return: dictionary with lists of calibration and trajectory times
+        - calibration_data = {
+         'calibration': [[t1_start, t1_end], [t2_start, t2_end], ...]
+         'trajectory': [[t1_start, t1_end], [t2_start, t2_end], ...]}
     """
+    calibration_data = {'calibration': [], 'trajectory': []}
+
     # Find calibration data
     # valid indices are close-to-zero length indices before the start times.
-    calibration_data = {}
-
-    # weird name inconsistency because in terms of calibration start_time is the end-time.
     for start_move_time, start_move_index in zip(start_move_times, start_move_indices):
-        print(start_move_time, start_move_index)
         num_min = 3  # min number of calibration samples
-        num_max = min(100, start_move_index)  # max number of calibration samples.
+        num_max = start_move_index  # max number of calibration samples.
         num_indices = 0
         for num_indices in range(num_min, num_max):
             if tango_df.iloc[start_move_index - num_indices].length > max_length:
@@ -406,7 +408,16 @@ def find_calibration_data(tango_df, start_move_times, start_move_indices, max_le
 
         start_calib_index = start_move_index - num_indices
         start_calib_time = tango_df.iloc[start_calib_index].timestamp
-        calibration_data[start_move_index] = [start_calib_time, start_move_time]
+
+        # make previous trajectory and at the next calibration start.
+        if len(calibration_data['trajectory']) > 0:
+            calibration_data['trajectory'][-1].append(start_calib_time)
+
+        calibration_data['calibration'].append([start_calib_time, start_move_time])
+        calibration_data['trajectory'].append([start_move_time])
+
+    # make last trajectory go until the end of dataset.
+    calibration_data['trajectory'][-1].append(-1)
     return calibration_data
 
 
