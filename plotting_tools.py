@@ -77,7 +77,6 @@ def plot_distances(data_df, anchors_df):
 
 
 def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=None):
-
     if error_types is None:
         error_types = ['absolute-errors', 'relative-errors', 'errors']
 
@@ -113,16 +112,16 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
         plt.show()
 
 
-def read_plot_df(name):
-    '''
+def read_plot_df(name, folder='experiments/robot_test/'):
+    """
     read dataset of given name.
 
     :param name: name of dataset, for example circle2_double.csv
     :return:
         - data_df: calibrated dataset, with columns [distance, distance_mean_0, ...]
         - plot_df: same dataset with one column distance, and one column distance_type.
-    '''
-    datafile = 'experiments/robot_test/' + name
+    """
+    datafile = folder + name
     datafile_name = datafile.split('.')[0]
     calibrate_name = datafile_name + '_calibrated.pkl'
 
@@ -200,7 +199,6 @@ def plot_times(plot_df, filename=''):
 
 
 def plot_rssis(plot_df, filename=''):
-
     fig, axarr = plt.subplots(2, 4, sharey=True, sharex=True)
     fig.set_size_inches(15, 10)
     axarr = axarr.reshape((-1, ))
