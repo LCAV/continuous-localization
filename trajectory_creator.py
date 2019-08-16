@@ -5,6 +5,7 @@ trajectory_creator.py: Creator of used trajectories.
 """
 
 from evaluate_dataset import convert_room_to_robot
+from global_variables import ROBOT_HEIGHT
 from trajectory import Trajectory
 import numpy as np
 
@@ -19,15 +20,24 @@ end_points_lines_room = [
 start_point_room = np.array([1.034, 5.410, 0.0]).reshape((3, 1))
 
 
-def get_trajectory(file_name):
+def get_trajectory(file_name, dim=2):
+    assert (dim == 2) or (dim == 3)
+
     if file_name == 'circle2_double.csv':
-        trajectory = Trajectory(dim=2, model='full_bandlimited')
-        trajectory.set_coeffs(coeffs=np.array([[0, 2, 0], [0, 0, 2]]))
+        trajectory = Trajectory(dim=dim, model='full_bandlimited')
+
+        if dim == 2:
+            trajectory.set_coeffs(coeffs=np.array([[0, 2, 0], [0, 0, 2]]))
+        else:
+            trajectory.set_coeffs(coeffs=np.array([[0, 2, 0], [0, 0, 2], [ROBOT_HEIGHT, 0, 0]]))
         return trajectory
 
     elif file_name == 'circle3_triple.csv':
-        trajectory = Trajectory(dim=2, model='full_bandlimited')
-        trajectory.set_coeffs(coeffs=np.array([[0.1, 1, 0], [1.5, 0, 1]]))
+        trajectory = Trajectory(dim=dim, model='full_bandlimited')
+        if dim == 2:
+            trajectory.set_coeffs(coeffs=np.array([[0.1, 1, 0], [1.5, 0, 1]]))
+        else:
+            trajectory.set_coeffs(coeffs=np.array([[0.1, 1, 0], [1.5, 0, 1], [ROBOT_HEIGHT, 0, 0]]))
         return trajectory
 
     elif file_name == 'clover.csv':
