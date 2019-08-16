@@ -3,6 +3,7 @@
 ## To check first
  - [ ] Project tango to 2D **before** calculating distances
  - [ ] Reconstruct linear trajectory
+ - [ ] Try different subsets of anchors and measurements
 
 ## To fix (and test)
  - [ ] Getting times from distances and the `TAU` (issue #36)
