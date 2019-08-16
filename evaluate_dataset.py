@@ -151,11 +151,18 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_t
         anchor_coord = np.array([row.px, row.py, row.pz]).reshape((1, 3))
         distances = np.linalg.norm(ground_truths[:, 1:] - anchor_coord, axis=1)
 
+        # calculate the tango distances in the plane.
+        vecs = ground_truths[:, 1:3] - anchor_coord[0, :2]
+        assert vecs.shape[0] == ground_truths.shape[0], vecs.shape
+        assert vecs.shape[1] == 2, vecs.shape
+        distances_2D = np.linalg.norm(vecs, axis=1)
+
         # make sure that the time ordering is correct.
         timestamps = new_df.loc[new_df.anchor_id == row.anchor_id, "timestamp"].values.astype(np.float32)
         assert np.allclose(timestamps, ground_truths[:, 0])
 
         new_df.loc[new_df.anchor_id == row.anchor_id, label] = distances
+        new_df.loc[new_df.anchor_id == row.anchor_id, label + '_2D'] = distances_2D
     return new_df
 
 
