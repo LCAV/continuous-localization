@@ -15,6 +15,12 @@ import numpy as np
 
 
 def verify_dimensions(D_topright, anchors, basis):
+    '''
+    :param D_topright: n_positions x n_anchors
+    :param anchors: dim x n_anchors
+    :param basis: n_complexity x n_positions
+
+    '''
     n_positions, n_anchors = D_topright.shape
     n_complexity = basis.shape[0]
     dim = anchors.shape[0]
@@ -23,8 +29,8 @@ def verify_dimensions(D_topright, anchors, basis):
         n_complexity, n_positions)
     assert n_anchors > dim, 'Cannot localize in {}D with only {} anchors.'.format(dim, n_anchors)
 
-    assert basis.shape[1] == n_positions
-    assert anchors.shape[1] == n_anchors
+    assert basis.shape[1] == n_positions, basis.shape
+    assert anchors.shape[1] == n_anchors, anchors.shape
 
 
 def get_constraints_D(D_topright, anchors, basis, vectorized=False, A=None, b=None):
@@ -172,6 +178,8 @@ def get_constraints_matrix(D_topright, anchors, basis):
 
 def get_C_constraints(D_topright, anchors, basis, weighted=False):
     """ Return constraints TA, TB, and vector b as defined in paper.
+
+    :param D_topright: matrix of square distances, of shape n_positions x n_anchors.
 
     :param weighted: bool, if true return measurements and constraints divided by the weight depended on the distance,
     in order to normalise errors. Makes sense only when errors are added to distances
