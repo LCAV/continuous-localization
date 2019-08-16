@@ -4,13 +4,14 @@
 import common
 
 import unittest
+import os
 
 from simulation import run_simulation
 
 
 class TestSimulation(unittest.TestCase):
-    def test_simulations(self):
-        parameters = {
+    def setUp(self):
+        self.parameters = {
             'key': 'test',
             'n_its': 2,
             'time': 'undefined',
@@ -20,9 +21,14 @@ class TestSimulation(unittest.TestCase):
             'noise_sigmas': [0],
             'success_thresholds': [0]
         }
-        outfolder = 'results/{}/'.format(parameters['key'])
+        self.outfolder = 'results/{}/'.format(self.parameters['key'])
+        parameters_file = self.outfolder + "/parameters.json"
+        if os.path.exists(parameters_file):
+            os.remove(parameters_file)
+
+    def test_simulations(self):
         try:
-            run_simulation(parameters, outfolder, solver="rightInverseOfConstraints")
+            run_simulation(self.parameters, self.outfolder, solver="rightInverseOfConstraints")
         except RuntimeError as e:
             self.fail("run_simulation raised exception: " + str(e))
 
