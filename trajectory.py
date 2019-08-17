@@ -10,7 +10,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON, MM
+from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
 
 
 class Trajectory(object):
@@ -27,11 +27,23 @@ class Trajectory(object):
                  n_complexity=3,
                  dim=DIM,
                  model='bandlimited',
-                 tau=TAU,
+                 period=TAU,
                  full_period=False,
                  seed=None,
                  coeffs=None,
                  name=None):
+        """
+        :param n_complexity: complexity of trajectory.
+        :param dim: dimension of the trajectory.
+        :param model: trajectory model type (either bandlimited, full_bandlimited (both sines and cosines) or
+        polynomial).
+        :param period: period in second for bandlimited trajectories.
+        :param full_period: if true, the default time of trajectory is 0 to period, else it is only a 0 to 0.5 of period
+        :param seed: random seed to generate coefficients
+        :param coeffs: array of coefficients of shape (dim x n_complexity). If it is given, the dimensions and
+        complexity are inferred form it.
+        :param name: name of trajectory, for plotting
+        """
         if coeffs is not None:
             dim, n_complexity = coeffs.shape
         self.dim = dim
@@ -40,13 +52,14 @@ class Trajectory(object):
         self.model = model
         if self.model == 'full_bandlimited':
             full_period = True
-        self.params = {'tau': tau, 'full_period': full_period}
+        self.period = period
+        self.params = {'full_period': full_period}
         if name is not None:
             self.params["name"] = name
         self.set_coeffs(seed=seed, coeffs=coeffs)
 
     def copy(self):
-        new = Trajectory(self.n_complexity, self.dim, self.model, self.params['tau'])
+        new = Trajectory(self.n_complexity, self.dim, self.model, self.period)
         new.set_coeffs(coeffs=self.coeffs)
         return new
 
@@ -56,7 +69,7 @@ class Trajectory(object):
             times = np.linspace(0, TMAX, n_samples)
         elif self.model == 'bandlimited' or self.model == 'full_bandlimited':
             part = 1.0 if self.params['full_period'] else 0.5
-            times = np.linspace(0, part * self.params['tau'], n_samples)
+            times = np.linspace(0, part * self.period, n_samples)
         else:
             raise NotImplementedError(self.model)
 
@@ -84,7 +97,7 @@ class Trajectory(object):
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
-            return np.cos(2 * np.pi * k * n / self.params['tau'])
+            return np.cos(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             return np.power(n, k)
         elif self.model == 'full_bandlimited':
@@ -92,8 +105,8 @@ class Trajectory(object):
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = np.cos(2 * np.pi * k * n / self.params['tau'])
-            basis[1::2] = np.sin(2 * np.pi * k[1:] * n / self.params['tau'])
+            basis[::2] = np.cos(2 * np.pi * k * n / self.period)
+            basis[1::2] = np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
@@ -108,7 +121,7 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -2 * np.pi * k / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
+            return -2 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
             return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
@@ -117,8 +130,8 @@ n_samples)
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = -2 * np.pi * k / self.params['tau'] * np.sin(2 * np.pi * k * n / self.params['tau'])
-            basis[1::2] = 2 * np.pi * k[1:] / self.params['tau'] * np.cos(2 * np.pi * k[1:] * n / self.params['tau'])
+            basis[::2] = -2 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
+            basis[1::2] = 2 * np.pi * k[1:] / self.period * np.cos(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
@@ -133,7 +146,7 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -(2 * np.pi * k / self.params['tau'])**2 * np.cos(2 * np.pi * k * n / self.params['tau'])
+            return -(2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
             return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
@@ -142,9 +155,8 @@ n_samples)
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = -(2 * np.pi * k / self.params['tau'])**2 * np.cos(2 * np.pi * k * n / self.params['tau'])
-            basis[1::2] = -(2 * np.pi * k[1:] / self.params['tau'])**2 * np.sin(
-                2 * np.pi * k[1:] * n / self.params['tau'])
+            basis[::2] = -(2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
+            basis[1::2] = -(2 * np.pi * k[1:] / self.period)**2 * np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
@@ -164,7 +176,7 @@ n_samples)
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
-    def get_sampling_points(self, basis=None, seed=None):
+    def get_sampling_points(self, basis=None):
         """ Get points where we get measurements.
         
         """
@@ -187,16 +199,17 @@ n_samples)
 
         trajectory_cont = self.get_continuous_points()
 
+        cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
+        plt.plot(*trajectory_cont, **cont_kwargs)
+        if "name" in self.params:
+            plt.title(self.params["name"])
+
         if basis is not None:
             trajectory = self.get_sampling_points(basis=basis)
 
             if mask is not None:
                 trajectory = trajectory[:, np.any(mask != 0, axis=1)]
 
-        cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
-        plt.plot(*trajectory_cont, **cont_kwargs)
-
-        if basis is not None:
             # avoid having two labels of same thing.
             pop_labels = ['label', 'linestyle']
             for pop_label in pop_labels:
@@ -280,7 +293,7 @@ n_samples)
     def get_times_from_distances(self,
                                  n_samples=None,
                                  step_distance=None,
-                                 time_steps=10000,
+                                 time_steps=1000000,
                                  plot=False,
                                  arbitrary_distances=None):
         """Calculate numerically times equivalent to given distances travelled.
@@ -309,9 +322,11 @@ n_samples)
         speeds = np.linalg.norm(velocities, axis=0)
         # generate distances only in the "natural" time of the trajectory
         # longer distances are generated on the fly
-        cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
+        cumulative_distances = np.concatenate([[0], np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)])
 
         if arbitrary_distances is not None:
+            if any(d < 0 for d in arbitrary_distances):
+                raise ValueError("Provided distances have to be positive")
             distances = arbitrary_distances
         elif n_samples is not None:
             distances = np.arange(n_samples) * cumulative_distances[-1] / (n_samples - 1)
@@ -323,8 +338,8 @@ n_samples)
         new_times = []
         errors = []
         i = 0
-        extra_distance = cumulative_distances[-1]
-        extra_time = times[-1]
+        extra_distance = 0
+        extra_time = 0
 
         for next_distance in distances:
             while cumulative_distances[i] < next_distance:
@@ -333,15 +348,15 @@ n_samples)
                 # this requires basis at new times (starting where the previous times ended)
                 # and the new distances have to be added on top of the distance traveled so far
                 if i == len(cumulative_distances):
+                    extra_time += times[-1]
+                    extra_distance += cumulative_distances[-1]
                     basis_prime = self.get_basis_prime(times=times + extra_time)
                     velocities = self.coeffs.dot(basis_prime)
                     speeds = np.linalg.norm(velocities, axis=0)
                     cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences) + extra_distance
                     i = 0
-                    extra_time += times[-1]
-                    extra_distance = cumulative_distances[-1]
             errors.append(cumulative_distances[i] - next_distance)
-            new_times.append(times[i])
+            new_times.append(extra_time + times[i])
 
         if plot:
             plt.figure()
@@ -487,7 +502,7 @@ n_samples)
                 current_right = ds_right[idx]
         distances_right.append(current_right)
         distances_left.append(current_left)
-        new_times.append(times[idx])
+        new_times.append(times[len(curvature) - 1])
 
         distances_left = np.array(distances_left)
         distances_right = np.array(distances_right)
