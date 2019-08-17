@@ -176,7 +176,7 @@ n_samples)
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
-    def get_sampling_points(self, basis=None):
+    def get_sampling_points(self, times=None, basis=None):
         """ Get points where we get measurements.
         
         """
@@ -360,21 +360,6 @@ n_samples)
         times = self.get_times(n_samples=time_steps)
         basis_prime = self.get_basis_prime(times=times)
         velocities = self.coeffs.dot(basis_prime)
-""" not used since Michaline fixed it. differently.
-        # find approximate maximum time from maximum distance.
-        if arbitrary_distances is not None:
-            min_velocity = np.min(np.abs(velocities))
-            max_time = arbitrary_distances[-1] / (min_velocity + 1e-3)
-            print('get_times_from_distances: setting max_time to {} instead of {}'.format(max_time, np.max(times)))
-
-            # since the time range can change a lot it is better to keep the time delta
-            # instead of number of times constant
-            timestep = np.max([times[1] - times[0], 1e-4])
-            print('using timestep', timestep)
-            times = np.arange(max_time, step=timestep)
-            basis_prime = self.get_basis_prime(times=times)
-            velocities = self.coeffs.dot(basis_prime)
-"""
 
         time_differences = times[1:] - times[:-1]
         speeds = np.linalg.norm(velocities, axis=0)
