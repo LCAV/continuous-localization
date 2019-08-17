@@ -37,7 +37,7 @@ def solve_for_times(times, R, C, trajectory):
 def fit_trajectory(trajectory, R, max_iter=10):
     N = R.shape[1]
     print('N', N)
-    times = np.linspace(0, trajectory.params['tau'] / 3.0, N)
+    times = np.linspace(0, trajectory.period / 3.0, N)
 
     K = trajectory.n_complexity
     d = trajectory.dim
