@@ -300,9 +300,9 @@ def find_times(tango_df):
     l = tango_df.loc[i, "length"]
     moving = (l >= threshold)
     if moving:
-        movement_times.append([i, -1])
+        movement_times.append([i, np.inf])
     else:
-        calibration_times.append([i, -1])
+        calibration_times.append([i, np.inf])
 
     for i in range(1, len(times)):
         l = tango_df.loc[i, "length"]
@@ -321,7 +321,7 @@ def find_times(tango_df):
         elif (not moving) and (l >= threshold):
             # started moving.
             calibration_times[-1][1] = i - 1
-            movement_times.append([i, -1])
+            movement_times.append([i, np.inf])
             moving = True
     return movement_times, calibration_times
 
@@ -424,7 +424,7 @@ def find_calibration_data(tango_df, start_move_times, start_move_indices, max_le
         calibration_data['trajectory'].append([start_move_time])
 
     # make last trajectory go until the end of dataset.
-    calibration_data['trajectory'][-1].append(-1)
+    calibration_data['trajectory'][-1].append(np.inf)
     return calibration_data
 
 

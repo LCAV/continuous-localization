@@ -157,6 +157,8 @@ n_samples)
             self.coeffs = dimension * \
                 np.random.rand(self.dim, self.n_complexity)
         else:
+            assert coeffs.shape[0] == self.dim
+            assert coeffs.shape[1] == self.n_complexity
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
@@ -164,19 +166,26 @@ n_samples)
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
-    def get_sampling_points(self, basis=None, seed=None):
+    # TODO seed here is never used.
+    def get_sampling_points(self, basis=None, seed=None, times=None):
         """ Get points where we get measurements.
         
         """
+        if basis is None:
+            basis = self.get_basis(times=times)
         points = self.coeffs @ basis
         return points
 
-    def get_continuous_points(self):
-        basis_cont = self.get_basis(n_samples=1000)
+    def get_continuous_points(self, times=None):
+        if times is None:
+            basis_cont = self.get_basis(n_samples=1000)
+        else:
+            times_cont = np.linspace(times[0], times[-1], 1000)
+            basis_cont = self.get_basis(times=times)
         trajectory_cont = self.get_sampling_points(basis=basis_cont)
         return trajectory_cont
 
-    def plot(self, basis=None, mask=None, **kwargs):
+    def plot(self, basis=None, mask=None, times=None, **kwargs):
         """ Plot continuous and sampled version.
 
         :param basis: basis of sampling points. Only plot continuous version if not given.
@@ -184,25 +193,33 @@ n_samples)
         :param kwargs: any additional kwargs passed to plt.scatter()
 
         """
+        if basis is not None:
+            print(
+                'Warning: it is now preferable to pass times instead of basis to the plotting function.  The basis argument is ignored when plotting the continuous trajectory.'
+            )
 
-        trajectory_cont = self.get_continuous_points()
+        trajectory_cont = self.get_continuous_points(times=times)
+
+        if times is not None:
+            if basis is not None:
+                print('Warning: overwriting basis with times.')
+            basis = self.get_basis(times=times)
 
         if basis is not None:
             trajectory = self.get_sampling_points(basis=basis)
-
             if mask is not None:
                 trajectory = trajectory[:, np.any(mask != 0, axis=1)]
 
         cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
         plt.plot(*trajectory_cont[:2], **cont_kwargs)
 
-        if basis is not None:
+        if (basis is not None):
             # avoid having two labels of same thing.
             pop_labels = ['label', 'linestyle']
             for pop_label in pop_labels:
                 if pop_label in kwargs.keys():
                     kwargs.pop(pop_label)
-                    plt.scatter(*trajectory[:2], **kwargs)
+            plt.scatter(*trajectory[:2], **kwargs)
         return plt.gca()
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
@@ -278,6 +295,33 @@ n_samples)
         points = self.get_continuous_points()
         self.coeffs[:, 0] -= np.mean(points, axis=1)
 
+    def get_distances_from_times(self, times, time_steps=1000):
+        ''' Integrate trajectory path length between given times. 
+
+        :param times: list of times to evaluate.
+        :param time_steps: number of time steps to use for integration between each pair of times.
+        :return: List of distances travelled between two time steps. Non-cumulative.
+        '''
+        distances = []
+        for t0, t1 in zip(times[:-1], times[1:]):
+            # Calculate the travelled distance between two times numerically.
+            # Always use the same number of intermediate times between two times.
+            # Could also fix the minimum timestep.
+            mid_times = np.linspace(t0, t1, time_steps)
+            basis_prime = self.get_basis_prime(times=mid_times)
+            velocities = self.coeffs.dot(basis_prime)
+
+            time_differences = mid_times[1:] - mid_times[:-1]
+            speeds = np.linalg.norm(velocities, axis=0)
+
+            # calculate travelled distances for all mid-points.
+            cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
+
+            # the total travelled distance between two time steps corresponds to last
+            # element.
+            distances.append(cumulative_distances[-1])
+        return distances
+
     def get_times_from_distances(self,
                                  n_samples=None,
                                  step_distance=None,
@@ -302,9 +346,24 @@ n_samples)
             distances at travelled in those times
             and approximation errors
         """
+
         times = self.get_times(n_samples=time_steps)
         basis_prime = self.get_basis_prime(times=times)
         velocities = self.coeffs.dot(basis_prime)
+
+        # find approximate maximum time from maximum distance.
+        if arbitrary_distances is not None:
+            min_velocity = np.min(np.abs(velocities))
+            max_time = arbitrary_distances[-1] / (min_velocity + 1e-3)
+            print('get_times_from_distances: setting max_time to {} instead of {}'.format(max_time, np.max(times)))
+
+            # since the time range can change a lot it is better to keep the time delta
+            # instead of number of times constant
+            timestep = np.max([times[1] - times[0], 1e-4])
+            print('using timestep', timestep)
+            times = np.arange(max_time, step=timestep)
+            basis_prime = self.get_basis_prime(times=times)
+            velocities = self.coeffs.dot(basis_prime)
 
         time_differences = times[1:] - times[:-1]
         speeds = np.linalg.norm(velocities, axis=0)
@@ -321,8 +380,8 @@ n_samples)
         else:
             raise ValueError("Either n_samples or step_distance or arbitrary distances has to be provided")
 
-        new_times = []
-        errors = []
+        new_times = [0]
+        errors = [0]
         i = 0
         extra_distance = cumulative_distances[-1]
         extra_time = times[-1]
@@ -341,6 +400,8 @@ n_samples)
                     i = 0
                     extra_time += times[-1]
                     extra_distance = cumulative_distances[-1]
+
+                    print('adding new distances.', extra_distance, extra_time)
             errors.append(cumulative_distances[i] - next_distance)
             new_times.append(times[i])
 
@@ -353,7 +414,7 @@ n_samples)
             plt.legend()
             plt.show()
 
-        assert len(new_times) == len(distances)
+        assert len(new_times) - 1 == len(distances)
 
         return np.array(new_times), distances, np.array(errors)
 
@@ -418,7 +479,6 @@ n_samples)
         return radii, tangents, curvatures
 
     def get_left_and_right_points(self, times, width=ROBOT_WIDTH, ax=None):
-
         basis = self.get_basis(times=times)
         sample_points = self.get_sampling_points(basis=basis)
         tangents, normal_vectors, _ = self.get_local_frame(times)
