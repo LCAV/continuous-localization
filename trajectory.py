@@ -214,8 +214,11 @@ n_samples)
                 print('Warning: overwriting basis with times.')
             basis = self.get_basis(times=times)
 
-        cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
-        plt.plot(*trajectory_cont[:2], **cont_kwargs)
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker' and k != "ax")}
+        if "ax" in kwargs:
+            kwargs["ax"].plot(*trajectory_cont[:2], **cont_kwargs)
+        else:
+            plt.plot(*trajectory_cont[:2], **cont_kwargs)
         if "name" in self.params:
             plt.title(self.params["name"])
 
