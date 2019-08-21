@@ -20,10 +20,10 @@ end_points_lines_room = {
 start_point_room = np.array([1.034, 5.410, 0.0]).reshape((3, 1))
 
 
-def get_trajectory(file_name, dim=2):
+def get_trajectory(filename, dim=2):
     assert (dim == 2) or (dim == 3)
 
-    if file_name == 'circle2_double.csv':
+    if 'circle2_double' in filename:
         trajectory = Trajectory(dim=dim, model='full_bandlimited')
 
         if dim == 2:
@@ -32,17 +32,7 @@ def get_trajectory(file_name, dim=2):
             trajectory.set_coeffs(coeffs=np.array([[0, 2, 0], [0, 0, 2], [ROBOT_HEIGHT, 0, 0]]))
         return trajectory
 
-    if file_name == 'circle2_test.csv':
-        trajectory = Trajectory(dim=dim, model='full_bandlimited')
-
-        if dim == 2:
-            trajectory.n_complexity = 5
-            trajectory.set_coeffs(coeffs=np.array([[0, 2, 0, 0, 0], [0, 0, 2, 0, 0]]))
-        else:
-            trajectory.set_coeffs(coeffs=np.array([[0, 2, 0], [0, 0, 2], [ROBOT_HEIGHT, 0, 0]]))
-        return trajectory
-
-    elif file_name == 'circle3_triple.csv':
+    elif 'circle3_triple' in filename:
         trajectory = Trajectory(dim=dim, model='full_bandlimited')
         if dim == 2:
             trajectory.set_coeffs(coeffs=np.array([[0.1, 1, 0], [1.5, 0, 1]]))
@@ -50,12 +40,12 @@ def get_trajectory(file_name, dim=2):
             trajectory.set_coeffs(coeffs=np.array([[0.1, 1, 0], [1.5, 0, 1], [ROBOT_HEIGHT, 0, 0]]))
         return trajectory
 
-    elif file_name == 'clover.csv':
+    elif 'clover.csv' in filename:
         trajectory = Trajectory(dim=2, model='full_bandlimited', n_complexity=5)
         trajectory.set_coeffs(seed=1)
         return trajectory
 
-    elif 'straight' in file_name:  #straight1.csv to straight6.csv
+    elif 'straight' in filename:  #straight1.csv to straight6.csv
         idx = file_name[8]
         end_point_room = np.array(end_points_lines_room[idx]).reshape((3, 1))
         end_point = convert_room_to_robot(end_point_room)
