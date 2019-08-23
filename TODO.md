@@ -1,12 +1,12 @@
 # General TODO list
 
 ## To check first
- - [ ] Project tango to 2D **before** calculating distances
- - [ ] Reconstruct linear trajectory
- - [ ] Try different subsets of anchors and measurements
+ - [x] Project tango to 2D **before** calculating distances
+ - [x] Reconstruct linear trajectory
+ - [x] Try different subsets of anchors and measurements
 
 ## To fix (and test)
- - [ ] Getting times from distances and the `TAU` (issue #36)
+ - [x] Getting times from distances and the `TAU` (issue #36)
 
 ## To think about when doing experiments
 
