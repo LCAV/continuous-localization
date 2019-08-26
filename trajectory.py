@@ -360,7 +360,7 @@ n_samples)
 
         if plot:
             plt.figure()
-            plt.plot(times[1:], cumulative_distances, label="smooth")
+            plt.plot(times, cumulative_distances, label="smooth")
             plt.plot(new_times, distances, "*", label="requested distances")
             plt.xlabel("time")
             plt.title("distance traveled")
