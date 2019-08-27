@@ -5,21 +5,21 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 from plotting_tools import make_dirs_safe
 
-# TODO change the diemsions so the matrices dont need to be transposed
-
 
 def get_anchors(n_anchors, n_dimensions=2, check=True):
     full_rank = False
     extension = np.ones((1, n_anchors))
-    anchors = np.zeros((n_dimensions, n_anchors))
+    anchors = np.random.rand(n_dimensions, n_anchors)
     if check:
         while not full_rank:
-            # TODO we would ideally like to check if any subset of anchors of the size
-            #  n_dimensions+1 is full rank, but it probably does not matter in the end
-            anchors = np.random.rand(n_dimensions, n_anchors)
+            # check if the extended anchors are linearly independent
+            # we would ideally like to check if any subset of anchors
+            # of the size n_dimensions + 1 is full rank
             extended = np.concatenate([anchors, extension])
             if np.linalg.matrix_rank(extended) > n_dimensions:
                 full_rank = True
+            else:
+                anchors = np.random.rand(n_dimensions, n_anchors)
     return anchors
 
 
@@ -49,7 +49,7 @@ def get_left_submatrix(idx_a, idx_f, anchors, frame):
     f_vect = [frame[:, i] for i in idx_f]
     a_extended = [np.concatenate([anchors[:, a], [1]]) for a in idx_a]
     matrices = [(a[:, None] @ f[None, :]).flatten() for (f, a) in zip(f_vect, a_extended)]
-    return np.array(matrices).T
+    return np.array(matrices)
 
 
 def get_reduced_right_submatrix(idx_f, frame):
@@ -70,11 +70,13 @@ def get_reduced_right_submatrix(idx_f, frame):
     extended_frame = np.cos(Ks @ Ns.T * np.pi / n_positions)
     vectors = [extended_frame[:, idx] for idx in idx_f]
     matrix = np.array(vectors)
-    return np.array(matrix).T
+    return np.array(matrix)
 
 
 def get_full_matrix(idx_a, idx_f, anchors, frame):
-    return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame), get_reduced_right_submatrix(idx_f, frame)])
+    return np.concatenate(
+        [get_left_submatrix(idx_a, idx_f, anchors, frame),
+         get_reduced_right_submatrix(idx_f, frame)], axis=1)
 
 
 def random_indexes(n_anchors, n_positions, n_measurements):
@@ -341,6 +343,7 @@ def left_independence_estimation(n_constraints, min_anchors, poisson_mean, repet
 
 
 def matrix_rank_experiment(params):
+    """ TODO (michalina) document """
 
     n_measurements = 0
     n_positions = 0

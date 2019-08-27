@@ -30,7 +30,7 @@ class TestGetLeftSubmatrix(unittest.TestCase):
         ind_b = ind_a
         anchors = get_anchors(n_anchors)
         frame = get_frame(n_constrains, n_positions)
-        self.assertEqual(((anchors.shape[0] + 1) * n_constrains, len(ind_a)),
+        self.assertEqual((len(ind_a), (anchors.shape[0] + 1) * n_constrains),
                          get_left_submatrix(ind_a, ind_b, anchors, frame).shape)
 
 
@@ -40,7 +40,7 @@ class TestGetRightSubmatrix(unittest.TestCase):
         n_positions = 13
         idx_f = [0] * 8
         frame = get_frame(n_constrains, n_positions)
-        self.assertEqual((n_constrains - 1, len(idx_f)), get_reduced_right_submatrix(idx_f, frame).shape)
+        self.assertEqual((len(idx_f), n_constrains - 1), get_reduced_right_submatrix(idx_f, frame).shape)
 
 
 class TestRandomIndexes(unittest.TestCase):
