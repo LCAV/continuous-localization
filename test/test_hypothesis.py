@@ -3,9 +3,10 @@
 
 import common
 
+from collections import Counter
 import unittest
+
 from hypothesis import *
-from scipy import special
 
 
 class TestGetAnchors(unittest.TestCase):
@@ -45,9 +46,57 @@ class TestGetRightSubmatrix(unittest.TestCase):
 
 class TestRandomIndexes(unittest.TestCase):
     def test_type(self):
-        a, b = random_indexes(3, 2, 1)
-        self.assertTrue(isinstance(a, list))
-        self.assertTrue(isinstance(b, list))
+        idx_a, idx_f = random_indexes(3, 2, n_measurements=1)
+        self.assertTrue(isinstance(idx_a, list))
+        self.assertTrue(isinstance(idx_f, list))
+        self.assertEqual(1, len(idx_a))
+        self.assertEqual(1, len(idx_f))
+
+    def test_one_per_time(self):
+        idx_a, idx_f = random_indexes(3, 5, n_measurements=4, one_per_time=True)
+        self.assertTrue(all(count < 2 for count in Counter(idx_f).values()))
+        self.assertTrue(all(count < 3 for count in Counter(idx_a).keys()))
+
+    def test_many_per_time(self):
+        np.random.seed(0)
+        idx_a, idx_f = random_indexes(3, 5, n_measurements=4)
+        self.assertEqual(2, Counter(idx_f)[1])
+
+
+class TestMatrixRankExperiments(unittest.TestCase):
+    def setUp(self) -> None:
+        np.random.seed(0)
+
+    def test_left_single_run(self):
+        experiment_params = {
+            "n_dimensions": 1,
+            "n_constraints": 2,
+            "fixed_n_measurements": 0,
+            "max_positions": 5,
+            "n_repetitions": 1,
+            "full_matrix": False,
+            "n_anchors_list": [1],
+        }
+        ranks, params = matrix_rank_experiment(experiment_params)
+        self.assertEqual((3, 1, 1), ranks.shape)
+        self.assertTrue(([4, 4, 3] == ranks[:, 0, 0]).all())
+        self.assertEqual(2, params["n_anchors_list"][0])
+        self.assertEqual(4, params["fixed_n_measurements"])
+
+    def test_full_single_run(self):
+        experiment_params = {
+            "n_dimensions": 1,
+            "n_constraints": 2,
+            "fixed_n_measurements": 0,
+            "max_positions": 4,
+            "n_repetitions": 1,
+            "full_matrix": True,
+            "n_anchors_list": [1],
+        }
+        ranks, params = matrix_rank_experiment(experiment_params)
+        self.assertEqual((1, 1, 1), ranks.shape)
+        self.assertEqual(5, ranks[0, 0, 0])
+        self.assertEqual(5, params["fixed_n_measurements"])
 
 
 class TestPartitions(unittest.TestCase):
