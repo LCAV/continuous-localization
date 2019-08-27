@@ -133,11 +133,11 @@ class TestBounds(unittest.TestCase):
         n_dimensions = 2
         n_constrains = 5
         n_positions = 20
-        n_anchors = 5
-        inefficient = probability_upper_bound(n_dimensions, n_constrains, n_positions, n_anchors)
-        efficient = probability_upper_bound_any_measurements(
-            n_dimensions, n_constrains, n_positions, n_anchors, n_measurements=(n_dimensions + 1) * n_constrains)
-        self.assertEqual(efficient, inefficient)
+        for n_anchors in range(3, 6):
+            inefficient = probability_upper_bound(n_dimensions, n_constrains, n_positions, n_anchors)
+            efficient = probability_upper_bound_any_measurements(
+                n_dimensions, n_constrains, n_positions, n_anchors, n_measurements=(n_dimensions + 1) * n_constrains)
+            self.assertEqual(efficient, inefficient)
 
     def test_limit_condition(self):
         part = (5, 5, 4, 1, 0)

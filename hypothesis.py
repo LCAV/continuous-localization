@@ -232,7 +232,7 @@ def probability_upper_bound_any_measurements(n_dimensions,
     :param position_wise: if True, calculates the upper bound based on partitions of positions and not anchors.
     The equations are the same for both cases, but for readability purposes the naming convention for partition of
     anchors is used rather than abstract notation
-    :param n_measurements: TODO
+    :param n_measurements: total number of measurements taken
     :return:
         float: upper bound on probability of the left hand side of the matrix being full rank
     """
@@ -400,7 +400,9 @@ def matrix_rank_experiment(params):
     params["anchor_condition"] = anchor_condition
     params["frame_condition"] = frame_condition
     params["wrong_matrices"] = wrong_matrices
-
+    params["max_rank"] = (params["n_dimensions"] + 1) * params["n_constraints"]
+    if params["full_matrix"]:
+        params["max_rank"] += params["n_constraints"] - 1
     return ranks, params
 
 
@@ -413,11 +415,8 @@ def plot_results(
 
     key = "_d{}_c{}_{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["second_key"],
                                       params["full_matrix"])
-    max_rank = (params["n_dimensions"] + 1) * params["n_constraints"]
 
-    if params["full_matrix"]:
-        max_rank += params["n_constraints"] - 1
-    params["max_rank"] = max_rank
+    max_rank = params["max_rank"]
     n_repetitions = ranks.shape[2]
     x = np.array(params["second_list"])
     if "fixed_n_measurements" not in params:
