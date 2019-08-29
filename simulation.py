@@ -203,7 +203,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
             os.makedirs(outfolder)
 
         save_params(outfolder + 'parameters.json', **parameters)
-        save_results(outfolder + 'result_{}_{}.csv', results)
+        save_results(outfolder + 'result_{}_{}', results)
     else:
         return results
 

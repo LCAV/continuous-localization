@@ -190,7 +190,7 @@ n_samples)
             basis_cont = self.get_basis(n_samples=1000)
         else:
             times_cont = np.linspace(times[0], times[-1], 1000)
-            basis_cont = self.get_basis(times=times)
+            basis_cont = self.get_basis(times=times_cont)
         trajectory_cont = self.get_sampling_points(basis=basis_cont)
         return trajectory_cont
 
