@@ -428,16 +428,37 @@ def match_reference(reference, points):
     :param reference: 2D array of size (dimension, number of points), that does not change
     :param points: 2D array of points to rotate, the same size as reference
     :return:
-        a pair (rotated points, rotation matrix)
+        a pair (rotated points, (rotation matrix, rotation center, reference center of mass)))
     """
     assert reference.shape == points.shape
     reference_center = np.mean(reference, axis=1)
-    reference = reference - reference_center[:, None]
-    points = points - np.mean(points, axis=1)[:, None]
+    reference -= reference_center[:, None]
+    rotation_center = np.mean(points, axis=1)[:, None]
+    points -= rotation_center[:, None]
     rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
-    points = np.dot(rotation, points)
+    points = rotation @ points
     points += reference_center[:, None]
-    return points, rotation
+    return points, (rotation, rotation_center, reference_center)
+
+
+def apply_rotation_and_translations(points, rotation, rotation_center, reference_center):
+    """
+    Rotate and translate points with the transformation returned by match_reference
+    Can be applied to arbitrary number of points.
+
+    :param points: points to rotate, matrix of size (dimension, number of points), points to rotate
+    :param rotation: rotation matrix of size (dimension, dimension)
+    :param rotation_center: rotation center, vector of length dimension
+    :param reference_center: center of mas of the reference frame, where the points will be shifted,
+    vector of length dimension
+
+    :return:
+        rotated points
+    """
+    points -= rotation_center[:, None]
+    points = rotation @ points
+    points += reference_center[:, None]
+    return points
 
 
 def read_correct_dataset(datafile, anchors_df, use_raw=False):
