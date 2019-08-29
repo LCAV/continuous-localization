@@ -1,0 +1,23 @@
+{
+    "key": "noise_right_inverse_2",
+    "n_its": 10,
+    "time": 1567080007.7931657,
+    "positions": [
+        200
+    ],
+    "complexities": [
+        3
+    ],
+    "anchors": [
+        6
+    ],
+    "noise_sigmas": [
+        1e-1, 2e-1, 5e-1, 1e0, 2e0, 5e0, 1e1
+    ],
+    "success_thresholds": [
+        0.0
+    ],
+    "noise_to_square": false,
+    "solver": "alternativePseudoInverse",
+    "measure_distances": false
+}

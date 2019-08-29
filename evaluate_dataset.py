@@ -151,11 +151,18 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_t
         anchor_coord = np.array([row.px, row.py, row.pz]).reshape((1, 3))
         distances = np.linalg.norm(ground_truths[:, 1:] - anchor_coord, axis=1)
 
+        # calculate the tango distances in the plane.
+        vecs = ground_truths[:, 1:3] - anchor_coord[0, :2]
+        assert vecs.shape[0] == ground_truths.shape[0], vecs.shape
+        assert vecs.shape[1] == 2, vecs.shape
+        distances_2D = np.linalg.norm(vecs, axis=1)
+
         # make sure that the time ordering is correct.
         timestamps = new_df.loc[new_df.anchor_id == row.anchor_id, "timestamp"].values.astype(np.float32)
         assert np.allclose(timestamps, ground_truths[:, 0])
 
         new_df.loc[new_df.anchor_id == row.anchor_id, label] = distances
+        new_df.loc[new_df.anchor_id == row.anchor_id, label + '_2D'] = distances_2D
     return new_df
 
 
@@ -293,9 +300,9 @@ def find_times(tango_df):
     l = tango_df.loc[i, "length"]
     moving = (l >= threshold)
     if moving:
-        movement_times.append([i, -1])
+        movement_times.append([i, np.inf])
     else:
-        calibration_times.append([i, -1])
+        calibration_times.append([i, np.inf])
 
     for i in range(1, len(times)):
         l = tango_df.loc[i, "length"]
@@ -314,7 +321,7 @@ def find_times(tango_df):
         elif (not moving) and (l >= threshold):
             # started moving.
             calibration_times[-1][1] = i - 1
-            movement_times.append([i, -1])
+            movement_times.append([i, np.inf])
             moving = True
     return movement_times, calibration_times
 
@@ -417,7 +424,7 @@ def find_calibration_data(tango_df, start_move_times, start_move_indices, max_le
         calibration_data['trajectory'].append([start_move_time])
 
     # make last trajectory go until the end of dataset.
-    calibration_data['trajectory'][-1].append(-1)
+    calibration_data['trajectory'][-1].append(np.inf)
     return calibration_data
 
 

@@ -176,19 +176,25 @@ n_samples)
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
-    def get_sampling_points(self, basis=None):
+    def get_sampling_points(self, times=None, basis=None):
         """ Get points where we get measurements.
         
         """
+        if basis is None:
+            basis = self.get_basis(times=times)
         points = self.coeffs @ basis
         return points
 
-    def get_continuous_points(self):
-        basis_cont = self.get_basis(n_samples=1000)
+    def get_continuous_points(self, times=None):
+        if times is None:
+            basis_cont = self.get_basis(n_samples=1000)
+        else:
+            times_cont = np.linspace(times[0], times[-1], 1000)
+            basis_cont = self.get_basis(times=times_cont)
         trajectory_cont = self.get_sampling_points(basis=basis_cont)
         return trajectory_cont
 
-    def plot(self, basis=None, mask=None, **kwargs):
+    def plot(self, basis=None, mask=None, times=None, **kwargs):
         """ Plot continuous and sampled version.
 
         :param basis: basis of sampling points. Only plot continuous version if not given.
@@ -196,11 +202,23 @@ n_samples)
         :param kwargs: any additional kwargs passed to plt.scatter()
 
         """
+        if basis is not None:
+            print(
+                'Warning: it is now preferable to pass times instead of basis to the plotting function.  The basis argument is ignored when plotting the continuous trajectory.'
+            )
 
-        trajectory_cont = self.get_continuous_points()
+        trajectory_cont = self.get_continuous_points(times=times)
 
-        cont_kwargs = {k: val for k, val in kwargs.items() if k != 'marker'}
-        plt.plot(*trajectory_cont, **cont_kwargs)
+        if times is not None:
+            if basis is not None:
+                print('Warning: overwriting basis with times.')
+            basis = self.get_basis(times=times)
+
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker' and k != "ax")}
+        if "ax" in kwargs:
+            kwargs["ax"].plot(*trajectory_cont[:2], **cont_kwargs)
+        else:
+            plt.plot(*trajectory_cont[:2], **cont_kwargs)
         if "name" in self.params:
             plt.title(self.params["name"])
 
@@ -215,7 +233,8 @@ n_samples)
             for pop_label in pop_labels:
                 if pop_label in kwargs.keys():
                     kwargs.pop(pop_label)
-            plt.scatter(*trajectory, **kwargs)
+            plt.scatter(*trajectory[:2], **kwargs)
+        return plt.gca()
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
@@ -290,10 +309,37 @@ n_samples)
         points = self.get_continuous_points()
         self.coeffs[:, 0] -= np.mean(points, axis=1)
 
+    def get_distances_from_times(self, times, time_steps=1000):
+        ''' Integrate trajectory path length between given times. 
+
+        :param times: list of times to evaluate.
+        :param time_steps: number of time steps to use for integration between each pair of times.
+        :return: List of distances travelled between two time steps. Non-cumulative.
+        '''
+        distances = []
+        for t0, t1 in zip(times[:-1], times[1:]):
+            # Calculate the travelled distance between two times numerically.
+            # Always use the same number of intermediate times between two times.
+            # Could also fix the minimum timestep.
+            mid_times = np.linspace(t0, t1, time_steps)
+            basis_prime = self.get_basis_prime(times=mid_times)
+            velocities = self.coeffs.dot(basis_prime)
+
+            time_differences = mid_times[1:] - mid_times[:-1]
+            speeds = np.linalg.norm(velocities, axis=0)
+
+            # calculate travelled distances for all mid-points.
+            cumulative_distances = np.cumsum((speeds[1:] + speeds[:-1]) / 2 * time_differences)
+
+            # the total travelled distance between two time steps corresponds to last
+            # element.
+            distances.append(cumulative_distances[-1])
+        return distances
+
     def get_times_from_distances(self,
                                  n_samples=None,
                                  step_distance=None,
-                                 time_steps=1000000,
+                                 time_steps=10000,
                                  plot=False,
                                  arbitrary_distances=None):
         """Calculate numerically times equivalent to given distances travelled.

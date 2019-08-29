@@ -76,7 +76,8 @@ def plot_distances(data_df, anchors_df):
         ax.set_ylim(0, 15)
 
 
-def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=None):
+def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=None, smoothing=100,
+               background_alpha=0.1):
     if error_types is None:
         error_types = ['absolute-errors', 'relative-errors', 'errors']
 
@@ -87,15 +88,26 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
     min_measurements = (DIM + 2) * parameters["complexities"][0] - 1
     noise_sigmas = parameters['noise_sigmas']
 
+    x = np.linspace(-smoothing, smoothing, 100)
+    sinc = np.sinc(x)
+    sinc = sinc / np.sum(sinc)
+
     for error_type in error_types:
         error = results[error_type].squeeze()
         dimensions = error.shape
         measurements = np.arange(min_measurements, dimensions[1])
-
+        new_error = []
+        for idx in range(dimensions[0]):
+            new_error.append(np.convolve(error[idx, :len(measurements)], sinc, "valid"))
+        new_error = np.array(new_error)
+        shift = dimensions[1] - len(new_error[0, :]) + 1
+        new_measurements = measurements[-shift // 2:shift // 2:-1]
         fig1, ax1 = plt.subplots()
         for idx, _ in enumerate(noise_sigmas[min_noise:max_noise]):
+            plot = plt.loglog(
+                new_measurements, new_error.T[:len(new_measurements), idx], label="noise: {}".format(noise_sigmas[idx]))
             plt.loglog(
-                measurements[::-1], error.T[:len(measurements), idx], label="noise: {}".format(noise_sigmas[idx]))
+                measurements[::-1], error.T[:len(measurements), idx], alpha=background_alpha, c=plot[0].get_color())
         plt.xlabel("number of measurements")
         if error_type == "errors":
             plt.ylabel("errors on coefficients")

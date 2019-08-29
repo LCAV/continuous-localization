@@ -1,5 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+simulation.py: Generate random trajectories and noisy distance estimates, reconstruct trajectory and save errors.  
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,9 +17,6 @@ from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 from trajectory import Trajectory
-"""
-simulation.py: 
-"""
 
 
 def robust_increment(arr, idx):
@@ -129,10 +129,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                             try:
                                 if (solver is None) or (solver == semidefRelaxationNoiseless):
-                                    X = semidefRelaxationNoiseless(D_topright,
-                                                                   environment.anchors,
-                                                                   basis,
-                                                                   chosen_solver=cvxpy.CVXOPT)
+                                    X = semidefRelaxationNoiseless(
+                                        D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
                                     X = rightInverseOfConstraints(D_topright, environment.anchors, basis)
@@ -140,10 +138,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                                 elif solver == 'alternativePseudoInverse':
                                     P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
                                 elif solver == 'weightedPseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright,
-                                                                     environment.anchors,
-                                                                     basis,
-                                                                     weighted=True)
+                                    P_hat = alternativePseudoInverse(
+                                        D_topright, environment.anchors, basis, weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
@@ -151,9 +147,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
-                                _, D_estimated = get_measurements(trajectory_estimated,
-                                                                  environment,
-                                                                  n_samples=n_positions)
+                                _, D_estimated = get_measurements(
+                                    trajectory_estimated, environment, n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 
                                 robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
@@ -208,7 +203,7 @@ def run_simulation(parameters, outfolder=None, solver=None):
             os.makedirs(outfolder)
 
         save_params(outfolder + 'parameters.json', **parameters)
-        save_results(outfolder + 'result_{}_{}.csv', results)
+        save_results(outfolder + 'result_{}_{}', results)
     else:
         return results
 

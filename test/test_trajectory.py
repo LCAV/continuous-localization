@@ -48,7 +48,8 @@ class TestTrajectory(unittest.TestCase):
     def test_times_and_distances_circle(self):
         distances = [0, 2 * np.pi, 4 * np.pi, 6 * np.pi]
         period = self.trajectory.period
-        times, distances_reconstructed, _ = self.trajectory.get_times_from_distances(arbitrary_distances=distances)
+        times, distances_reconstructed, _ = self.trajectory.get_times_from_distances(
+            arbitrary_distances=distances, time_steps=100000)
         np.testing.assert_almost_equal(distances, distances_reconstructed)
         np.testing.assert_almost_equal(times, [0, 0.5 * period, period, 1.5 * period], decimal=5)
 
@@ -58,7 +59,8 @@ class TestTrajectory(unittest.TestCase):
         trajectory.coeffs[0, 1] = 1
         trajectory.coeffs[1, 1] = 1
         distances = [0, np.sqrt(2), 2 * np.sqrt(2)]
-        times, distances_reconstructed, _ = trajectory.get_times_from_distances(arbitrary_distances=distances)
+        times, distances_reconstructed, _ = trajectory.get_times_from_distances(
+            arbitrary_distances=distances, time_steps=100000)
         np.testing.assert_almost_equal(distances, distances_reconstructed)
         np.testing.assert_almost_equal(times, [0, 1, 2], decimal=5)
 
