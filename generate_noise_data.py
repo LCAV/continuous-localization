@@ -7,37 +7,37 @@ def f(params):
     run_simulation(params, outfolder, solver=params['solver'])
 
 
-noise_simgas = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0, 1e1, 1e2]
+noise_simgas = [1e-1, 2e-1, 5e-1, 1e0, 2e0, 5e0, 1e1]
 
 parameters = [{
-    'key': 'noise_to_square_right_inverse',
-    'n_its': 500,
+    'key': 'noise_to_square_right_inverse_2',
+    'n_its': 10,
     'time': 'undefined',
-    'positions': [20],
-    'complexities': [5],
-    'anchors': [8],
+    'positions': [200],
+    'complexities': [3],
+    'anchors': [6],
     'noise_sigmas': noise_simgas,
     'success_thresholds': [0.0] * len(noise_simgas),
     'noise_to_square': True,
     'solver': "alternativePseudoInverse"
 }, {
-    'key': 'noise_right_inverse_weighted',
-    'n_its': 500,
+    'key': 'noise_right_inverse_weighted_2',
+    'n_its': 10,
     'time': 'undefined',
-    'positions': [20],
-    'complexities': [5],
-    'anchors': [8],
+    'positions': [200],
+    'complexities': [3],
+    'anchors': [6],
     'noise_sigmas': noise_simgas,
     'success_thresholds': [0.0] * len(noise_simgas),
     "noise_to_square": False,
     'solver': 'weightedPseudoInverse'
 }, {
-    'key': 'noise_right_inverse',
-    'n_its': 500,
+    'key': 'noise_right_inverse_2',
+    'n_its': 10,
     'time': 'undefined',
-    'positions': [20],
-    'complexities': [5],
-    'anchors': [8],
+    'positions': [200],
+    'complexities': [3],
+    'anchors': [6],
     'noise_sigmas': noise_simgas,
     'success_thresholds': [0.0] * len(noise_simgas),
     "noise_to_square": False,
