@@ -23,16 +23,18 @@ def add_noise(D, noise_sigma, noise_to_square=False):
 
 
 def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwargs):
-    ''' Create a mask of shape n_anchors x n_measurements. 
+    """ Create a mask of shape n_anchors x n_measurements.
     
-    :param strategy: strategy to use. Currently implemented: 
-
+    :param strategy: strategy to use. Currently implemented:
     - 'minimal': We randomly delete measures such that we only keep measurements from
     exactly dim+1 anchors, and we have measurements at at least n_complexity different time instances, 
     where dim is the dimension and n_complexity the complexity of the setup. 
-    - 'simple': The first point sees D+1 anchors, and the next K-1 points see only anchor 0 and 1. 
+    - 'simple': The first point sees D+1 anchors, and the next K-1 points see only anchor 0 and 1.
+    - 'single': The first d+1 points see d+1 different anchors, all following points see exactly one anchor.
+    - 'uniform': Choose uniformly the n_missing (passed via **kwargs) missing measurements
+    - 'single_time': At each time/position there is at most one measurement
 
-    '''
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -124,6 +126,17 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
         # assert correct number of missing measurements
         idx = np.where(mask == 0.0)
         assert n_missing == len(idx[0])
+
+    elif strategy == 'single_time':
+        n_missing = kwargs.get('n_missing', 0)
+        if n_samples < n_missing:
+            raise ValueError("to many measurements {}<{} requested".format(n_samples, n_missing))
+        mask[:, :] = 0.0
+        idx_f = np.random.choice(n_samples, n_samples - n_missing, replace=False)
+        idx_a = np.random.choice(n_anchors, n_samples - n_missing, replace=True)
+        mask[idx_f, idx_a] = 1.0
+    else:
+        raise ValueError('{} is not a valid strategy'.format(strategy))
 
     return mask
 

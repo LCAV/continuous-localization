@@ -88,7 +88,7 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
     min_measurements = (DIM + 2) * parameters["complexities"][0] - 1
     noise_sigmas = parameters['noise_sigmas']
 
-    x = np.linspace(-smoothing, smoothing, 100)
+    x = np.linspace(-smoothing, smoothing, smoothing)
     sinc = np.sinc(x)
     sinc = sinc / np.sum(sinc)
 

@@ -35,7 +35,7 @@ def robust_add(arr, idx, value):
         arr[idx] += value
 
 
-def run_simulation(parameters, outfolder=None, solver=None):
+def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
     """ Run simulation. 
 
     :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
@@ -70,6 +70,9 @@ def run_simulation(parameters, outfolder=None, solver=None):
     if 'measure_distances' not in parameters:
         parameters['measure_distances'] = False
 
+    if 'sampling_strategy' not in parameters:
+        parameters['sampling_strategy'] = 'uniform'
+
     complexities = parameters['complexities']
     anchors = parameters['anchors']
     positions = parameters['positions']
@@ -78,8 +81,12 @@ def run_simulation(parameters, outfolder=None, solver=None):
     success_thresholds = parameters['success_thresholds']
     assert len(success_thresholds) == len(noise_sigmas)
 
-    successes = np.full(
-        (len(complexities), len(anchors), len(positions), len(noise_sigmas), max(positions) * max(anchors)), np.nan)
+    if parameters['sampling_strategy'] == 'single_time':
+        max_measurements = max(positions)
+    else:
+        max_measurements = max(positions) * max(anchors)
+
+    successes = np.full((len(complexities), len(anchors), len(positions), len(noise_sigmas), max_measurements), np.nan)
     errors = np.full(successes.shape, np.nan)
     relative_errors = np.full(successes.shape, np.nan)
     absolute_errors = np.full(successes.shape, np.nan)
@@ -96,13 +103,18 @@ def run_simulation(parameters, outfolder=None, solver=None):
             for p_idx, n_positions in enumerate(positions):
                 print('n_positions', n_positions)
 
-                n_measurements = n_positions * n_anchors
+                if parameters['sampling_strategy'] == 'single_time':
+                    n_measurements = n_positions
+                else:
+                    n_measurements = n_positions * n_anchors
                 for m_idx, n_missing in enumerate(range(n_measurements)):
-                    print('measurements idx', m_idx)
+                    if verbose:
+                        print('measurements idx', m_idx)
 
                     for noise_idx, noise_sigma in enumerate(noise_sigmas):
                         indexes = np.s_[c_idx, a_idx, p_idx, noise_idx, m_idx]
-                        print("noise", noise_sigma)
+                        if verbose:
+                            print("noise", noise_sigma)
 
                         # set all values to 0 since we have visited them.
                         if np.isnan(successes[indexes]):
@@ -122,7 +134,8 @@ def run_simulation(parameters, outfolder=None, solver=None):
                             basis, D_topright = get_measurements(trajectory, environment, n_samples=n_positions)
                             distances = np.sqrt(D_topright)
                             D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
-                            mask = create_mask(n_positions, n_anchors, 'uniform', n_missing=n_missing)
+                            mask = create_mask(
+                                n_positions, n_anchors, strategy=parameters['sampling_strategy'], n_missing=n_missing)
                             if parameters['measure_distances']:
                                 squared_distances.extend(D_topright.flatten().tolist())
                             D_topright = np.multiply(D_topright, mask)

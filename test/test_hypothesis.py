@@ -3,9 +3,10 @@
 
 import common
 
+from collections import Counter
 import unittest
+
 from hypothesis import *
-from scipy import special
 
 
 class TestGetAnchors(unittest.TestCase):
@@ -45,9 +46,57 @@ class TestGetRightSubmatrix(unittest.TestCase):
 
 class TestRandomIndexes(unittest.TestCase):
     def test_type(self):
-        a, b = random_indexes(3, 2, 1)
-        self.assertTrue(isinstance(a, list))
-        self.assertTrue(isinstance(b, list))
+        idx_a, idx_f = random_indexes(3, 2, n_measurements=1)
+        self.assertTrue(isinstance(idx_a, list))
+        self.assertTrue(isinstance(idx_f, list))
+        self.assertEqual(1, len(idx_a))
+        self.assertEqual(1, len(idx_f))
+
+    def test_one_per_time(self):
+        idx_a, idx_f = random_indexes(3, 5, n_measurements=4, one_per_time=True)
+        self.assertTrue(all(count < 2 for count in Counter(idx_f).values()))
+        self.assertTrue(all(count < 3 for count in Counter(idx_a).keys()))
+
+    def test_many_per_time(self):
+        np.random.seed(0)
+        idx_a, idx_f = random_indexes(3, 5, n_measurements=4)
+        self.assertEqual(2, Counter(idx_f)[1])
+
+
+class TestMatrixRankExperiments(unittest.TestCase):
+    def setUp(self) -> None:
+        np.random.seed(0)
+
+    def test_left_single_run(self):
+        experiment_params = {
+            "n_dimensions": 1,
+            "n_constraints": 2,
+            "fixed_n_measurements": 0,
+            "max_positions": 5,
+            "n_repetitions": 1,
+            "full_matrix": False,
+            "n_anchors_list": [1],
+        }
+        ranks, params = matrix_rank_experiment(experiment_params)
+        self.assertEqual((3, 1, 1), ranks.shape)
+        self.assertTrue(([4, 4, 3] == ranks[:, 0, 0]).all())
+        self.assertEqual(2, params["n_anchors_list"][0])
+        self.assertEqual(4, params["fixed_n_measurements"])
+
+    def test_full_single_run(self):
+        experiment_params = {
+            "n_dimensions": 1,
+            "n_constraints": 2,
+            "fixed_n_measurements": 0,
+            "max_positions": 4,
+            "n_repetitions": 1,
+            "full_matrix": True,
+            "n_anchors_list": [1],
+        }
+        ranks, params = matrix_rank_experiment(experiment_params)
+        self.assertEqual((1, 1, 1), ranks.shape)
+        self.assertEqual(5, ranks[0, 0, 0])
+        self.assertEqual(5, params["fixed_n_measurements"])
 
 
 class TestPartitions(unittest.TestCase):
@@ -63,38 +112,58 @@ class TestPartitions(unittest.TestCase):
 
 
 class TestBounds(unittest.TestCase):
+    def setUp(self) -> None:
+        self.n_dimensions = 2
+        self.n_constrains = 5
+        self.n_positions = 20
+
     def test_few_anchors(self):
-        n_dimensions = 2
-        n_constrains = 5
         for n_positions in [15, 20, 25]:
-            exact = probability_few_anchors(n_dimensions, n_constrains, n_positions)
-            upper = probability_upper_bound(n_dimensions, n_constrains, n_positions, n_dimensions + 1)
+            exact = probability_few_anchors(self.n_dimensions, self.n_constrains, n_positions)
+            upper = probability_upper_bound(self.n_dimensions, self.n_constrains, n_positions, self.n_dimensions + 1)
             self.assertEqual(exact, upper)
 
     def test_few_anchors_any_measurements(self):
-        n_dimensions = 2
-        n_constrains = 5
-        n_positions = 15
-        exact = probability_few_anchors(n_dimensions, n_constrains, n_positions)
+        exact = probability_few_anchors(self.n_dimensions, self.n_constrains, self.n_positions)
         upper = probability_upper_bound_any_measurements(
-            n_dimensions, n_constrains, n_positions, n_dimensions + 1, n_measurements=(n_dimensions + 1) * n_constrains)
+            self.n_dimensions,
+            self.n_constrains,
+            self.n_positions,
+            self.n_dimensions + 1,
+            n_measurements=(self.n_dimensions + 1) * self.n_constrains)
         self.assertEqual(exact, upper)
 
     def test_many_anchors(self):
-        n_dimensions = 2
-        n_constrains = 5
-        n_positions = 20
-        n_anchors = 5
-        inefficient = probability_upper_bound(n_dimensions, n_constrains, n_positions, n_anchors)
-        efficient = probability_upper_bound_any_measurements(
-            n_dimensions, n_constrains, n_positions, n_anchors, n_measurements=(n_dimensions + 1) * n_constrains)
-        self.assertEqual(efficient, inefficient)
+        for n_anchors in range(3, 6):
+            inefficient = probability_upper_bound(self.n_dimensions, self.n_constrains, self.n_positions, n_anchors)
+            efficient = probability_upper_bound_any_measurements(
+                self.n_dimensions,
+                self.n_constrains,
+                self.n_positions,
+                n_anchors,
+                n_measurements=(self.n_dimensions + 1) * self.n_constrains)
+            self.assertEqual(efficient, inefficient)
 
     def test_limit_condition(self):
         part = (5, 5, 4, 1, 0)
-        self.assertTrue(limit_condition(part[::-1], 3, 4))
-        self.assertTrue(limit_condition(part[::-1], 3, 5))
-        self.assertFalse(limit_condition(part[::-1], 4, 2))
+        self.assertTrue(limit_condition(part, 3, 4))
+        self.assertTrue(limit_condition(part, 3, 5))
+        self.assertFalse(limit_condition(part, 4, 2))
+
+    def test_infinity_anchors(self):
+        infinity = probability_upper_bound_any_measurements(
+            self.n_dimensions, self.n_constrains, n_positions=30, n_anchors=np.Infinity, n_measurements=30)
+        print(infinity)
+        self.assertAlmostEqual(1, infinity)
+
+    def test_infinity_positions(self):
+        for n_anchors in range(3, 6):
+            infinity = probability_upper_bound_any_measurements(
+                self.n_dimensions, self.n_constrains, n_positions=100000000, n_anchors=n_anchors, n_measurements=15)
+
+            large = probability_upper_bound_any_measurements(
+                self.n_dimensions, self.n_constrains, n_positions=np.Infinity, n_anchors=n_anchors, n_measurements=15)
+            self.assertAlmostEqual(large, infinity)
 
 
 if __name__ == '__main__':
