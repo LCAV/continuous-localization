@@ -1,7 +1,9 @@
 # coding: utf-8
 """
-This script contains experiments are probably not going to be used in the papaer.
-Those experiments are aimed
+This script contains experiments are probably not going to be used in the paper,
+because they use many measurements per time.
+
+They can be used as examples or removed later.
 """
 
 import numpy as np
