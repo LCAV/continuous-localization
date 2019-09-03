@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import seaborn as sns
 
-from simulation import read_results, read_params
+import simulation  # to avoid circular imports
 from global_variables import DIM, RTT_SYSTEM_ID
 
 
@@ -82,8 +82,8 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
         error_types = ['absolute-errors', 'relative-errors', 'errors']
 
     resultfolder = 'results/{}/'.format(key)
-    results = read_results(resultfolder + 'result_')
-    parameters = read_params(resultfolder + 'parameters.json')
+    results = simulation.read_results(resultfolder + 'result_')
+    parameters = simulation.read_params(resultfolder + 'parameters.json')
 
     min_measurements = (DIM + 2) * parameters["complexities"][0] - 1
     noise_sigmas = parameters['noise_sigmas']

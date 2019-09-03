@@ -4,7 +4,7 @@ import numpy as np
 from scipy import special
 import time
 import warnings
-from plotting_tools import make_dirs_safe
+import plotting_tools  # to avoid cyclic imports
 
 
 def get_anchors(n_anchors, n_dimensions=2, check=True):
@@ -466,5 +466,5 @@ def plot_results(
         plt.ylim(bottom=0)
         matrix_type = "full" if params["full_matrix"] else "left"
         fname = directory + matrix_type + "_matrix_anchors" + key + ".pdf"
-        make_dirs_safe(fname)
+        plotting_tools.make_dirs_safe(fname)
         plt.savefig(fname)

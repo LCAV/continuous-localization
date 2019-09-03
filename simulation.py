@@ -17,6 +17,7 @@ from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 from trajectory import Trajectory
+import hypothesis as h
 
 
 def robust_increment(arr, idx):
@@ -141,6 +142,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
+                                assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
+                                                         n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == semidefRelaxationNoiseless):
                                     X = semidefRelaxationNoiseless(
                                         D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
@@ -189,10 +192,13 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             except np.linalg.LinAlgError:
                                 robust_increment(num_not_solved, indexes)
 
-                            except AssertionError:
-                                logging.info("result not accurate n_positions={}, n_missing={}".format(
-                                    n_positions, n_missing))
-                                robust_increment(num_not_accurate, indexes)
+                            except AssertionError as e:
+                                if str(e) == "insufficient rank":
+                                    robust_increment(num_not_solved, indexes)
+                                else:
+                                    logging.info("result not accurate n_positions={}, n_missing={}".format(
+                                        n_positions, n_missing))
+                                    robust_increment(num_not_accurate, indexes)
 
                             errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
                             relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
