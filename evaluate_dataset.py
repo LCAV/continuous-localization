@@ -211,16 +211,14 @@ def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
 
     """
     assert (gt_system_id in df.system_id.values), 'did not find any gt measurements in dataset.'
-    df_gt = df[df.system_id == 'Tango']
+    df_gt = df[df.system_id == gt_system_id]
 
     for i, row in df.iterrows():
         if row.system_id == gt_system_id:
             continue
-        elif row.system_id == 'RTT':
+        else:
             allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, ['px', 'py', 'pz']]
             df.loc[i, ['px', 'py', 'pz']] = allowed.median()
-        else:
-            raise ValueError(row.system_id)
     return df
 
 
@@ -232,9 +230,15 @@ def apply_distance_gt(row, anchors_df, gt_system_id="Tango"):
     """ Return the ground truth distance between the measured anchor and the current ground truth. """
     if row.system_id == gt_system_id:
         return 0.0
-    anchor_coord = anchors_df.loc[anchors_df.anchor_id == row.anchor_id, ['px', 'py', 'pz']].values.astype(np.float32)
+    anchor_coord = anchors_df.loc[anchors_df.anchor_id == row.anchor_id, ['px', 'py', 'pz']].values.astype(
+        np.float32).flatten()
+    if len(anchor_coord) == 0:
+        return np.nan
     point_coord = np.array([row.px, row.py, row.pz], dtype=np.float32)
-    return np.linalg.norm(point_coord - anchor_coord)
+    if np.isnan(anchor_coord[2]) or np.isnan(point_coord[2]):
+        return np.linalg.norm(point_coord[:2] - anchor_coord[:2])
+    else:
+        return np.linalg.norm(point_coord - anchor_coord)
 
 
 def apply_calibrate(row, calib_dict, calib_type):

@@ -119,6 +119,10 @@ results/get_distances/
 results/one_per_time/
 theory/
 
+# datasets
+datasets/*
+!datasets/README.md
+
 # images 
 *.png
 
