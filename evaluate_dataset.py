@@ -529,8 +529,12 @@ def compute_distance_matrix(df,
     D_topright_real = np.zeros((n_times, n_anchors))
 
     i = 0
+    actually_used_times = []
     for t in times:
         this_slice = df[(df.anchor_name.isin(anchor_names)) & (df.timestamp == t)]
+
+        if len(this_slice) == 0:
+            continue
 
         # this can be done more elegantly with pandas
         for anchor_name in this_slice.anchor_name:
@@ -547,7 +551,10 @@ def compute_distance_matrix(df,
                 else:
                     distance_sq = distance**2
                 D_topright_real[i, a_id] = distance_sq
+
+        actually_used_times.append(t)
         i += 1
     # If some times did not have valid measurements (not correct anchors, etc.)
     # then there might be some trailing all-zero rows.
-    return D_topright_real[:i, :]
+
+    return D_topright_real[:i, :], actually_used_times
