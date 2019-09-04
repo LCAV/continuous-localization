@@ -41,46 +41,55 @@ def convert_room_to_robot(x_room):
 #### Dataset processing.
 
 
+def apply_anchor_id(row):
+    return row.anchor_id.strip()
+
+
+def apply_system_id(row, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+    if row.system_id == range_system_id:
+        return 'Range'
+    elif row.system_id == gt_system_id:
+        return 'GT'
+    else:
+        raise NameError(row.system_id)
+
+
 def read_anchors_df(anchorsfile):
     """ Read and preprocess the anchors file. """
-
-    def apply_add_name(row, rtt_, tango_):
-        if row.system_id == 'Tango':
-            tango_[0] += 1
-            return 'Tango {}'.format(tango_[0])
-        elif row.system_id == 'RTT':
-            rtt_[0] += 1
-            return 'RTT {}'.format(rtt_[0])
-
-    def apply_system_id(row):
-        if row.system_id == tango_system_id:
-            return 'Tango'
-        elif row.system_id == rtt_system_id:
-            return 'RTT'
-
-    def apply_anchor_id(row):
-        return row.anchor_id.strip()
-
-    rtt_ = [-1]  # using lists so that we can change them inplace.
-    tango_ = [-1]
-
     anchors_df = pd.read_csv(anchorsfile)
+    return format_anchors_df(anchors_df)
+
+
+def read_dataset(datafile, anchors_df, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+    """ Read and preprocess the measurement dataset, a .csv file. """
+    data_df = pd.read_csv(datafile)
+    data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
+    return format_data_df(data_df, anchors_df, gt_system_id, range_system_id)
+
+
+def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+    """
+    Make sure anchors_df is correctly formatted.
+    """
+
+    def apply_add_name(row, counter_dict):
+        counter_dict[row.system_id] += 1
+        return '{} {}'.format(row.system_id, counter_dict[row.system_id])
+
+    anchors_df = anchors_df.astype({'anchor_id': str})
     anchors_df.loc[:, 'anchor_id'] = anchors_df.apply(lambda row: apply_anchor_id(row), axis=1)
-    anchors_df.loc[:, 'system_id'] = anchors_df.apply(lambda row: apply_system_id(row), axis=1)
-    anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, rtt_, tango_), axis=1)
+    anchors_df.loc[:, 'system_id'] = anchors_df.apply(
+        lambda row: apply_system_id(row, gt_system_id, range_system_id=range_system_id), axis=1)
+
+    counter_dict = {name: 0 for name in anchors_df.system_id.unique()}
+    anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, counter_dict), axis=1)
     return anchors_df
 
 
-def read_dataset(datafile, anchors_df):
-    """ Read and preprocess the measurement dataset, a .csv file. """
-
-    def apply_system_id(row):
-        if row.system_id == rtt_system_id:
-            return 'RTT'
-        elif row.system_id == tango_system_id:
-            return 'Tango'
-        else:
-            raise NameError(row.system_id)
+def format_data_df(data_df, anchors_df=None, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+    """
+    Make sure data df is correctly formatted.
+    """
 
     def filter_columns(data_df):
         all_columns = set(data_df.columns)
@@ -88,15 +97,15 @@ def read_dataset(datafile, anchors_df):
         drop_columns = all_columns - keep_columns  # this is a set difference
         data_df.drop(drop_columns, axis=1, inplace=True)
 
-    data_df = pd.read_csv(datafile)
     filter_columns(data_df)
-    data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
-    data_df.loc[:, 'anchor_name'] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
-    data_df.loc[:, 'system_id'] = data_df.apply(lambda row: apply_system_id(row), axis=1)
+    data_df = data_df.astype({"anchor_id": str})
+    data_df.loc[:, 'system_id'] = data_df.apply(lambda row: apply_system_id(row, gt_system_id, range_system_id), axis=1)
+    if anchors_df is not None:
+        data_df.loc[:, "anchor_name"] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
     return data_df
 
 
-def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
+def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range"):
     """ Resample measurements at regular timestamps. 
 
     :param df: dataframe with measurements. 
@@ -107,9 +116,9 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
     """
     uniform_times = np.arange(*t_range, t_delta)
 
-    if system_id == 'RTT':
+    if system_id == 'Range':
         fields = ["distance", "rssi"]
-    elif system_id == 'Tango':
+    elif system_id == 'GT':
         fields = ["px", "py", "pz"]
 
     anchor_ids = df[df.system_id == system_id].anchor_id.unique()
@@ -136,7 +145,7 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="RTT"):
     return new_df
 
 
-def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_tango'):
+def add_gt_resampled(new_df, anchors_df, gt_system_id="GT", label='distance_gt'):
     """ Add ground truth distances to new_df as a new column.
 
     It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
@@ -166,14 +175,14 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="Tango", label='distance_t
     return new_df
 
 
-def add_median_raw(df, t_window=1.0):
+def add_median_raw(df, t_window=1.0, range_system_id='Range'):
     """ Add (centered) median over t_window at each measurement point. 
 
     :param df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
 
     """
-    for anchor_id, anchor_df in df[df.system_id == 'RTT'].groupby("anchor_id"):
+    for anchor_id, anchor_df in df[df.system_id == 'Range'].groupby("anchor_id"):
         print('processing', anchor_id)
         for t in anchor_df.timestamp:
             # we want to take into account all measurements that lie within the specified window.
@@ -203,7 +212,7 @@ def add_median_raw_rolling(df, t_window=1):
     return df
 
 
-def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
+def add_gt_raw(df, t_window=0.1, gt_system_id="GT"):
     """ Add median over t_window of ground truth position at each measurement point. 
 
     :param df: dataframe with measurements. 
@@ -223,10 +232,15 @@ def add_gt_raw(df, t_window=0.1, gt_system_id="Tango"):
 
 
 def apply_name(row, anchors_df):
-    return anchors_df.loc[anchors_df.anchor_id == row.anchor_id, "anchor_name"].values[0]
+    if not any(anchors_df.anchor_id.isin([row.anchor_id])) and (row.anchor_id != 'GT'):
+        print('Warning: {} not in {}'.format(row.anchor_id, anchors_df.anchor_id.unique()))
+        return "unknown"
+    elif row.anchor_id == 'GT':
+        return 'GT'
+    return anchors_df.loc[anchors_df.anchor_id.isin([row.anchor_id]), "anchor_name"].values[0]
 
 
-def apply_distance_gt(row, anchors_df, gt_system_id="Tango"):
+def apply_distance_gt(row, anchors_df, gt_system_id="GT"):
     """ Return the ground truth distance between the measured anchor and the current ground truth. """
     if row.system_id == gt_system_id:
         return 0.0
@@ -242,7 +256,7 @@ def apply_distance_gt(row, anchors_df, gt_system_id="Tango"):
 
 
 def apply_calibrate(row, calib_dict, calib_type):
-    if row.system_id == 'Tango':
+    if row.system_id == 'GT':
         return 0.0
     offset = calib_dict[row.anchor_name][calib_type]
     return row.distance - offset
@@ -483,40 +497,57 @@ def read_correct_dataset(datafile, anchors_df, use_raw=False):
         print('reading', resample_name)
         data_df = pd.read_pickle(resample_name)
         data_df = add_gt_resampled(data_df, anchors_df)
-        data_df.loc[:, "anchor_name"] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
+        data_df = format_data_df(data_df, anchors_df)
     return data_df
 
 
-def compute_distance_matrix(df, anchors_df, anchor_names, times, chosen_distance, dimension=3, robot_height=0):
+def compute_distance_matrix(df,
+                            anchors_df,
+                            anchor_names=None,
+                            times=None,
+                            chosen_distance='distance',
+                            dimension=3,
+                            robot_height=0):
     '''
     :param df: dataset which has time, distance, anchor_id data.
-    :param anchors_df: dataset of anchors data.
-    :param anchor_names: list of anchor names to use.
-    :param times: the measurement times which we want to use. 
+    :param anchors_df: dataset of anchors data. 
+    :param anchor_names: list of anchor names to use. Set to None to use all.
+    :param times: the measurement times which we want to use. Set to None to use all.
     :param chosen_distance: name of distance column to use.
     :param dimension: calculate distances in this dimension (2 or 3)
     :param robot_height: if dimension is 2, use this for robot height.
     '''
 
+    if anchor_names is None:
+        anchor_names = list(anchors_df.anchor_name.unique())
+    if times is None:
+        times = list(df.timestamp.unique())
+
     n_times = len(times)
     n_anchors = len(anchor_names)
+
     D_topright_real = np.zeros((n_times, n_anchors))
 
-    for i, t in enumerate(times):
+    i = 0
+    for t in times:
         this_slice = df[(df.anchor_name.isin(anchor_names)) & (df.timestamp == t)]
 
         # this can be done more elegantly with pandas
         for anchor_name in this_slice.anchor_name:
             a_id = anchor_names.index(anchor_name)
             distance = this_slice.loc[this_slice.anchor_name == anchor_name, chosen_distance].values[0]
-
             if dimension == 3:
                 D_topright_real[i, a_id] = distance**2
             else:
                 if chosen_distance != 'distance_tango_2D':  # we already did this correction.
+                    if not (anchor_name in anchors_df.anchor_name.unique()):
+                        raise ValueError('{} not in {}'.format(anchor_name, anchors_df.anchor_name.unique()))
                     anchor_height = anchors_df[anchors_df.anchor_name == anchor_name].pz
                     distance_sq = distance**2 - (anchor_height - robot_height)**2
                 else:
                     distance_sq = distance**2
                 D_topright_real[i, a_id] = distance_sq
-    return D_topright_real
+        i += 1
+    # If some times did not have valid measurements (not correct anchors, etc.)
+    # then there might be some trailing all-zero rows.
+    return D_topright_real[:i, :]
