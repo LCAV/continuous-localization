@@ -473,7 +473,6 @@ def apply_rotation_and_translations(points, rotation, rotation_center, reference
 
 
 def read_correct_dataset(datafile, anchors_df, use_raw=False):
-
     if use_raw:
         data_df = read_dataset(datafile, anchors_df)
         data_df = add_gt_raw(data_df, t_window=0.1)
@@ -486,3 +485,38 @@ def read_correct_dataset(datafile, anchors_df, use_raw=False):
         data_df = add_gt_resampled(data_df, anchors_df)
         data_df.loc[:, "anchor_name"] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
     return data_df
+
+
+def compute_distance_matrix(df, anchors_df, anchor_names, times, chosen_distance, dimension=3, robot_height=0):
+    '''
+    :param df: dataset which has time, distance, anchor_id data.
+    :param anchors_df: dataset of anchors data.
+    :param anchor_names: list of anchor names to use.
+    :param times: the measurement times which we want to use. 
+    :param chosen_distance: name of distance column to use.
+    :param dimension: calculate distances in this dimension (2 or 3)
+    :param robot_height: if dimension is 2, use this for robot height.
+    '''
+
+    n_times = len(times)
+    n_anchors = len(anchor_names)
+    D_topright_real = np.zeros((n_times, n_anchors))
+
+    for i, t in enumerate(times):
+        this_slice = df[(df.anchor_name.isin(anchor_names)) & (df.timestamp == t)]
+
+        # this can be done more elegantly with pandas
+        for anchor_name in this_slice.anchor_name:
+            a_id = anchor_names.index(anchor_name)
+            distance = this_slice.loc[this_slice.anchor_name == anchor_name, chosen_distance].values[0]
+
+            if dimension == 3:
+                D_topright_real[i, a_id] = distance**2
+            else:
+                if chosen_distance != 'distance_tango_2D':  # we already did this correction.
+                    anchor_height = anchors_df[anchors_df.anchor_name == anchor_name].pz
+                    distance_sq = distance**2 - (anchor_height - robot_height)**2
+                else:
+                    distance_sq = distance**2
+                D_topright_real[i, a_id] = distance_sq
+    return D_topright_real
