@@ -18,6 +18,7 @@ def make_dirs_safe(path):
 
 
 def savefig(fig, name):
+    make_dirs_safe(name)
     fig.savefig(name, bbox_inches='tight')
     print('saved as', name)
 

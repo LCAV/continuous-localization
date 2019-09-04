@@ -275,6 +275,7 @@ def get_length(pos_df, plot=False):
     # To turn off annoying pandas warning. I did not figure out where it came from.
     pd.options.mode.chained_assignment = None
 
+    # create new index so that we can use rolling function.
     new_index = [datetime.datetime.fromtimestamp(t) for t in pos_df.timestamp]
     pos_df.index = new_index
     v_x = pos_df.px.rolling(min_periods=1, window=2, center=False).apply(func=diff, raw=True)
