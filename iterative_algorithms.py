@@ -11,7 +11,19 @@ import matplotlib.pylab as plt
 from solvers import alternativePseudoInverse
 
 
-def averaging_algorithm(D, basis, times, anchors, t_window=1.0):
+def averaging_algorithm(D, anchors, basis, times, t_window=1.0):
+    """ Iteratively compute estimates over fixed time window.
+
+    :param D: measurement matrix with squared distances (N x M)
+    :param anchors: anchor coordinates (dim x M)
+    :param basis: basis vectors (dim x K)
+    :param times: list of measurement times (length N)
+
+    :param t_window: width of fixed time window. 
+
+    """
+
+    print(anchors.shape)
     line_counter = 0
 
     D_k = np.empty((0, D.shape[1]))
@@ -45,7 +57,21 @@ def averaging_algorithm(D, basis, times, anchors, t_window=1.0):
     return C_list, t_list
 
 
-def build_up_algorithm(D, basis, anchors, times, eps=1e-3):
+def build_up_algorithm(D, anchors, basis, times, eps=1e-3):
+    """ Build-up algorithm for trajectory estimation. 
+    
+    Build up different trajectories as long as measurements "fit". When they 
+    stop fitting (see eps parameter), start a new trajectory.
+
+    :param D: measurement matrix with squared distances (N x M)
+    :param anchors: anchor coordinates (dim x M)
+    :param basis: basis vectors (dim x K)
+    :param times: list of measurement times (length N)
+
+    :param eps: error threshold for starting new trajectory.
+
+    """
+    print(anchors.shape)
     C_k = None
     tk = []
 
