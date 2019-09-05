@@ -41,7 +41,7 @@ class TestExact(unittest.TestCase):
         from measurements import get_measurements
         environment = Environment(n_anchors=5)
         trajectory = Trajectory(n_complexity=4, dim=2)
-        basis, D_topright = get_measurements(trajectory, environment, n_samples=10)
+        basis, D_topright = get_measurements(trajectory, environment.anchors, n_samples=10)
 
         eps = 1e-10
         self.assertTrue(np.all(abs(f_multidim(environment.anchors, basis, D_topright, trajectory.coeffs)) < eps))

@@ -15,9 +15,9 @@ import matplotlib.pylab as plt
 import scipy as sp
 
 # These system_ids are used by the python pipeline, but will be changed to human-readable
-# "Tango" and "RTT".
-tango_system_id = 7585
-rtt_system_id = 7592
+# "GT" and "Range".
+tango_system_id = 7585  # GT
+rtt_system_id = 7592  # Range
 
 #### Geometry.
 
@@ -81,7 +81,7 @@ def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=
     anchors_df.loc[:, 'system_id'] = anchors_df.apply(
         lambda row: apply_system_id(row, gt_system_id, range_system_id=range_system_id), axis=1)
 
-    counter_dict = {name: 0 for name in anchors_df.system_id.unique()}
+    counter_dict = {name: -1 for name in anchors_df.system_id.unique()}
     anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, counter_dict), axis=1)
     return anchors_df
 
