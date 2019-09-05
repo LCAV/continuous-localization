@@ -100,7 +100,13 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs
 
         Z \succeq 0
 
-    parameters are same as for semidefRelaxation. 
+    In following, N is number of measurements, M is nmber of anchors, dim is dimension 
+    and K is trajectory complexity. 
+
+    :param D_topright: N x M
+    :param anchors: dim x M
+    :param basis: K x N
+
     """
 
     # overwrite predefined options with kwargs.

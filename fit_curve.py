@@ -35,6 +35,13 @@ def solve_for_times(times, R, C, trajectory):
 
 
 def fit_trajectory(trajectory, R, max_iter=10):
+    """ Fit a trajectory to positions. 
+
+    :param trajectory: Trajectory object.
+    :param R: matrix of coordinates to fit trajectory to. Nxdim
+    :param max_iter:
+
+    """
     N = R.shape[1]
     print('N', N)
     times = np.linspace(0, trajectory.period / 3.0, N)
@@ -50,7 +57,6 @@ def fit_trajectory(trajectory, R, max_iter=10):
         assert C.shape[0] == d
         assert C.shape[1] == K
 
-        F_prime = trajectory.get_basis_prime(times=times)
         times = solve_for_times(times, R, C, trajectory)
     return C, times
 

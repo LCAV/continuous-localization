@@ -176,6 +176,14 @@ n_samples)
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
 
+    def set_n_complexity(self, n_complexity):
+        """ Set new complexity and cut or pad coefficients with zeros if necessary. """
+        new_coeffs = np.zeros((self.dim, n_complexity))
+        keep = min(self.n_complexity, n_complexity)
+        new_coeffs[:, :keep] = self.coeffs[:, :keep]
+        self.coeffs = new_coeffs
+        self.n_complexity = n_complexity
+
     def get_sampling_points(self, times=None, basis=None):
         """ Get points where we get measurements.
         
@@ -214,13 +222,17 @@ n_samples)
                 print('Warning: overwriting basis with times.')
             basis = self.get_basis(times=times)
 
-        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker' and k != "ax")}
         if "ax" in kwargs:
-            kwargs["ax"].plot(*trajectory_cont[:2], **cont_kwargs)
+            ax = kwargs["ax"]
+            kwargs.pop("ax")
         else:
-            plt.plot(*trajectory_cont[:2], **cont_kwargs)
+            fig, ax = plt.subplots()
+
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker')}
+        ax.plot(*trajectory_cont[:2], **cont_kwargs)
+
         if "name" in self.params:
-            plt.title(self.params["name"])
+            ax.set_title(self.params["name"])
 
         if basis is not None:
             trajectory = self.get_sampling_points(basis=basis)
@@ -233,8 +245,8 @@ n_samples)
             for pop_label in pop_labels:
                 if pop_label in kwargs.keys():
                     kwargs.pop(pop_label)
-            plt.scatter(*trajectory[:2], **kwargs)
-        return plt.gca()
+            ax.scatter(*trajectory[:2], **kwargs)
+        return ax
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
@@ -478,7 +490,6 @@ n_samples)
         return radii, tangents, curvatures
 
     def get_left_and_right_points(self, times, width=ROBOT_WIDTH, ax=None):
-
         basis = self.get_basis(times=times)
         sample_points = self.get_sampling_points(basis=basis)
         tangents, normal_vectors, _ = self.get_local_frame(times)

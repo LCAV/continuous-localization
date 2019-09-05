@@ -65,5 +65,17 @@ def get_trajectory(filename, dim=2):
         trajectory.set_coeffs(coeffs=coeffs)
         return trajectory
 
+    elif 'Plaza1' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=100, full_period=True)
+
+    elif 'Plaza2' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=100.3 - 45.1, full_period=True)
+
+    elif 'uah1' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='polynomial')
+
+    elif 'uah2' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=1470, full_period=True)
+
     else:
         raise NotImplementedError(filename)
