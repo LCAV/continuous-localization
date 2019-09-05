@@ -55,7 +55,7 @@ class TrajectoryCreator:
             coords = np.array([self.xs, self.ys])
             np.savetxt(self.fname + '.txt', coords, fmt='%.5f', delimiter=',')
 
-            print('saved as {}.txt,png'.format(self.fname))
+            print('saved as {}.txt and image'.format(self.fname))
 
         [self.fig.canvas.mpl_disconnect(cid) for cid in self.cids]
 
@@ -75,8 +75,9 @@ if __name__ == "__main__":
 
     #fname = 'fitting/random_{:.0f}'.format(time.time())
     #fname = 'fitting/circle'
-    fname = 'fitting/complicated'
+    #fname = 'fitting/complicated'
     #fname = 'fitting/test'
+    fname = 'fitting/plaza2'
     make_dirs_safe(fname)
     print('saving as', fname)
 

@@ -173,11 +173,11 @@ def get_D_topright(anchors, samples):
     return D[:n_positions, n_positions:]
 
 
-def get_measurements(traj, env, seed=None, n_samples=20):
+def get_measurements(traj, anchors, seed=None, n_samples=20, times=None):
     """ Get measurements from setup.
 
     :param traj: Trajectory instance.
-    :param env: Environment instance.
+    :param anchors: Anchor coordinates, Nxdim.
     :param n_samples: number of samples
     :param seed: random seed
 
@@ -186,7 +186,10 @@ def get_measurements(traj, env, seed=None, n_samples=20):
     # get measurements
     if seed is not None:
         np.random.seed(seed)
-    basis = traj.get_basis(n_samples=n_samples)
+    if times is None:
+        basis = traj.get_basis(n_samples=n_samples)
+    else:
+        basis = traj.get_basis(times=times)
     points = traj.get_sampling_points(basis=basis)
-    D_topright = get_D_topright(env.anchors, points)
+    D_topright = get_D_topright(anchors, points)
     return basis, D_topright
