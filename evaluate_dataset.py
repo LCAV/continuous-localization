@@ -558,4 +558,5 @@ def compute_distance_matrix(df,
     # If some times did not have valid measurements (not correct anchors, etc.)
     # then there might be some trailing all-zero rows.
 
+    D_topright_real[np.isnan(D_topright_real)] = 0.0
     return D_topright_real[:i, :], actually_used_times
