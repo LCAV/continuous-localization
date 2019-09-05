@@ -22,7 +22,7 @@ def verify_dimensions(D, anchors, basis, times):
         raise ValueError(D.shape, anchors.shape, basis.shape, len(times))
 
 
-def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None):
+def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None, verbose=False):
     """ Iteratively compute estimates over fixed time window.
 
     :param D: measurement matrix with squared distances (N x M)
@@ -64,7 +64,11 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None):
             C_k = alternativePseudoInverse(D_k, anchors, basis_k)
             C_list.append(C_k)
         except AssertionError:
-            print('skipping {:.2f} because only {} measurements.'.format(t_s, len(np.array(tk))))
+            if verbose:
+                print('skipping {:.2f} because only {} measurements.'.format(t_s, len(np.array(tk))))
+        except np.linalg.LinAlgError:
+            if verbose:
+                print('skipping {:.2f} because failed.'.format(t_s))
         except ValueError:
             raise
 
@@ -74,7 +78,7 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None):
     return C_list, t_list
 
 
-def build_up_algorithm(D, anchors, basis, times, eps=1):
+def build_up_algorithm(D, anchors, basis, times, eps=1, verbose=False):
     """ Build-up algorithm for trajectory estimation. 
     
     Build up different trajectories as long as measurements "fit". When they 
@@ -121,13 +125,15 @@ def build_up_algorithm(D, anchors, basis, times, eps=1):
                 assert g(C_test) < 2 * eps
                 C_k = C_test
             except AssertionError as e:
-                pass
-                #print('skipping {:.2f} because only {} measurements.'.format(t_n, len(np.array(tk))))
+                if verbose:
+                    print('skipping {:.2f} because only {} measurements.'.format(t_n, len(np.array(tk))))
             except np.linalg.LinAlgError:
-                print('skipping {:.2f} because failed'.format(t_n))
+                if verbose:
+                    print('skipping {:.2f} because failed'.format(t_n))
 
         elif (C_k is not None) and g(C_k) > eps:
-            print('changing to new trajectory, because error is {:.4f}'.format(g(C_k)))
+            if verbose:
+                print('changing to new trajectory, because error is {:.4f}'.format(g(C_k)))
 
             basis_k = f_n
             D_k = d_mn_row
