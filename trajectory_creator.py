@@ -41,8 +41,8 @@ def get_trajectory(filename, dim=2):
         return trajectory
 
     elif 'clover' in filename:
-        trajectory = Trajectory(dim=2, model='full_bandlimited', n_complexity=5)
-        trajectory.set_coeffs(seed=1)
+        trajectory = Trajectory(dim=2, model='full_bandlimited', n_complexity=7)
+        trajectory.set_coeffs(coeffs=np.array([[0., 1., 0., 0., 0., 1, 0.], [0., 0., 1., 0., 0., 0., -1]]), )
         return trajectory
 
     elif 'straight' in filename:  #straight1.csv to straight6.csv

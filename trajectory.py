@@ -60,7 +60,7 @@ class Trajectory(object):
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.period)
-        new.set_coeffs(coeffs=self.coeffs)
+        new.set_coeffs(coeffs=np.copy(self.coeffs))
         return new
 
     def get_times(self, n_samples):

@@ -1,37 +1,28 @@
 {
-    "time": 1565801585.9961667,
-    "n_its": 500,
-    "anchors": [
-        8
-    ],
-    "noise_sigmas": [
-        1e-05,
-        0.0001,
-        0.001,
-        0.01,
-        0.1,
-        1.0,
-        10.0,
-        100.0
-    ],
-    "success_thresholds": [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
+    "key": "noise_right_inverse",
+    "n_its": 1000,
+    "time": 1567652730.0291886,
+    "positions": [
+        500
     ],
     "complexities": [
         5
     ],
-    "noise_to_square": false,
-    "measure_distances": false,
-    "positions": [
-        20
+    "anchors": [
+        4
     ],
+    "noise_sigmas": [
+        0.1,
+        1.0,
+        10.0
+    ],
+    "success_thresholds": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "noise_to_square": false,
     "solver": "alternativePseudoInverse",
-    "key": "noise_right_inverse"
+    "sampling_strategy": "single_time",
+    "measure_distances": false
 }
