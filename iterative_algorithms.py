@@ -33,6 +33,8 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None, ve
     :param t_window: width of fixed time window. 
 
     """
+    if type(times) == list:
+        times = np.array(times)
 
     verify_dimensions(D, anchors, basis, times)
 

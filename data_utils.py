@@ -21,7 +21,7 @@ range_system_id = "Range"
 gt_anchor_id = "GT"
 
 
-def create_anchors_df(anchors_data):
+def create_anchors_df(anchor_data):
     """ Create standard anchors dataframe. 
 
     :param anchors_data: anchors data read from .mat file ('TL' field).
@@ -54,9 +54,9 @@ def create_full_df(range_data, gt_data):
     range_df.loc[:, 'system_id'] = range_system_id
 
     gt_df = pd.DataFrame(columns=range_df.columns)
-    gt_df.loc[:, 'px'] = result_dict['GT'][:, 1]
-    gt_df.loc[:, 'py'] = result_dict['GT'][:, 2]
-    gt_df.loc[:, 'timestamp'] = result_dict['GT'][:, 0]
+    gt_df.loc[:, 'px'] = gt_data[:, 1]
+    gt_df.loc[:, 'py'] = gt_data[:, 2]
+    gt_df.loc[:, 'timestamp'] = gt_data[:, 0]
     gt_df.loc[:, 'anchor_id'] = gt_anchor_id
     gt_df.loc[:, 'system_id'] = gt_system_id
 
@@ -154,11 +154,10 @@ def plot_distance_errors(this_df, ax=None, **kwargs):
     ax.scatter(distances_gt, errors, alpha=0.5, **kwargs)
     ax.set_xlabel('real distance [m]')
     ax.set_ylabel('error [m]')
-    ax.set_title(dataname)
     return ax
 
 
-def plot_distance_times(this_df):
+def plot_distance_times(full_df):
     range_ids = full_df[full_df.system_id == range_system_id].anchor_id.unique()
     fig, axs = plt.subplots(len(range_ids), sharex=True)
     fig.set_size_inches(10, 10)
@@ -170,6 +169,7 @@ def plot_distance_times(this_df):
         axs[i].set_title('anchor {}'.format(anchor_id))
         axs[i].set_ylabel('distance [m]')
     axs[i].set_xlabel('time [s]')
+    return fig, axs
 
 
 def plot_individual(C_list, t_list, traj):
@@ -181,9 +181,7 @@ def plot_individual(C_list, t_list, traj):
         if len(t) > 0:
             traj.plot(ax=ax, times=t)
             #traj.plot(ax=ax, times=t, label='{:.1f}'.format(t[0]))
-
-    ax.set_xlim(*xlim)
-    ax.set_ylim(*ylim)
+    return ax
 
 
 def plot_smooth(result_df):
@@ -192,172 +190,8 @@ def plot_smooth(result_df):
     #plt.scatter(result_df.px, result_df.py, s=1)
     plt.scatter(result_df.px_median, result_df.py_median, s=2, color='red')
     plt.plot(result_df.px_median, result_df.py_median, color='red')
-
-    plt.plot(ground_truth_pos.px, ground_truth_pos.py, color='black')
-    ax.set_xlim(*xlim)
-    ax.set_ylim(*ylim)
+    return ax
 
 
 if __name__ == "__main__":
-    anchor_names = None  # use all anchors by default.
-
-    filename = 'datasets/uah1.mat'
-    # fingers. works ok.
-    #filename = 'datasets/Plaza1.mat'; # zig zag. does not work super well.
-    #filename = 'datasets/Plaza2.mat' # triangle. works well.
-
-    verbose = False
-    traj = get_trajectory(filename)
-    dataname = filename.split('/')[-1].split('.')[0]
-
-    if dataname == 'uah1':
-        t_window = 1.0
-        eps = 2.0
-        xlim = 0, 50
-        ylim = -20, 20
-
-        min_time = 0
-        max_time = 1000
-
-        # for iterative.
-        n_complexity_it = 2
-        model_it = 'polynomial'
-        t_window_it = 80
-
-    elif dataname == 'Plaza1':
-        t_window = 0.5
-        eps = 0.5
-        xlim = -50, 10
-        ylim = -20, 75
-
-        # choose one:
-        min_time = 0  # first big circle
-        max_time = 200  # first big circle
-        min_time = 510  # first loop
-        max_time = 600  # first loop
-        min_time = 0  # first few loops
-        max_time = 1000  # first few loops.
-
-        # for iterative.
-        n_complexity_it = 3
-        model_it = 'full_bandlimited'
-        period_it = 40
-        t_window_it = 20
-
-    elif dataname == 'Plaza2':
-        t_window = 0.1
-        eps = 0.2
-        xlim = -80, 10
-        ylim = -20, 75
-
-        min_time = 45.1
-        period = 100.3 - 45.1
-        num_loops = 2
-        max_time = min_time + num_loops * period
-        traj.period = period
-
-        # for iterative.
-        n_complexity_it = 5
-        model_it = 'full_bandlimited'
-        period_it = 40
-        t_window_it = 40
-
-    result_dict = loadmat(filename)
-
-    ## Prepare dataset
-    anchor_data = result_dict['TL']
-    range_data = result_dict['TD']
-    gt_data = result_dict['GT']
-
-    anchors_df = create_anchors_df(anchor_data)
-    anchors_df = format_anchors_df(anchors_df, range_system_id=range_system_id, gt_system_id=gt_system_id)
-
-    full_df = create_full_df(range_data, gt_data)
-    full_df = format_data_df(full_df, anchors_df, gt_system_id=gt_system_id, range_system_id=range_system_id)
-    if verbose:
-        print('time going from {:.1f} to {:.1f}'.format(full_df.timestamp.min(), full_df.timestamp.max()))
-    full_df = full_df[(full_df.timestamp >= min_time) & (full_df.timestamp <= max_time)]
-    full_df.loc[:, 'timestamp'] = full_df.timestamp - full_df.timestamp.min()
-
-    fig, axs = plt.subplots(1, 2)
-    sns.scatterplot(data=full_df, x='px', y='py', hue='timestamp', linewidth=0.0, ax=axs[0])
-    sns.scatterplot(data=full_df, x='timestamp', y='px', hue='timestamp', linewidth=0.0, ax=axs[1])
-
-    print('adding ground truth...')
-    full_df = add_gt_raw(full_df, t_window=t_window, gt_system_id=gt_system_id)
-    full_df.loc[:, "distance_gt"] = full_df.apply(
-        lambda row: apply_distance_gt(row, anchors_df, gt_system_id=gt_system_id), axis=1)
-    print('...done')
-
-    fig, axs = plt.subplots(1, 2)
-    range_df = full_df[full_df.system_id == range_system_id]
-    sns.scatterplot(data=range_df, x='px', y='py', hue='timestamp', linewidth=0.0, ax=axs[0])
-    #sns.scatterplot(data=anchors_df, x='px', y='py', linewidth=0.0,  ax=axs[0], color='red')
-    sns.scatterplot(data=range_df, x='timestamp', y='px', hue='timestamp', linewidth=0.0, ax=axs[1])
-
-    plot_distance_times(full_df)
-    plot_distance_errors(full_df)
-
-    anchors = get_coordinates(anchors_df, anchor_names)
-
-    ## Construct anchors.
-    if anchor_names is None:
-        anchors = anchors_df.loc[:, ['px', 'py', 'pz']].values.astype(np.float32).T
-    else:
-        anchors_df = anchors_df.loc[anchors_df.anchor_name.isin(anchor_names)]
-        anchors = get_coordinates(anchors_df, anchor_names)
-
-    ## Construct times.
-    range_df = full_df[full_df.system_id == range_system_id]
-    times = range_df.timestamp.unique()
-
-    ## Construct D.
-    #chosen_distance = 'distance_gt'
-    chosen_distance = 'distance'
-    D, times = compute_distance_matrix(full_df, anchors_df, anchor_names, times, chosen_distance)
-    if np.sum(D > 0) > D.shape[0]:
-        print('Warning: multiple measurements for some times!')
-
-    ## Construct ground truth.
-    ground_truth_pos = get_ground_truth(full_df, times)
-
-    list_complexities = [3, 5, 21, 51]
-    for n_complexity in list_complexities:
-
-        traj.set_n_complexity(n_complexity)
-        basis = traj.get_basis(times=times)
-
-        Chat_weighted = alternativePseudoInverse(D, anchors[:2, :], basis, weighted=True)
-        Chat = alternativePseudoInverse(D, anchors[:2, :], basis, weighted=False)
-
-        traj.set_coeffs(coeffs=Chat)
-
-        traj_weighted = traj.copy()
-        traj_weighted.set_coeffs(coeffs=Chat_weighted)
-
-        fig, ax = plt.subplots()
-        traj.plot(times=times, color='green', label='non-weighted', ax=ax)
-        traj_weighted.plot(times=times, color='blue', label='weighted', ax=ax)
-        ax.plot(full_df.px, full_df.py, color='black', label='ground truth')
-        ax.set_xlabel('x [m]')
-        ax.set_ylabel('y [m]')
-        ax.set_title('K={}'.format(traj.n_complexity))
-        ax.legend()
-
-    ## Iterative algorithms
-    traj.set_n_complexity(n_complexity_it)
-    traj.model = model_it
-    traj.period = period_it
-    basis = traj.get_basis(times=times)
-
-    ### Averaging algorithm
-    C_list, t_list = averaging_algorithm(D, anchors[:2, :], basis, times, t_window=t_window_it)
-    plot_individual(C_list, t_list, traj.copy())
-    result_df = get_smooth_points(C_list, t_list, traj)
-    plot_smooth(result_df)
-
-    ### Build up algorithm
-    C_list, t_list = build_up_algorithm(D, anchors[:2, :], basis, times, eps=eps, verbose=False)
-    plot_individual(C_list, t_list, traj.copy())
-    result_df = get_smooth_points(C_list, t_list, traj)
-    plot_smooth(result_df)
+    print('see Datasets.ipynb for how to use above functions.')
