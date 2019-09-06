@@ -19,7 +19,7 @@ class TestTrajectory(unittest.TestCase):
 
     def test_curvature(self):
         radii, unit_tangents, radial_acc = self.trajectory.get_curvatures(self.trajectory.get_times(n_samples=7))
-        np.testing.assert_allclose(2 * np.ones(7), radii)
+        np.testing.assert_allclose(4 * np.ones(7), radii)
 
     def test_dimensions(self):
         n_samples = 10
@@ -46,7 +46,7 @@ class TestTrajectory(unittest.TestCase):
         np.testing.assert_almost_equal(times, times_reconstructed)
 
     def test_times_and_distances_circle(self):
-        distances = [0, 2 * np.pi, 4 * np.pi, 6 * np.pi]
+        distances = [0, 4 * np.pi, 8 * np.pi, 12 * np.pi]
         period = self.trajectory.period
         times, distances_reconstructed, _ = self.trajectory.get_times_from_distances(
             arbitrary_distances=distances, time_steps=100000)

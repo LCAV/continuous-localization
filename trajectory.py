@@ -97,7 +97,9 @@ class Trajectory(object):
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
-            return np.cos(2 * np.pi * k * n / self.period)
+            basis = np.ones((self.n_complexity, n_samples))
+            basis[1:] = 2 * np.cos(2 * np.pi * k[1:] * n / self.period)
+            return basis
         elif self.model == 'polynomial':
             return np.power(n, k)
         elif self.model == 'full_bandlimited':
@@ -105,8 +107,8 @@ class Trajectory(object):
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = np.cos(2 * np.pi * k * n / self.period)
-            basis[1::2] = np.sin(2 * np.pi * k[1:] * n / self.period)
+            basis[2::2] = 2 * np.cos(2 * np.pi * k[1:] * n / self.period)
+            basis[1::2] = 2 * np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
@@ -121,7 +123,7 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -2 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
+            return -4 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
             return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
@@ -130,8 +132,8 @@ n_samples)
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = -2 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
-            basis[1::2] = 2 * np.pi * k[1:] / self.period * np.cos(2 * np.pi * k[1:] * n / self.period)
+            basis[::2] = -4 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
+            basis[1::2] = 4 * np.pi * k[1:] / self.period * np.cos(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
@@ -146,7 +148,7 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -(2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
+            return -2 * (2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
             return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
@@ -155,8 +157,8 @@ n_samples)
                 "full bandlimited model requires odd number of coefficients"
             k = np.reshape(range(math.ceil(self.n_complexity / 2)), [math.ceil(self.n_complexity / 2), 1])
             basis = np.ones((self.n_complexity, n_samples))
-            basis[::2] = -(2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
-            basis[1::2] = -(2 * np.pi * k[1:] / self.period)**2 * np.sin(2 * np.pi * k[1:] * n / self.period)
+            basis[::2] = -2 * (2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
+            basis[1::2] = -2 * (2 * np.pi * k[1:] / self.period)**2 * np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
             raise NotImplementedError(self.model)
