@@ -158,8 +158,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                         D_topright, environment.anchors, basis, weighted=True)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
-                                    )
+                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
+                                        ' or "alternativePseudoInverse"')
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
@@ -167,12 +167,12 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                     trajectory_estimated, environment, n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 
-                                robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                robust_add(errors, indexes, np.linalg.norm(P_hat - trajectory.coeffs))
                                 robust_add(relative_errors, indexes,
-                                           np.mean(np.abs(distances - estimated_distances) / (distances + 1e-10)))
-                                robust_add(absolute_errors, indexes, np.mean(np.abs(distances - estimated_distances)))
+                                           np.linalg.norm((distances - estimated_distances) / (distances + 1e-10)))
+                                robust_add(absolute_errors, indexes, np.linalg.norm(distances - estimated_distances))
 
-                                assert not np.mean(np.abs(P_hat - trajectory.coeffs)) > success_thresholds[noise_idx]
+                                assert not np.linalg.norm(P_hat - trajectory.coeffs) > success_thresholds[noise_idx]
 
                                 robust_increment(successes, indexes)
 

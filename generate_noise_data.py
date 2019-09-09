@@ -57,7 +57,7 @@ parameters = [
         'positions': [500],
         'complexities': [3],
         'anchors': [3, 5, 10],
-        'noise_sigmas': [0.1],
+        'noise_sigmas': [1],
         'success_thresholds': [0.0],
         'noise_to_square': True,
         'solver': 'alternativePseudoInverse',
