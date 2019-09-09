@@ -1,28 +1,26 @@
 {
-    "key": "noise_right_inverse_weighted",
+    "key": "noise_and_anchors",
     "n_its": 1000,
-    "time": 1567833360.505675,
+    "time": 1567829366.8377552,
     "positions": [
         500
     ],
     "complexities": [
-        5
+        3
     ],
     "anchors": [
-        4
+        3,
+        5,
+        10
     ],
     "noise_sigmas": [
-        0.1,
-        1.0,
-        10.0
+        0.1
     ],
     "success_thresholds": [
-        0.0,
-        0.0,
         0.0
     ],
-    "noise_to_square": false,
-    "solver": "weightedPseudoInverse",
+    "noise_to_square": true,
+    "solver": "alternativePseudoInverse",
     "sampling_strategy": "single_time",
     "measure_distances": false
 }
