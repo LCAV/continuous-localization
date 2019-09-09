@@ -232,7 +232,7 @@ def save_results(filename, results):
     for key, array in results.items():
         for i in range(100):
             try_name = filename.format(key, i)
-            if not os.path.exists(try_name):
+            if not os.path.exists(try_name + '.npy'):
                 try_name = filename.format(key, i)
                 np.save(try_name, array, allow_pickle=False)
                 print('saved as', try_name)
@@ -252,7 +252,11 @@ def read_results(filestart):
             key = filename.split('_')[-2]
             new_array = np.load(full_path, allow_pickle=False)
             if key in results.keys():
-                results[key] += new_array
+                old_array = results[key]
+                if old_array.shape == new_array.shape:
+                    results[key] = np.stack([old_array, new_array], axis=-1)
+                else:
+                    results[key] = np.concatenate([old_array, new_array[..., np.newaxis]], axis=-1)
             else:
                 print('new key:', key)
                 results[key] = new_array
