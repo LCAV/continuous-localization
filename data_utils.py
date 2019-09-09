@@ -148,13 +148,20 @@ def plot_distance_errors(this_df, ax=None, **kwargs):
     distances_gt = this_df.distance_gt.values[indices]
     errors = distances - distances_gt
 
+    # a quick hack for calculating the variance.
+    error_df = pd.DataFrame({'e': errors, 'd': distances_gt})
+    error_df.sort_values('d', inplace=True)
+    variances = error_df.e.rolling(10).std().values
+    print('mean std', np.nanmean(variances))
+    print('median std', np.nanmedian(variances))
+
     if ax is None:
         fig, ax = plt.subplots()
         fig.set_size_inches(5, 2)
     ax.scatter(distances_gt, errors, alpha=0.5, **kwargs)
     ax.set_xlabel('real distance [m]')
-    ax.set_ylabel('error [m]')
-    return ax
+    ax.set_ylabel('distance error [m]')
+    return ax, errors, distances_gt
 
 
 def plot_distance_times(full_df):

@@ -122,6 +122,7 @@ theory/
 # datasets
 datasets/*
 !datasets/README.md
+results/*.pdf
 
 # images 
 *.png

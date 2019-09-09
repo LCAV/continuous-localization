@@ -517,6 +517,8 @@ def compute_distance_matrix(df,
     :param chosen_distance: name of distance column to use.
     :param dimension: calculate distances in this dimension (2 or 3)
     :param robot_height: if dimension is 2, use this for robot height.
+
+    :return: squared distance matrix of shape n_measurements x n_anchors.
     '''
 
     if anchor_names is None:

@@ -250,6 +250,17 @@ n_samples)
             ax.scatter(*trajectory[:2], **kwargs)
         return ax
 
+    def plot_pretty(self, times=None, **kwargs):
+        trajectory_cont = self.get_continuous_points(times=times)
+        if "ax" in kwargs:
+            ax = kwargs["ax"]
+            kwargs.pop("ax")
+        else:
+            fig, ax = plt.subplots()
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker')}
+        ax.plot(*trajectory_cont[:2], **cont_kwargs)
+        return ax
+
     def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
         ns, ms = np.where(mask)
