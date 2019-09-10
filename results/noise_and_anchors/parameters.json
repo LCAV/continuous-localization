@@ -1,7 +1,7 @@
 {
     "key": "noise_and_anchors",
     "n_its": 1000,
-    "time": 1567829366.8377552,
+    "time": 1568082199.2604797,
     "positions": [
         500
     ],
@@ -14,7 +14,7 @@
         10
     ],
     "noise_sigmas": [
-        0.1
+        1
     ],
     "success_thresholds": [
         0.0

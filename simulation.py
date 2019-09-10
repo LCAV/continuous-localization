@@ -253,13 +253,13 @@ def read_results(filestart):
             new_array = np.load(full_path, allow_pickle=False)
             if key in results.keys():
                 old_array = results[key]
-                if old_array.shape == new_array.shape:
-                    results[key] = np.stack([old_array, new_array], axis=-1)
-                else:
-                    results[key] = np.concatenate([old_array, new_array[..., np.newaxis]], axis=-1)
+                # if old_array.shape == new_array.shape: # this should not be needed if we always add new axis
+                results[key] = np.stack([old_array, new_array], axis=-1)
+                # else:
+                #     results[key] = np.concatenate([old_array, new_array[..., np.newaxis]], axis=-1)
             else:
                 print('new key:', key)
-                results[key] = new_array
+                results[key] = new_array[..., np.newaxis]
     return results
 
 

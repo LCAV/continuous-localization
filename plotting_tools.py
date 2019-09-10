@@ -84,7 +84,8 @@ def plot_noise(key,
                background_alpha=0.1,
                start=1,
                anchors=False,
-               lines=None):
+               lines=None,
+               ax=None):
     if error_types is None:
         error_types = ['absolute-errors', 'relative-errors', 'errors']
 
@@ -111,33 +112,38 @@ def plot_noise(key,
 
     for error_type in error_types:
         error = np.mean(results[error_type], axis=-1)
+        print(error.shape)
         error = error.squeeze()
+        print(error.shape)
         measurements = np.arange(min_measurements, max_measurements + 1)[::-1]
         if len(second_dim) == 1:
             error = error[:, None]
 
-        fig1, ax1 = plt.subplots()
+        if ax is None:
+            fig1, ax1 = plt.subplots()
+        else:
+            ax1 = ax
 
         if len(second_dim) == 1:
             error = error.T
         for idx, _ in enumerate(second_dim[min_noise:max_noise]):
-            plot = plt.loglog(measurements, error.T[:len(measurements), idx], alpha=background_alpha)
+            plot = ax1.loglog(measurements, error.T[:len(measurements), idx], alpha=background_alpha)
             z = np.polyfit(np.log(measurements[:-start]), np.log(error[idx, :len(measurements[:-start])]), 1)
             pol = np.poly1d(z)
             print(("anchors {}" if anchors else "noise: {}").format(second_dim[idx]))
             print("fitted slope: {:.2f}".format(z[0]))
-            plt.loglog(
+            ax1.loglog(
                 measurements,
                 np.exp(pol(np.log(measurements))),
                 c=plot[0].get_color(),
-                label=("{} anchors" if anchors else r"noise $\sigma$: {}").format(second_dim[idx]),
+                label=("{} anchors" if anchors else r"noise: {}").format(second_dim[idx]),
                 linestyle=next(linecycler))
         plt.xlabel("number of measurements")
         if error_type == "errors":
             plt.ylabel("errors")
         else:
             plt.ylabel(" ".join(error_type.split("-") + ["on distances"]))
-        ax1.legend(loc='upper right')
+        ax1.legend(loc='upper right', mode='expand', ncol=len(second_dim[min_noise:max_noise]))
         ax1.set_xticks(measurements[::int(len(measurements) / 5)])
         ax1.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
         ax1.get_xaxis().set_minor_formatter(ticker.NullFormatter())

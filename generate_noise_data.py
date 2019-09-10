@@ -65,5 +65,5 @@ parameters = [
     },
 ]
 
-with Pool(2) as p:
+with Pool(4) as p:
     p.map(f, parameters)
