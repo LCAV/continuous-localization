@@ -64,6 +64,9 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None, ve
 
         try:
             C_k = alternativePseudoInverse(D_k, anchors, basis_k)
+            # We need this somehow for numercial reasons.
+            # Otherwise sometimes the tests fail because -0. != 0.
+            C_k[np.abs(C_k) <= 1e-10] = 0.0
             C_list.append(C_k)
         except AssertionError:
             if verbose:
@@ -126,6 +129,9 @@ def build_up_algorithm(D, anchors, basis, times, eps=1, verbose=False):
                 # TODO find a sensible general threshold here.
                 assert g(C_test) < 2 * eps
                 C_k = C_test
+                # We need this somehow for numercial reasons.
+                # Otherwise sometimes the tests fail because -0. != 0.
+                C_k[np.abs(C_k) <= 1e-10] = 0.0
             except AssertionError as e:
                 if verbose:
                     print('skipping {:.2f} because only {} measurements.'.format(t_n, len(np.array(tk))))
