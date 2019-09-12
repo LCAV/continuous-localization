@@ -10,7 +10,9 @@ Created by (in alphabetic order):
 * Frederike Duembgen
 * Michalina Pacholska
 
-## About
+## Installation
+
+### Basics
 
 Get this package and its non-standard code dependencies using:
 
@@ -39,7 +41,6 @@ commit on that branch) then run these lines of code:
 
     git config -f .gitmodules submodule.pylocus.branch <new branch name>
     git submodule update --remote
-
 
 ### Note on SCS dependency:
 

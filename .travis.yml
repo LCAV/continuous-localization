@@ -2,7 +2,6 @@ language: python
 sudo: required
 install: 
   - pip install -r requirements.txt
-  - python pylocus/setup.py install
 python:
   - "3.5"
 script:
