@@ -34,7 +34,7 @@ def get_anchors_and_distances(D, idx, dim=2):
     anchors = []
     counter = 0
     for a_id in range(D.shape[1]):
-        indices = np.where(D[:idx, a_id] > 0)[0]
+        indices = np.where(D[:idx + 1, a_id] > 0)[0]
         if len(indices) > 0:
             latest_idx = indices[-1]
             r2.append(D[latest_idx, a_id])
