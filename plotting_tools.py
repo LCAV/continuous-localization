@@ -19,7 +19,7 @@ def make_dirs_safe(path):
 
 def savefig(fig, name):
     make_dirs_safe(name)
-    fig.savefig(name, bbox_inches='tight')
+    fig.savefig(name, bbox_inches='tight', pad_inches=0)
     print('saved as', name)
 
 
@@ -46,6 +46,40 @@ def add_plot_decoration(label, parameters):
     y_val = parameters[label[0]]
     plt.yticks(range(len(y_val)), y_val)
     plt.gca().xaxis.tick_bottom()
+
+
+def add_scalebar(ax, size=5, loc='lower left'):
+    """ Add a scale bar to the plot. 
+
+    :param ax: axis to use.
+    :param size: size of scale bar.
+    :param loc: location (same syntax as for matplotlib legend)
+    """
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+    import matplotlib.font_manager as fm
+    fontprops = fm.FontProperties(size=8)
+    scalebar = AnchoredSizeBar(
+        ax.transData,
+        size,
+        '{} m'.format(size),
+        loc,
+        pad=0.1,
+        color='black',
+        frameon=False,
+        size_vertical=1,
+        fontproperties=fontprops)
+    ax.add_artist(scalebar)
+
+
+def remove_ticks(ax):
+    """ Remove all ticks and margins from plot. """
+    for ax_name in ['x', 'y']:
+        ax.tick_params(
+            axis=ax_name, which='both', bottom=False, top=False, left=False, labelbottom=False, labelleft=False)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0.1)
+    plt.margins(0, 0)
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
 
 
 def plot_cdf_raw(values, ax, **kwargs):

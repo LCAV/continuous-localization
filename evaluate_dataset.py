@@ -222,12 +222,16 @@ def add_gt_raw(df, t_window=0.1, gt_system_id="GT"):
     assert (gt_system_id in df.system_id.values), 'did not find any gt measurements in dataset.'
     df_gt = df[df.system_id == gt_system_id]
 
+    coords = ['px', 'py', 'pz']
+    if all(pd.isnull(df.pz)):
+        coords = ['px', 'py']
+
     for i, row in df.iterrows():
         if row.system_id == gt_system_id:
             continue
         else:
-            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, ['px', 'py', 'pz']]
-            df.loc[i, ['px', 'py', 'pz']] = allowed.median()
+            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, coords].astype(np.float32).values
+            df.loc[i, coords] = np.nanmedian(allowed, axis=0)
     return df
 
 
