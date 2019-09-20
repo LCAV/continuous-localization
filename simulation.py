@@ -17,6 +17,7 @@ from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 from trajectory import Trajectory
+import hypothesis as h
 
 
 def robust_increment(arr, idx):
@@ -141,6 +142,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
+                                assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
+                                                         n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == semidefRelaxationNoiseless):
                                     X = semidefRelaxationNoiseless(
                                         D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
@@ -155,8 +158,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                         D_topright, environment.anchors, basis, weighted=True)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints" or "alternativePseudoInverse"'
-                                    )
+                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
+                                        ' or "alternativePseudoInverse"')
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
@@ -164,12 +167,12 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                     trajectory_estimated, environment.anchors, n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 
-                                robust_add(errors, indexes, np.mean(np.abs(P_hat - trajectory.coeffs)))
+                                robust_add(errors, indexes, np.linalg.norm(P_hat - trajectory.coeffs))
                                 robust_add(relative_errors, indexes,
-                                           np.mean(np.abs(distances - estimated_distances) / (distances + 1e-10)))
-                                robust_add(absolute_errors, indexes, np.mean(np.abs(distances - estimated_distances)))
+                                           np.linalg.norm((distances - estimated_distances) / (distances + 1e-10)))
+                                robust_add(absolute_errors, indexes, np.linalg.norm(distances - estimated_distances))
 
-                                assert not np.mean(np.abs(P_hat - trajectory.coeffs)) > success_thresholds[noise_idx]
+                                assert not np.linalg.norm(P_hat - trajectory.coeffs) > success_thresholds[noise_idx]
 
                                 robust_increment(successes, indexes)
 
@@ -189,10 +192,13 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             except np.linalg.LinAlgError:
                                 robust_increment(num_not_solved, indexes)
 
-                            except AssertionError:
-                                logging.info("result not accurate n_positions={}, n_missing={}".format(
-                                    n_positions, n_missing))
-                                robust_increment(num_not_accurate, indexes)
+                            except AssertionError as e:
+                                if str(e) == "insufficient rank":
+                                    robust_increment(num_not_solved, indexes)
+                                else:
+                                    logging.info("result not accurate n_positions={}, n_missing={}".format(
+                                        n_positions, n_missing))
+                                    robust_increment(num_not_accurate, indexes)
 
                             errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
                             relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
@@ -226,7 +232,7 @@ def save_results(filename, results):
     for key, array in results.items():
         for i in range(100):
             try_name = filename.format(key, i)
-            if not os.path.exists(try_name):
+            if not os.path.exists(try_name + '.npy'):
                 try_name = filename.format(key, i)
                 np.save(try_name, array, allow_pickle=False)
                 print('saved as', try_name)
@@ -246,10 +252,14 @@ def read_results(filestart):
             key = filename.split('_')[-2]
             new_array = np.load(full_path, allow_pickle=False)
             if key in results.keys():
-                results[key] += new_array
+                old_array = results[key]
+                # if old_array.shape == new_array.shape: # this should not be needed if we always add new axis
+                results[key] = np.stack([old_array, new_array], axis=-1)
+                # else:
+                #     results[key] = np.concatenate([old_array, new_array[..., np.newaxis]], axis=-1)
             else:
                 print('new key:', key)
-                results[key] = new_array
+                results[key] = new_array[..., np.newaxis]
     return results
 
 

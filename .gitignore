@@ -118,6 +118,7 @@ results/*/*.pdf
 results/get_distances/
 results/one_per_time/
 theory/
+figures/
 
 # datasets
 datasets/*

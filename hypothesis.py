@@ -4,7 +4,7 @@ import numpy as np
 from scipy import special
 import time
 import warnings
-from plotting_tools import make_dirs_safe
+import plotting_tools  # to avoid cyclic imports
 
 
 def get_anchors(n_anchors, n_dimensions=2, check=True):
@@ -175,7 +175,8 @@ def probability_upper_bound(n_dimensions, n_constraints, n_positions, n_anchors,
     total_combinations = special.binom(n_positions * n_anchors, n_measurements)
     end = time.time()
     if end - start > 1:
-        print("Upper bound, position {}, elapsed time: {:.2f}s".format(position_wise, end - start))
+        print("Upper bound, position {}, positions {}, elapsed time: {:.2f}s".format(
+            n_positions, position_wise, end - start))
     return upper_bound_combinations / total_combinations
 
 
@@ -217,7 +218,8 @@ def probability_upper_bound_any_measurements(n_dimensions,
                                              n_positions,
                                              n_anchors,
                                              n_measurements,
-                                             position_wise=False):
+                                             position_wise=False,
+                                             full_matrix=False):
     """Calculate upper bound on the probability of matrix being full rank,
     assuming that the number of measurements is exactly n_constraints * (n_dimensions + 1).
     This assumption allows for speed up calculations.
@@ -238,6 +240,8 @@ def probability_upper_bound_any_measurements(n_dimensions,
     The equations are the same for both cases, but for readability purposes the naming convention for partition of
     anchors is used rather than abstract notation
     :param n_measurements: total number of measurements taken
+    :param full_matrix: if true, returns the  bound on probability of full matrix being of maximal rank. The two
+    necessary conditions are the left submatrix being full rank and having at least (D+2)K-1 measurements
     :return:
         float: upper bound on probability of the left hand side of the matrix being full rank
     """
@@ -252,6 +256,9 @@ def probability_upper_bound_any_measurements(n_dimensions,
         return 1.0
 
     start = time.time()
+    if full_matrix:
+        if n_measurements < (n_dimensions + 2) * n_constraints - 1:
+            return 0
     upper_bound_sum = 0
     for partition in partitions(n_measurements, n_anchors):
         if limit_condition(partition, n_dimensions + 1, n_constraints):
@@ -266,7 +273,8 @@ def probability_upper_bound_any_measurements(n_dimensions,
 
     end = time.time()
     if end - start > 1:
-        print("Upper bound (any), position {}, elapsed time: {:.2f}s".format(position_wise, end - start))
+        print("Upper bound, position {}, measurements {}, elapsed time: {:.2f}s".format(
+            n_measurements, position_wise, end - start))
 
     if np.isinf(n_positions):
         common_factor = special.factorial(n_measurements) / (n_anchors**n_measurements)
@@ -466,5 +474,5 @@ def plot_results(
         plt.ylim(bottom=0)
         matrix_type = "full" if params["full_matrix"] else "left"
         fname = directory + matrix_type + "_matrix_anchors" + key + ".pdf"
-        make_dirs_safe(fname)
+        plotting_tools.make_dirs_safe(fname)
         plt.savefig(fname)
