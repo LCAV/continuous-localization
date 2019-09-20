@@ -59,8 +59,8 @@ class Trajectory(object):
         self.set_coeffs(seed=seed, coeffs=coeffs)
 
     def copy(self):
-        new = Trajectory(self.n_complexity, self.dim, self.model, self.period)
-        new.set_coeffs(coeffs=self.coeffs)
+        new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=self.coeffs)
+        new.params = self.params
         return new
 
     def get_times(self, n_samples):
@@ -169,6 +169,8 @@ n_samples)
             self.coeffs = dimension * \
                 np.random.rand(self.dim, self.n_complexity)
         else:
+            if coeffs.shape[1] != self.n_complexity:
+                print('Warning:', coeffs.shape, self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
@@ -246,6 +248,17 @@ n_samples)
                 if pop_label in kwargs.keys():
                     kwargs.pop(pop_label)
             ax.scatter(*trajectory[:2], **kwargs)
+        return ax
+
+    def plot_pretty(self, times=None, **kwargs):
+        trajectory_cont = self.get_continuous_points(times=times)
+        if "ax" in kwargs:
+            ax = kwargs["ax"]
+            kwargs.pop("ax")
+        else:
+            fig, ax = plt.subplots()
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker')}
+        ax.plot(*trajectory_cont[:2], **cont_kwargs)
         return ax
 
     def plot_connections(self, basis, anchors, mask, **kwargs):

@@ -15,9 +15,9 @@ import matplotlib.pylab as plt
 import scipy as sp
 
 # These system_ids are used by the python pipeline, but will be changed to human-readable
-# "Tango" and "RTT".
-tango_system_id = 7585
-rtt_system_id = 7592
+# "GT" and "Range".
+tango_system_id = 7585  # GT
+rtt_system_id = 7592  # Range
 
 #### Geometry.
 
@@ -51,18 +51,18 @@ def apply_system_id(row, gt_system_id=tango_system_id, range_system_id=rtt_syste
     elif row.system_id == gt_system_id:
         return 'GT'
     else:
-        raise NameError(row.system_id)
+        return row.system_id  # do not change.
 
 
 def read_anchors_df(anchorsfile):
     """ Read and preprocess the anchors file. """
-    anchors_df = pd.read_csv(anchorsfile)
+    anchors_df = pd.read_csv(anchorsfile, engine='python')
     return format_anchors_df(anchors_df)
 
 
 def read_dataset(datafile, anchors_df, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
     """ Read and preprocess the measurement dataset, a .csv file. """
-    data_df = pd.read_csv(datafile)
+    data_df = pd.read_csv(datafile, engine='python')
     data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
     return format_data_df(data_df, anchors_df, gt_system_id, range_system_id)
 
@@ -71,7 +71,6 @@ def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=
     """
     Make sure anchors_df is correctly formatted.
     """
-
     def apply_add_name(row, counter_dict):
         counter_dict[row.system_id] += 1
         return '{} {}'.format(row.system_id, counter_dict[row.system_id])
@@ -81,7 +80,7 @@ def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=
     anchors_df.loc[:, 'system_id'] = anchors_df.apply(
         lambda row: apply_system_id(row, gt_system_id, range_system_id=range_system_id), axis=1)
 
-    counter_dict = {name: 0 for name in anchors_df.system_id.unique()}
+    counter_dict = {name: -1 for name in anchors_df.system_id.unique()}
     anchors_df.loc[:, 'anchor_name'] = anchors_df.apply(lambda row: apply_add_name(row, counter_dict), axis=1)
     return anchors_df
 
@@ -90,10 +89,10 @@ def format_data_df(data_df, anchors_df=None, gt_system_id=tango_system_id, range
     """
     Make sure data df is correctly formatted.
     """
-
     def filter_columns(data_df):
         all_columns = set(data_df.columns)
-        keep_columns = set(['timestamp', 'system_id', 'anchor_id', 'px', 'py', 'pz', 'distance', 'rssi', 'seconds'])
+        keep_columns = set(
+            ['timestamp', 'system_id', 'anchor_id', 'px', 'py', 'pz', 'distance', 'rssi', 'distance_gt', 'seconds'])
         drop_columns = all_columns - keep_columns  # this is a set difference
         data_df.drop(drop_columns, axis=1, inplace=True)
 
@@ -151,6 +150,7 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="GT", label='distance_gt')
     It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
     Therefore it takes less than 0.08 seconds on 4000 rows!! 
     """
+    assert gt_system_id in new_df.system_id.values, '{} not in {}'.format(gt_system_id, new_df.system_id.unique())
     ground_truths = new_df.loc[new_df.system_id == gt_system_id, ["timestamp", "px", "py", "pz"]].values.astype(
         np.float32)
 
@@ -222,12 +222,16 @@ def add_gt_raw(df, t_window=0.1, gt_system_id="GT"):
     assert (gt_system_id in df.system_id.values), 'did not find any gt measurements in dataset.'
     df_gt = df[df.system_id == gt_system_id]
 
+    coords = ['px', 'py', 'pz']
+    if all(pd.isnull(df.pz)):
+        coords = ['px', 'py']
+
     for i, row in df.iterrows():
         if row.system_id == gt_system_id:
             continue
         else:
-            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, ['px', 'py', 'pz']]
-            df.loc[i, ['px', 'py', 'pz']] = allowed.median()
+            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, coords].astype(np.float32).values
+            df.loc[i, coords] = np.nanmedian(allowed, axis=0)
     return df
 
 
@@ -360,7 +364,6 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
         - start_indices:  indices at which movement starts.
 
     """
-
     def find_edge(window, pattern):
         """ Calculate the inner product of the pattern with the given window. """
         if len(window) < len(pattern):
@@ -374,9 +377,9 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
     # compute the rolling inner product between pattern and the length in tango_df.
     tango_df.index = [datetime.datetime.fromtimestamp(t) for t in tango_df.timestamp]
     normalized_series = tango_df.loc[:, "length"] / tango_df.length.max()
-    df = normalized_series.rolling(
-        window=len(pattern), center=False, min_periods=1).apply(
-            find_edge, raw=True, kwargs={'pattern': pattern})
+    df = normalized_series.rolling(window=len(pattern), center=False, min_periods=1).apply(find_edge,
+                                                                                           raw=True,
+                                                                                           kwargs={'pattern': pattern})
     tango_df.reset_index(inplace=True, drop=True)
 
     if plot:
@@ -459,7 +462,7 @@ def match_reference(reference, points):
     assert reference.shape == points.shape
     reference_center = np.mean(reference, axis=1)
     reference -= reference_center[:, None]
-    rotation_center = np.mean(points, axis=1)[:, None]
+    rotation_center = np.mean(points, axis=1)
     points -= rotation_center[:, None]
     rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
     points = rotation @ points
@@ -487,9 +490,18 @@ def apply_rotation_and_translations(points, rotation, rotation_center, reference
     return points
 
 
+def change_system_ids(data_df):
+    """ Temporary fix while results are still saved with all system ids. """
+    if 'Tango' in data_df.system_id.unique():
+        data_df.loc[data_df.system_id == 'Tango', 'system_id'] = 'GT'
+    if 'RTT' in data_df.system_id.unique():
+        data_df.loc[data_df.system_id == 'RTT', 'system_id'] = 'Range'
+
+
 def read_correct_dataset(datafile, anchors_df, use_raw=False):
     if use_raw:
         data_df = read_dataset(datafile, anchors_df)
+        print('reading', datafile)
         data_df = add_gt_raw(data_df, t_window=0.1)
         data_df.loc[:, 'distance_tango'] = data_df.apply(lambda row: apply_distance_gt(row, anchors_df), axis=1)
     else:
@@ -497,6 +509,7 @@ def read_correct_dataset(datafile, anchors_df, use_raw=False):
         resample_name = datafile_root + '_resampled.pkl'
         print('reading', resample_name)
         data_df = pd.read_pickle(resample_name)
+        change_system_ids(data_df)
         data_df = add_gt_resampled(data_df, anchors_df)
         data_df = format_data_df(data_df, anchors_df)
     return data_df
@@ -517,6 +530,8 @@ def compute_distance_matrix(df,
     :param chosen_distance: name of distance column to use.
     :param dimension: calculate distances in this dimension (2 or 3)
     :param robot_height: if dimension is 2, use this for robot height.
+
+    :return: squared distance matrix of shape n_measurements x n_anchors.
     '''
 
     if anchor_names is None:
@@ -558,4 +573,5 @@ def compute_distance_matrix(df,
     # If some times did not have valid measurements (not correct anchors, etc.)
     # then there might be some trailing all-zero rows.
 
+    D_topright_real[np.isnan(D_topright_real)] = 0.0
     return D_topright_real[:i, :], actually_used_times

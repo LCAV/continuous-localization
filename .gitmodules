@@ -1,4 +1,0 @@
-[submodule "pylocus"]
-	path = pylocus
-	url = https://github.com/LCAV/pylocus
-	branch = master
