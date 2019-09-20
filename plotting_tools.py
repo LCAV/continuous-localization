@@ -58,24 +58,28 @@ def add_scalebar(ax, size=5, loc='lower left'):
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
     import matplotlib.font_manager as fm
     fontprops = fm.FontProperties(size=8)
-    scalebar = AnchoredSizeBar(
-        ax.transData,
-        size,
-        '{} m'.format(size),
-        loc,
-        pad=0.1,
-        color='black',
-        frameon=False,
-        size_vertical=1,
-        fontproperties=fontprops)
+    scalebar = AnchoredSizeBar(ax.transData,
+                               size,
+                               '{} m'.format(size),
+                               loc,
+                               pad=0.1,
+                               color='black',
+                               frameon=False,
+                               size_vertical=1,
+                               fontproperties=fontprops)
     ax.add_artist(scalebar)
 
 
 def remove_ticks(ax):
     """ Remove all ticks and margins from plot. """
     for ax_name in ['x', 'y']:
-        ax.tick_params(
-            axis=ax_name, which='both', bottom=False, top=False, left=False, labelbottom=False, labelleft=False)
+        ax.tick_params(axis=ax_name,
+                       which='both',
+                       bottom=False,
+                       top=False,
+                       left=False,
+                       labelbottom=False,
+                       labelleft=False)
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0.1)
     plt.margins(0, 0)
     ax.xaxis.set_major_locator(plt.NullLocator())
@@ -139,10 +143,13 @@ def plot_noise(key, save_figures, error_types=None, min_noise=None, max_noise=No
         new_measurements = measurements[-shift // 2:shift // 2:-1]
         fig1, ax1 = plt.subplots()
         for idx, _ in enumerate(noise_sigmas[min_noise:max_noise]):
-            plot = plt.loglog(
-                new_measurements, new_error.T[:len(new_measurements), idx], label="noise: {}".format(noise_sigmas[idx]))
-            plt.loglog(
-                measurements[::-1], error.T[:len(measurements), idx], alpha=background_alpha, c=plot[0].get_color())
+            plot = plt.loglog(new_measurements,
+                              new_error.T[:len(new_measurements), idx],
+                              label="noise: {}".format(noise_sigmas[idx]))
+            plt.loglog(measurements[::-1],
+                       error.T[:len(measurements), idx],
+                       alpha=background_alpha,
+                       c=plot[0].get_color())
         plt.xlabel("number of measurements")
         if error_type == "errors":
             plt.ylabel("errors on coefficients")
@@ -179,7 +186,14 @@ def read_plot_df(name, folder='experiments/robot_test/'):
 
     id_vars = [c for c in data_df.columns if c[:8] != 'distance']
     plot_df = data_df.melt(id_vars=id_vars, var_name="distance_type", value_name="distance")
-    plot_df = plot_df[plot_df.system_id == 'RTT']
+    if 'RTT' in plot_df.system_id.unique():
+        print('Warning: using old RTT system id.')
+        plot_df = plot_df[plot_df.system_id == 'RTT']
+    elif 'Range' in plot_df.system_id.unique():
+        plot_df = plot_df[plot_df.system_id == 'Range']
+    else:
+        raise NameError('no valid system id in {}'.format(plot_df.system_id.unique()))
+
     plot_df.sort_values(['timestamp', 'anchor_name'], inplace=True)
     plot_df.reset_index(inplace=True, drop=True)
     plot_df.loc[:, 'distance'] = plot_df.distance.astype(np.float32)
@@ -198,7 +212,7 @@ def plot_cdfs(plot_df, filename=''):
 
         axarr[i].set_title(anchor_name)
         df = df.sort_values("timestamp")
-        gt_df = df[df.distance_type == "distance_tango"]
+        gt_df = df[df.distance_type == "distance_gt"]
 
         color_cycle = cycle(colors)
         for distance_type in sorted(df.distance_type.unique()):
@@ -235,8 +249,10 @@ def plot_times(plot_df, filename=''):
         color_cycle = cycle(colors)
         for distance_type in sorted(df.distance_type.unique()):
             meas_df = df[df.distance_type == distance_type]
-            axarr[i].plot(
-                meas_df.timestamp.values, meas_df.distance.values, color=next(color_cycle), label=distance_type)
+            axarr[i].plot(meas_df.timestamp.values,
+                          meas_df.distance.values,
+                          color=next(color_cycle),
+                          label=distance_type)
     axarr[i].legend(loc='lower left', bbox_to_anchor=[1.0, 0])
     for j in range(i + 1, len(axarr)):
         axarr[j].axis('off')
@@ -252,7 +268,7 @@ def plot_rssis(plot_df, filename=''):
     for i, (anchor_name, df) in enumerate(plot_df.sort_values("anchor_name").groupby("anchor_name")):
         axarr[i].set_title(anchor_name)
         df = df.sort_values("timestamp")
-        gt_df = df[df.distance_type == "distance_tango"]
+        gt_df = df[df.distance_type == "distance_gt"]
 
         meas_df = df[df.distance_type == "distance_median_all"]
 
@@ -271,7 +287,7 @@ def plot_rssis(plot_df, filename=''):
 
 def plot_tango_components(data_df, filename=''):
     fig = plt.figure()
-    data = data_df[data_df.system_id == "Tango"]
+    data = data_df[data_df.system_id == "GT"]
     sns.scatterplot(data=data, x='timestamp', y='px', linewidth=0.0, label='x')
     sns.scatterplot(data=data, x='timestamp', y='py', linewidth=0.0, label='y')
     sns.scatterplot(data=data, x='timestamp', y='pz', linewidth=0.0, label='z')
@@ -282,7 +298,7 @@ def plot_tango_components(data_df, filename=''):
 
 
 def plot_tango_2d(data_df, anchors_df, filename=''):
-    tango_df = data_df.loc[data_df.system_id == "Tango"]
+    tango_df = data_df.loc[data_df.system_id == "GT"]
 
     fig = plt.figure()
     sns.scatterplot(data=tango_df, x='px', y='py', hue='timestamp', linewidth=0.0)
