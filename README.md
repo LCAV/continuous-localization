@@ -10,37 +10,25 @@ Created by (in alphabetic order):
 * Frederike Duembgen
 * Michalina Pacholska
 
-## About
+## Installation
 
-Get this package and its non-standard code dependencies using:
+### Basics
 
-    git clone --recurse-submodules https://github.com/duembgen/SamplingTrajectories.git
+Get this package using:
 
-Install all standard python requirements using `pip`:
+    git clone  https://github.com/duembgen/SamplingTrajectories.git
 
+You can install all standard python requirements it (at least) two ways:
+ 
+1. using `pip` in you favourite Python 3 environment:
+    ```
     pip install -r requirements.txt
-
-If are using `conda`, we recomend to add `conda-forge` channel and install all requirements by:
-
-    conda config --add channels conda-forge
-    conda install --file requirements.txt
-
-If you don't want to add new channels, you can run:
-
-    conda install -c omnia cvxpy
-    conda install -c conda-forge cvxopt
-
-before installing the rest of the requirements by running:
-
-    conda install --file requirements.txt
-
-If you want to update the submodule to point to a different branch (i.e. the latest
-commit on that branch) then run these lines of code:
-
-    git config -f .gitmodules submodule.pylocus.branch <new branch name>
-    git submodule update --remote
-
-
+    ```
+2. using `conda`, that will create virtual environment for you:
+    ```
+    conda env create -f environment.yml
+    ```
+   
 ### Note on SCS dependency:
 
 The package cvxpy uses SCS as default solver. The problem is that for SCS to work

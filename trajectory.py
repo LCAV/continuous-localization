@@ -59,8 +59,8 @@ class Trajectory(object):
         self.set_coeffs(seed=seed, coeffs=coeffs)
 
     def copy(self):
-        new = Trajectory(self.n_complexity, self.dim, self.model, self.period)
-        new.set_coeffs(coeffs=np.copy(self.coeffs))
+        new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))
+        new.params = copy(self.params)
         return new
 
     def get_times(self, n_samples):
@@ -171,12 +171,22 @@ n_samples)
             self.coeffs = dimension * \
                 np.random.rand(self.dim, self.n_complexity)
         else:
+            if coeffs.shape[1] != self.n_complexity:
+                print('Warning:', coeffs.shape, self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
         self.Z_opt = np.vstack(
             [np.hstack([np.eye(dim), self.coeffs]),
              np.hstack([self.coeffs.T, self.coeffs.T @ self.coeffs])])
+
+    def set_n_complexity(self, n_complexity):
+        """ Set new complexity and cut or pad coefficients with zeros if necessary. """
+        new_coeffs = np.zeros((self.dim, n_complexity))
+        keep = min(self.n_complexity, n_complexity)
+        new_coeffs[:, :keep] = self.coeffs[:, :keep]
+        self.coeffs = new_coeffs
+        self.n_complexity = n_complexity
 
     def get_sampling_points(self, times=None, basis=None):
         """ Get points where we get measurements.
@@ -216,13 +226,17 @@ n_samples)
                 print('Warning: overwriting basis with times.')
             basis = self.get_basis(times=times)
 
-        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker' and k != "ax")}
         if "ax" in kwargs:
-            kwargs["ax"].plot(*trajectory_cont[:2], **cont_kwargs)
+            ax = kwargs["ax"]
+            kwargs.pop("ax")
         else:
-            plt.plot(*trajectory_cont[:2], **cont_kwargs)
+            fig, ax = plt.subplots()
+
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker')}
+        ax.plot(*trajectory_cont[:2], **cont_kwargs)
+
         if "name" in self.params:
-            plt.title(self.params["name"])
+            ax.set_title(self.params["name"])
 
         if basis is not None:
             trajectory = self.get_sampling_points(basis=basis)
@@ -235,8 +249,19 @@ n_samples)
             for pop_label in pop_labels:
                 if pop_label in kwargs.keys():
                     kwargs.pop(pop_label)
-            plt.scatter(*trajectory[:2], **kwargs)
-        return plt.gca()
+            ax.scatter(*trajectory[:2], **kwargs)
+        return ax
+
+    def plot_pretty(self, times=None, **kwargs):
+        trajectory_cont = self.get_continuous_points(times=times)
+        if "ax" in kwargs:
+            ax = kwargs["ax"]
+            kwargs.pop("ax")
+        else:
+            fig, ax = plt.subplots()
+        cont_kwargs = {k: val for k, val in kwargs.items() if (k != 'marker')}
+        ax.plot(*trajectory_cont[:2], **cont_kwargs)
+        return ax
 
     def plot_connections(self, basis, anchors, mask, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
@@ -480,7 +505,6 @@ n_samples)
         return radii, tangents, curvatures
 
     def get_left_and_right_points(self, times, width=ROBOT_WIDTH, ax=None):
-
         basis = self.get_basis(times=times)
         sample_points = self.get_sampling_points(basis=basis)
         tangents, normal_vectors, _ = self.get_local_frame(times)

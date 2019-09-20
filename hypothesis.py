@@ -75,9 +75,9 @@ def get_reduced_right_submatrix(idx_f, frame):
 
 
 def get_full_matrix(idx_a, idx_f, anchors, frame):
-    return np.concatenate(
-        [get_left_submatrix(idx_a, idx_f, anchors, frame),
-         get_reduced_right_submatrix(idx_f, frame)], axis=1)
+    return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame),
+                           get_reduced_right_submatrix(idx_f, frame)],
+                          axis=1)
 
 
 def random_indexes(n_anchors, n_positions, n_measurements, one_per_time=False):
@@ -182,7 +182,7 @@ def probability_upper_bound(n_dimensions, n_constraints, n_positions, n_anchors,
 
 def limit_condition(p, bins, measurements):
     """
-    Calculate the condition:
+    Calculate the condition from Theorem 1.
 
     :param p: a partition **sorted in a descending order**
     :param bins: minimum number of bins that should be possible to fill (D+1 or K)

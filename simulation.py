@@ -132,7 +132,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             trajectory.set_coeffs(seed=None)
                             environment.set_random_anchors(seed=None)
 
-                            basis, D_topright = get_measurements(trajectory, environment, n_samples=n_positions)
+                            basis, D_topright = get_measurements(trajectory, environment.anchors, n_samples=n_positions)
                             distances = np.sqrt(D_topright)
                             D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
                             mask = create_mask(
@@ -164,7 +164,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
                                 _, D_estimated = get_measurements(
-                                    trajectory_estimated, environment, n_samples=n_positions)
+                                    trajectory_estimated, environment.anchors, n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 
                                 robust_add(errors, indexes, np.linalg.norm(P_hat - trajectory.coeffs))

@@ -26,7 +26,7 @@ class TestSolvers(unittest.TestCase):
         self.env.set_random_anchors(seed=seed)
 
         # get measurements
-        self.basis, self.D_topright = get_measurements(self.traj, self.env, seed=seed, n_samples=20)
+        self.basis, self.D_topright = get_measurements(self.traj, self.env.anchors, seed=seed, n_samples=20)
 
     def test_semidefRelaxationNoiseless(self):
         """ Check noiseless error. """
