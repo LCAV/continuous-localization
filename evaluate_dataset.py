@@ -462,7 +462,7 @@ def match_reference(reference, points):
     assert reference.shape == points.shape
     reference_center = np.mean(reference, axis=1)
     reference -= reference_center[:, None]
-    rotation_center = np.mean(points, axis=1)[:, None]
+    rotation_center = np.mean(points, axis=1)
     points -= rotation_center[:, None]
     rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
     points = rotation @ points
