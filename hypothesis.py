@@ -393,8 +393,10 @@ def matrix_rank_experiment(params):
             for r in range(params["n_repetitions"]):
                 frame = get_frame(params["n_constraints"], n_positions)
                 try:
-                    idx_a, idx_f = random_indexes(
-                        n_anchors, n_positions, n_measurements, one_per_time=params["one_per_time"])
+                    idx_a, idx_f = random_indexes(n_anchors,
+                                                  n_positions,
+                                                  n_measurements,
+                                                  one_per_time=params["one_per_time"])
                     if params["full_matrix"]:
                         constraints = get_full_matrix(idx_a, idx_f, anchors, frame)
                     else:
@@ -448,18 +450,16 @@ def plot_results(
 
     f, ax = plt.subplots()
     for a_idx, n_anchors in enumerate(params["n_anchors_list"]):
-        plt.plot(
-            x,
-            np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
-            label="mean rank, {} anchors".format(n_anchors),
-            color="C{}".format(a_idx),
-            linestyle='dashed')
-        plt.step(
-            x,
-            np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
-            label="probability, {} anchors".format(n_anchors),
-            color="C{}".format(a_idx),
-            where='post')
+        plt.plot(x,
+                 np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
+                 label="mean rank, {} anchors".format(n_anchors),
+                 color="C{}".format(a_idx),
+                 linestyle='dashed')
+        plt.step(x,
+                 np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
+                 label="probability, {} anchors".format(n_anchors),
+                 color="C{}".format(a_idx),
+                 where='post')
     if "fixed_n_measurements" in params:
         plt.xlabel("number of positions")
     else:

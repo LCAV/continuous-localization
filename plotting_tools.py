@@ -48,11 +48,12 @@ def add_plot_decoration(label, parameters):
     plt.gca().xaxis.tick_bottom()
 
 
-def add_scalebar(ax, size=5, loc='lower left'):
+def add_scalebar(ax, size=5, size_vertical=1, loc='lower left'):
     """ Add a scale bar to the plot. 
 
     :param ax: axis to use.
     :param size: size of scale bar.
+    :param size_vertical: height (thckness) of the bar
     :param loc: location (same syntax as for matplotlib legend)
     """
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
@@ -65,7 +66,7 @@ def add_scalebar(ax, size=5, loc='lower left'):
                                pad=0.1,
                                color='black',
                                frameon=False,
-                               size_vertical=1,
+                               size_vertical=size_vertical,
                                fontproperties=fontprops)
     ax.add_artist(scalebar)
 
@@ -171,12 +172,11 @@ def plot_noise(key,
             pol = np.poly1d(z)
             print(("anchors {}" if anchors else "noise: {}").format(second_dim[idx]))
             print("fitted slope: {:.2f}".format(z[0]))
-            ax1.loglog(
-                measurements,
-                np.exp(pol(np.log(measurements))),
-                c=plot[0].get_color(),
-                label=("{} anchors" if anchors else r"noise: {}").format(second_dim[idx]),
-                linestyle=next(linecycler))
+            ax1.loglog(measurements,
+                       np.exp(pol(np.log(measurements))),
+                       c=plot[0].get_color(),
+                       label=("{} anchors" if anchors else r"noise: {}").format(second_dim[idx]),
+                       linestyle=next(linecycler))
 
         plt.xlabel("number of measurements")
         if error_type == "errors":

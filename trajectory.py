@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
 
+import copy
+
 
 class Trajectory(object):
     """ Trajectory class.
@@ -22,7 +24,6 @@ class Trajectory(object):
     :member model: trajectory model,
     either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
     """
-
     def __init__(self,
                  n_complexity=3,
                  dim=DIM,
@@ -60,7 +61,7 @@ class Trajectory(object):
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))
-        new.params = copy(self.params)
+        new.params = copy.deepcopy(self.params)
         return new
 
     def get_times(self, n_samples):
@@ -583,12 +584,11 @@ n_samples)
         if plot:
             plt.figure()
             plt.plot(np.cumsum(ds_left), np.cumsum(ds_right), label="continous")
-            plt.scatter(
-                np.cumsum(distances_left),
-                np.cumsum(distances_right),
-                label="discretized ({})".format(len(distances_left)),
-                marker='x',
-                color='C1')
+            plt.scatter(np.cumsum(distances_left),
+                        np.cumsum(distances_right),
+                        label="discretized ({})".format(len(distances_left)),
+                        marker='x',
+                        color='C1')
             plt.legend()
             plt.show()
             print("minimum distance traveled by center: {:.4f}m".format(np.min((distances_left + distances_right) / 2)))

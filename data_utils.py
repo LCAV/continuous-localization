@@ -101,10 +101,10 @@ def get_smooth_points(C_list, t_list, traj):
     mean_window = 10
     datetimes = [datetime.datetime.fromtimestamp(t) for t in result_df.t]
     result_df.index = [pd.Timestamp(datetime) for datetime in datetimes]
-    result_df.loc[:, 'px_median'] = result_df['px'].rolling(
-        '{}s'.format(mean_window), min_periods=1, center=False).median()
-    result_df.loc[:, 'py_median'] = result_df['py'].rolling(
-        '{}s'.format(mean_window), min_periods=1, center=False).median()
+    result_df.loc[:, 'px_median'] = result_df['px'].rolling('{}s'.format(mean_window), min_periods=1,
+                                                            center=False).median()
+    result_df.loc[:, 'py_median'] = result_df['py'].rolling('{}s'.format(mean_window), min_periods=1,
+                                                            center=False).median()
     return result_df
 
 

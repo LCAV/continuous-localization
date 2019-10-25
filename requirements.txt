@@ -4,7 +4,7 @@ cvxpy>=1.0.6
 cvxopt>=1.1.9
 matplotlib>=3.0.2
 sphinx==1.8.4
-yapf>=0.26.0
+yapf==0.28.0
 # for notebook testing.
 jupyter>=1.0.0
 nbformat>=4.4.0
