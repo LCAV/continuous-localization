@@ -75,9 +75,9 @@ def get_reduced_right_submatrix(idx_f, frame):
 
 
 def get_full_matrix(idx_a, idx_f, anchors, frame):
-    return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame),
-                           get_reduced_right_submatrix(idx_f, frame)],
-                          axis=1)
+    return np.concatenate(
+        [get_left_submatrix(idx_a, idx_f, anchors, frame),
+         get_reduced_right_submatrix(idx_f, frame)], axis=1)
 
 
 def random_indexes(n_anchors, n_positions, n_measurements, one_per_time=False):

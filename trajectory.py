@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
 
+import copy
+
 
 class Trajectory(object):
     """ Trajectory class.
@@ -60,7 +62,7 @@ class Trajectory(object):
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))
-        new.params = copy(self.params)
+        new.params = copy.deepcopy(self.params)
         return new
 
     def get_times(self, n_samples):

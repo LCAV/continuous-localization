@@ -59,28 +59,24 @@ def add_scalebar(ax, size=5, size_vertical=1, loc='lower left'):
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
     import matplotlib.font_manager as fm
     fontprops = fm.FontProperties(size=8)
-    scalebar = AnchoredSizeBar(ax.transData,
-                               size,
-                               '{} m'.format(size),
-                               loc,
-                               pad=0.1,
-                               color='black',
-                               frameon=False,
-                               size_vertical=size_vertical,
-                               fontproperties=fontprops)
+    scalebar = AnchoredSizeBar(
+        ax.transData,
+        size,
+        '{} m'.format(size),
+        loc,
+        pad=0.1,
+        color='black',
+        frameon=False,
+        size_vertical=size_vertical,
+        fontproperties=fontprops)
     ax.add_artist(scalebar)
 
 
 def remove_ticks(ax):
     """ Remove all ticks and margins from plot. """
     for ax_name in ['x', 'y']:
-        ax.tick_params(axis=ax_name,
-                       which='both',
-                       bottom=False,
-                       top=False,
-                       left=False,
-                       labelbottom=False,
-                       labelleft=False)
+        ax.tick_params(
+            axis=ax_name, which='both', bottom=False, top=False, left=False, labelbottom=False, labelleft=False)
     plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0.1)
     plt.margins(0, 0)
     ax.xaxis.set_major_locator(plt.NullLocator())
@@ -172,11 +168,12 @@ def plot_noise(key,
             pol = np.poly1d(z)
             print(("anchors {}" if anchors else "noise: {}").format(second_dim[idx]))
             print("fitted slope: {:.2f}".format(z[0]))
-            ax1.loglog(measurements,
-                       np.exp(pol(np.log(measurements))),
-                       c=plot[0].get_color(),
-                       label=("{} anchors" if anchors else r"noise: {}").format(second_dim[idx]),
-                       linestyle=next(linecycler))
+            ax1.loglog(
+                measurements,
+                np.exp(pol(np.log(measurements))),
+                c=plot[0].get_color(),
+                label=("{} anchors" if anchors else r"noise: {}").format(second_dim[idx]),
+                linestyle=next(linecycler))
 
         plt.xlabel("number of measurements")
         if error_type == "errors":
@@ -278,10 +275,8 @@ def plot_times(plot_df, filename=''):
         color_cycle = cycle(colors)
         for distance_type in sorted(df.distance_type.unique()):
             meas_df = df[df.distance_type == distance_type]
-            axarr[i].plot(meas_df.timestamp.values,
-                          meas_df.distance.values,
-                          color=next(color_cycle),
-                          label=distance_type)
+            axarr[i].plot(
+                meas_df.timestamp.values, meas_df.distance.values, color=next(color_cycle), label=distance_type)
     axarr[i].legend(loc='lower left', bbox_to_anchor=[1.0, 0])
     for j in range(i + 1, len(axarr)):
         axarr[j].axis('off')

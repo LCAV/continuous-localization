@@ -19,9 +19,8 @@ def reconstructD_topright(coeffs, basis, anchors):
     """ Construct D_topright from coeffs (coefficients), basis vectors and anchors."""
     N = basis.shape[1]
     M = anchors.shape[1]
-    return np.outer(np.ones(N), np.diag(
-        anchors.T @ anchors)) - 2 * basis.T @ coeffs.T @ anchors + np.outer(
-            np.diag(basis.T @ coeffs.T @ coeffs @ basis), np.ones(M))
+    return np.outer(np.ones(N), np.diag(anchors.T @ anchors)) - 2 * basis.T @ coeffs.T @ anchors + np.outer(
+        np.diag(basis.T @ coeffs.T @ coeffs @ basis), np.ones(M))
 
 
 def customMDS(D_topright, basis, anchors):
@@ -29,10 +28,8 @@ def customMDS(D_topright, basis, anchors):
     [d, M] = anchors.shape
     N = basis.shape[1]
     JM = np.eye(M) - np.ones([M, M]) / M
-    tmp = lowRankApproximation(
-        JM @ (np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.T), d)
-    return 0.5 * np.linalg.inv(anchors @ JM @ anchors.T) @ anchors @ tmp @ basis.T @ np.linalg.inv(
-        basis @ basis.T)
+    tmp = lowRankApproximation(JM @ (np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.T), d)
+    return 0.5 * np.linalg.inv(anchors @ JM @ anchors.T) @ anchors @ tmp @ basis.T @ np.linalg.inv(basis @ basis.T)
 
 
 def SRLS(anchors, basis, coeffs, D_topright):
@@ -45,8 +42,7 @@ def getSRLSGrad(anchors, basis, coeffs, D_topright):
     """ Get gradient of SRLS function. """
     [K, N] = basis.shape
     M = anchors.shape[1]
-    LHS = anchors @ (
-        np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.transpose()) @ basis.T
+    LHS = anchors @ (np.outer(np.diag(anchors.T @ anchors), np.ones(N)) - D_topright.transpose()) @ basis.T
 
     term1 = M * np.outer(np.diag(basis.T @ coeffs.T @ coeffs @ basis), np.ones(K))
     term2 = -2 * basis.T @ coeffs.T @ anchors @ np.outer(np.ones(M), np.ones(K))

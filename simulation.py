@@ -56,8 +56,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
             try:
                 parameters_old = read_params(outfolder + 'parameters.json')
                 parameters['time'] = parameters_old['time']
-                assert parameters == parameters_old, 'found conflicting parameters file: {}'.format(outfolder +
-                                                                                                    'parameters.json')
+                assert parameters == parameters_old, 'found conflicting parameters file: {}'.format(
+                    outfolder + 'parameters.json')
             except FileNotFoundError:
                 print('no conflicting parameters file found.')
             except AssertionError as error:
@@ -135,10 +135,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             basis, D_topright = get_measurements(trajectory, environment.anchors, n_samples=n_positions)
                             distances = np.sqrt(D_topright)
                             D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
-                            mask = create_mask(n_positions,
-                                               n_anchors,
-                                               strategy=parameters['sampling_strategy'],
-                                               n_missing=n_missing)
+                            mask = create_mask(
+                                n_positions, n_anchors, strategy=parameters['sampling_strategy'], n_missing=n_missing)
                             if parameters['measure_distances']:
                                 squared_distances.extend(D_topright.flatten().tolist())
                             D_topright = np.multiply(D_topright, mask)
@@ -147,10 +145,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
                                                          n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == semidefRelaxationNoiseless):
-                                    X = semidefRelaxationNoiseless(D_topright,
-                                                                   environment.anchors,
-                                                                   basis,
-                                                                   chosen_solver=cvxpy.CVXOPT)
+                                    X = semidefRelaxationNoiseless(
+                                        D_topright, environment.anchors, basis, chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
                                     X = rightInverseOfConstraints(D_topright, environment.anchors, basis)
@@ -158,10 +154,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 elif solver == 'alternativePseudoInverse':
                                     P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
                                 elif solver == 'weightedPseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright,
-                                                                     environment.anchors,
-                                                                     basis,
-                                                                     weighted=True)
+                                    P_hat = alternativePseudoInverse(
+                                        D_topright, environment.anchors, basis, weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
@@ -169,9 +163,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
-                                _, D_estimated = get_measurements(trajectory_estimated,
-                                                                  environment.anchors,
-                                                                  n_samples=n_positions)
+                                _, D_estimated = get_measurements(
+                                    trajectory_estimated, environment.anchors, n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 
                                 robust_add(errors, indexes, np.linalg.norm(P_hat - trajectory.coeffs))

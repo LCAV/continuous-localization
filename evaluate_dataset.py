@@ -71,6 +71,7 @@ def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=
     """
     Make sure anchors_df is correctly formatted.
     """
+
     def apply_add_name(row, counter_dict):
         counter_dict[row.system_id] += 1
         return '{} {}'.format(row.system_id, counter_dict[row.system_id])
@@ -89,6 +90,7 @@ def format_data_df(data_df, anchors_df=None, gt_system_id=tango_system_id, range
     """
     Make sure data df is correctly formatted.
     """
+
     def filter_columns(data_df):
         all_columns = set(data_df.columns)
         keep_columns = set(
@@ -364,6 +366,7 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
         - start_indices:  indices at which movement starts.
 
     """
+
     def find_edge(window, pattern):
         """ Calculate the inner product of the pattern with the given window. """
         if len(window) < len(pattern):
@@ -377,9 +380,11 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
     # compute the rolling inner product between pattern and the length in tango_df.
     tango_df.index = [datetime.datetime.fromtimestamp(t) for t in tango_df.timestamp]
     normalized_series = tango_df.loc[:, "length"] / tango_df.length.max()
-    df = normalized_series.rolling(window=len(pattern), center=False, min_periods=1).apply(find_edge,
-                                                                                           raw=True,
-                                                                                           kwargs={'pattern': pattern})
+    df = normalized_series.rolling(
+        window=len(pattern), center=False, min_periods=1).apply(
+            find_edge, raw=True, kwargs={
+                'pattern': pattern
+            })
     tango_df.reset_index(inplace=True, drop=True)
 
     if plot:

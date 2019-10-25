@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # module EDMtools
 
-# TODO this module is currently not used. When we actually use these functions, we should 
-# take them from pylocus instead of using them here. 
+# TODO this module is currently not used. When we actually use these functions, we should
+# take them from pylocus instead of using them here.
 
 import numpy as np
 
@@ -28,12 +28,13 @@ def classicalMDS(EDM_noisy, d):
 def procrustes(A, X):
     return algorithms.procrustes(A.T, X.T, scale=False)
 
+
 def procrustes_adam(A, X):
     # TODO: check if this implementation is more elegant than the one in pylocus.
     # columns of A are the anchors
     # columns of X are the points to be aligned to the anchors
-    d = A.shape[0] # dimension
-    L = A.shape[1] # number anchors
+    d = A.shape[0]  # dimension
+    L = A.shape[1]  # number anchors
     assert L >= d, 'Procrustes needs at least d anchors.'
 
     a_bar = np.reshape(np.mean(A, axis=1), (2, 1))
@@ -45,6 +46,7 @@ def procrustes_adam(A, X):
     R = VT.T @ U.T
     oneL = np.ones(L)
     return R @ X_bar + a_bar
+
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
