@@ -94,23 +94,21 @@ n_anchors = params["n_anchors_list"][idx]
 print("Start comparision calculation for {} anchors".format(n_anchors))
 
 probabilities1 = [
-    h.probability_upper_bound_any_measurements(
-        params["n_dimensions"],
-        params["n_constraints"],
-        n,
-        position_wise=False,
-        n_anchors=n_anchors,
-        n_measurements=params["fixed_n_measurements"]) for n in n_positions_list
+    h.probability_upper_bound_any_measurements(params["n_dimensions"],
+                                               params["n_constraints"],
+                                               n,
+                                               position_wise=False,
+                                               n_anchors=n_anchors,
+                                               n_measurements=params["fixed_n_measurements"]) for n in n_positions_list
 ]
 
 probabilities2 = [
-    h.probability_upper_bound_any_measurements(
-        params["n_dimensions"],
-        params["n_constraints"],
-        n,
-        position_wise=True,
-        n_anchors=n_anchors,
-        n_measurements=params["fixed_n_measurements"]) for n in n_positions_list
+    h.probability_upper_bound_any_measurements(params["n_dimensions"],
+                                               params["n_constraints"],
+                                               n,
+                                               position_wise=True,
+                                               n_anchors=n_anchors,
+                                               n_measurements=params["fixed_n_measurements"]) for n in n_positions_list
 ]
 
 probabilities1 = np.array(probabilities1)
@@ -132,8 +130,11 @@ beg = 0
 plt.plot(n_positions_list[beg:], probabilities1[beg:], linestyle=":", c="C1", label="anchor upper bound")
 plt.plot(n_positions_list[beg:], probabilities2[beg:], linestyle=":", c="C2", label="sample upper bound")
 plt.plot(n_positions_list[beg:], probabilities2[beg:] * probabilities1, linestyle=":", c="C3", label="both bounds")
-plt.plot(
-    n_positions_list[beg:], probabilities2[beg:] * np.min(probabilities1[beg:]), linestyle=":", c="C0", label="a hack")
+plt.plot(n_positions_list[beg:],
+         probabilities2[beg:] * np.min(probabilities1[beg:]),
+         linestyle=":",
+         c="C0",
+         label="a hack")
 plt.plot(n_positions_list[beg:], anchor_condition, c="C2", label="sample condition")
 plt.plot(n_positions_list[beg:], frame_condition, c="C1", label="anchor condition")
 plt.plot(n_positions_list, both_conditions, c="C3", label="both conditions")
@@ -156,23 +157,21 @@ probabilities = []
 probabilities2 = []
 for n_anchors in n_anchors_list:
     probabilities.append([
-        h.probability_upper_bound_any_measurements(
-            params["n_dimensions"],
-            params["n_constraints"],
-            n,
-            position_wise=False,
-            n_anchors=n_anchors,
-            n_measurements=n_measurements) for n in n_positions_list
+        h.probability_upper_bound_any_measurements(params["n_dimensions"],
+                                                   params["n_constraints"],
+                                                   n,
+                                                   position_wise=False,
+                                                   n_anchors=n_anchors,
+                                                   n_measurements=n_measurements) for n in n_positions_list
     ])
 for n_anchors in n_anchors_list:
     probabilities2.append([
-        h.probability_upper_bound_any_measurements(
-            params["n_dimensions"],
-            params["n_constraints"],
-            n,
-            position_wise=True,
-            n_anchors=n_anchors,
-            n_measurements=n_measurements) for n in n_positions_list
+        h.probability_upper_bound_any_measurements(params["n_dimensions"],
+                                                   params["n_constraints"],
+                                                   n,
+                                                   position_wise=True,
+                                                   n_anchors=n_anchors,
+                                                   n_measurements=n_measurements) for n in n_positions_list
     ])
 
 fig, ax = plt.subplots(figsize=(6, 6))
