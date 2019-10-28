@@ -67,6 +67,33 @@ def create_full_df(range_data, gt_data):
     return full_df
 
 
+def prepare_dataset(result_dict, range_system_id, gt_system_id, time_range, t_window, verbose=False):
+    min_time, max_time = time_range
+    anchor_data = result_dict['TL']
+    range_data = result_dict['TD']
+    gt_data = result_dict['GT']
+
+    anchors_df = create_anchors_df(anchor_data)
+    anchors_df = format_anchors_df(anchors_df, range_system_id=range_system_id, gt_system_id=gt_system_id)
+
+    full_df = create_full_df(range_data, gt_data)
+    full_df = format_data_df(full_df, anchors_df, gt_system_id=gt_system_id, range_system_id=range_system_id)
+    if verbose:
+        print('time going from {:.1f} to {:.1f}'.format(full_df.timestamp.min(), full_df.timestamp.max()))
+    full_df = full_df[(full_df.timestamp >= min_time) & (full_df.timestamp <= max_time)]
+    full_df.loc[:, 'timestamp'] = full_df.timestamp - full_df.timestamp.min()
+
+    if verbose:
+        print('adding ground truth...')
+    full_df = add_gt_raw(full_df, t_window=t_window, gt_system_id=gt_system_id)
+    full_df.loc[:, "distance_gt"] = full_df.apply(
+        lambda row: apply_distance_gt(row, anchors_df, gt_system_id=gt_system_id), axis=1)
+
+    if verbose:
+        print('...done')
+    return full_df, anchors_df
+
+
 def get_ground_truth(full_df, times):
     """ Find one ground truth for each time when we have a distance measurement. 
     """

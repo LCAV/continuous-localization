@@ -88,5 +88,5 @@ def pointwise_srls(D, anchors, basis, traj, indices):
             weights = np.ones(r2.shape)
             points.append(SRLS(anchors_srls, weights, r2))
         else:
-            print('skipping')
+            print('SRLS: skipping {} cause not enough measurements'.format(idx))
     return points
