@@ -46,12 +46,6 @@ chmod a+x pre-commit.sh
 mv pre-commit.sh .git/hooks/pre-commit
 ```
  
-
-
-## File headers and footers
-
-Not sure yet what we want to use here. 
-
 ## Documentation format
 
 Use sphynx standard: 

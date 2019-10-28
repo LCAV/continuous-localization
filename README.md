@@ -12,8 +12,6 @@ Created by (in alphabetic order):
 
 ## Installation
 
-### Basics
-
 Get this package using:
 
     git clone  https://github.com/duembgen/SamplingTrajectories.git
@@ -28,32 +26,19 @@ You can install all standard python requirements it (at least) two ways:
     ```
     conda env create -f environment.yml
     ```
-   
-### Note on SCS dependency:
 
-The package cvxpy uses SCS as default solver. The problem is that for SCS to work
-it needs to be installed with BLAS and LAPACK support, which is not done automatically.
-I did not manage to set up SCS as default solver in the travis environment, so I
-decided to use CVXOPT instead, for which the installation is less problematic.
+## Contents
 
-### Contribute 
 
-If you want to contribute to this repository, you should run:
+### Notebooks
+- *GenerateAllFigures.ipynb*: generate the Figures used in the paper.
 
-    ./scripts/setup_repository
-   
-after downloading the repository, in order to set up `yapf` formatter
-and git hook for removing non important changes form Jupyter Notebooks. 
+### Other
+- *datasets/*: Lawnmower and WiFi datasets for range-only localization. See *datasets/README.md* for descriptions.
 
-## Test Suite
+## Contribute 
 
-To run tests, type in terminal
-
-   pytest test/
-
-To see if important notebooks run without error, you can also run
-
-   python runner.py
+If you want to contribute to this repository, please check CONTRIBUTE.md. 
 
 ## Documentation
 
