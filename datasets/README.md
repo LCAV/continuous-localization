@@ -1,23 +1,27 @@
-## Dataset description
+# Real data information
 
-### Cool drone datasets
+## Download instructions
 
-- All folders
+The WiFi and lawnmower datasets can be automatically downloaded by running the script
+`download_datasets.sh`. They will be placed in the datasets/ folder. 
 
-Source: https://grvc.us.es/staff/felramfab/roslam_datasets/datasets.html
+## Dataset descriptions
 
-These datasets are not currently used. 
+### Drone datasets
+
+- *all folders*: from https://grvc.us.es/staff/felramfab/roslam_datasets/datasets.html.  These datasets are not currently used. 
 
 ### Wifi Indoor localization
 
-- uah1.mat, uah2.mat: from http://www.robesafe.es/repository/UAHWiFiDataset/
+
+- *uah1.mat, uah2.mat*: from http://www.robesafe.es/repository/UAHWiFiDataset/. Indoor localization using a phone and WiFi signals to multiple access points of known locations.
 
 
 ### Range-only dataset from Djungash
 
--Plaza1.mat, Plaza2.mat
+- *Plaza1.mat, Plaza2.mat*: from https://github.com/gtrll/gpslam/tree/master/matlab/data. Localization of an autonomous lawnmower using UWB-based ranging to access points of known locations.  
 
-https://github.com/gtrll/gpslam/tree/master/matlab/data
+The [original website](http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData) of this datasets is broken, so we found the alternative source given above. It only has two of the 5 original datasets though, and little description. 
 
 ### General info
 
