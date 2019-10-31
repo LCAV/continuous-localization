@@ -3,7 +3,7 @@
 ## Download instructions
 
 The WiFi and lawnmower datasets can be automatically downloaded by running the script
-`download_datasets.sh`. They will be placed in the datasets/ folder. 
+`download_datasets.sh`. They will be placed in the datasets/ folder, and are not included in *git* to avoid clutter.
 
 ## Dataset descriptions
 
@@ -17,15 +17,15 @@ The WiFi and lawnmower datasets can be automatically downloaded by running the s
 - *uah1.mat, uah2.mat*: from http://www.robesafe.es/repository/UAHWiFiDataset/. Indoor localization using a phone and WiFi signals to multiple access points of known locations.
 
 
-### Range-only dataset from Djungash
+### Range-only data sets
 
-- *Plaza1.mat, Plaza2.mat*: from https://github.com/gtrll/gpslam/tree/master/matlab/data. Localization of an autonomous lawnmower using UWB-based ranging to access points of known locations.  
+- *Plaza1.mat, Plaza2.mat*: from https://github.com/gtrll/gpslam/tree/master/matlab/data. Localization of an autonomous lawnmower using UWB-based ranging to access points of known locations, as published in the [paper](https://www.ri.cmu.edu/pub_files/2009/9/Final_5datasetsRangingRadios.pdf) *Djugash et al.: Navigating with Ranging Radios: Five Data Sets with Ground Truth*.
 
-The [original website](http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData) of this datasets is broken, so we found the alternative source given above. It only has two of the 5 original datasets though, and little description. 
+The [original website](http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData) of these data sets is broken, so we found the alternative source given above. It only has two of the 5 original data sets though, and little description. 
 
 ### General info
 
-File description (from WiFi website, seems to be similar for Djungash): 
+File description (from WiFi datasets, seems to be similar for *Djugash et al*.): 
 ```
 GT: Groundtruth path from Laser Scan matching
 Time (sec) 	X_pose (m) 	Y_pose (m) 	Heading (rad)
