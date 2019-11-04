@@ -86,7 +86,7 @@ def gradientDescent(anchors, basis, coeffs, D_topright, maxIters=10):
     return coeffs_hat, costs
 
 
-def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, print_out=False, DR_true=None):
+def alternateGDandKEonDR(DR_missing, mask, basis, anchors, niter=50, DR_true=None):
     """ Alternate between gradient descent and MDS. """
     d = anchors.shape[0]
     N = basis.shape[1]

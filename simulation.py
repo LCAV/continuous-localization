@@ -125,7 +125,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                         if np.isnan(num_not_accurate[indexes]):
                             num_not_accurate[indexes] = 0.0
 
-                        for n_it in range(n_its):
+                        for _ in range(n_its):
 
                             trajectory = Trajectory(n_complexity)
                             environment = Environment(n_anchors)

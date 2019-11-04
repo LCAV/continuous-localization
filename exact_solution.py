@@ -144,7 +144,6 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
 
         # set up nonlinear constraints.
         constraints = []
-        found_enough = False
         for m, a_m in enumerate(anchors.T):
             assert len(a_m) == dim
             for n, f_n in enumerate(basis.T):

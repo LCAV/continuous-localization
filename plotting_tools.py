@@ -160,7 +160,7 @@ def plot_noise(key,
             error = error[:, None]
 
         if ax is None:
-            fig1, ax1 = plt.subplots()
+            _, ax1 = plt.subplots()
         else:
             ax1 = ax
 

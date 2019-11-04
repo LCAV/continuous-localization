@@ -72,8 +72,6 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
         mask[samples_, anchors_seen] = 1.0
         mask[samples_seen, anchors_] = 1.0
 
-        nnz_indices = np.sum(mask > 0)
-
         samples_nnz, anchors_nnz = np.where(mask)
 
         assert len(set(anchors_nnz)) == required_anchors

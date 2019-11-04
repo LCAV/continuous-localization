@@ -4,16 +4,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.io import loadmat
 import seaborn as sns
 
 from evaluate_dataset import format_anchors_df, format_data_df
 from evaluate_dataset import add_gt_raw, apply_distance_gt
-from iterative_algorithms import build_up_algorithm
-from iterative_algorithms import averaging_algorithm
 from plotting_tools import savefig
 from solvers import alternativePseudoInverse
-from trajectory_creator import get_trajectory
 
 # Need to give different systems a name.
 gt_system_id = "GT"
