@@ -100,7 +100,6 @@ def indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions):
     return matrix
 
 
-# TODO(FD): not used, what to do with this?
 def probability_few_anchors(n_dimensions, n_constraints, n_positions):
     """Calculate probability of size the smallest matrix being invertible with minimal number of anchors.
 
@@ -113,7 +112,7 @@ def probability_few_anchors(n_dimensions, n_constraints, n_positions):
     return full / total
 
 
-# TODO(FD): not used, what to do with this?
+# TODO(FD): not used, what to do with this? Add a test in test/test_hypothesis?
 def probability_few_anchors_limit(n_dimensions, n_constraints, anchors_limit=False):
     """Calculate analytical limit of probability_few_anchors.
 
@@ -135,7 +134,6 @@ def probability_few_anchors_limit(n_dimensions, n_constraints, anchors_limit=Fal
     return np.sqrt(n_dimensions + 1) / (np.sqrt(2 * np.pi * n_constraints)**n_dimensions)
 
 
-# TODO(FD): not used, what to do with this?
 def probability_upper_bound(n_dimensions, n_constraints, n_positions, n_anchors, position_wise=False):
     """Calculate upper bound on the probability of matrix being full rank,
     assuming that the number of measurements is exactly n_constraints * (n_dimensions + 1).
@@ -281,7 +279,7 @@ def probability_upper_bound_any_measurements(n_dimensions,
     return upper_bound_sum * common_factor
 
 
-# TODO(FD): not used, what to do with this?
+# TODO(FD): not used, what to do with this? Add a test in test/test_hypothesis?
 def left_independence_estimation(n_constraints, min_anchors, poisson_mean, repetitions=10000, use_limits=False):
     """
     Estimate joint and marginal probabilities of the left hand side matrix satisfying
