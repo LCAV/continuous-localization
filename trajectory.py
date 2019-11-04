@@ -264,15 +264,18 @@ n_samples)
         ax.plot(*trajectory_cont[:2], **cont_kwargs)
         return ax
 
-    def plot_connections(self, basis, anchors, mask, **kwargs):
+    def plot_connections(self, basis, anchors, mask, ax=None, **kwargs):
         trajectory = self.get_sampling_points(basis=basis)
         ns, ms = np.where(mask)
         for n, m in zip(ns, ms):
             p1 = trajectory[:, n]
             p2 = anchors[:, m]
-            plt.plot([p1[0], p2[0]], [p1[1], p2[1]], **kwargs)
+            if ax is None:
+                plt.plot([p1[0], p2[0]], [p1[1], p2[1]], **kwargs)
+            else:
+                ax.plot([p1[0], p2[0]], [p1[1], p2[1]], **kwargs)
 
-    def plot_noisy_connections(self, basis, anchors, mask, D_noisy, **kwargs):
+    def plot_noisy_connections(self, basis, anchors, mask, D_noisy, ax=None, **kwargs):
         """ Plot measurements between trajectory points and anchors 
         with the noisy distances as connection lengths. 
         """
@@ -285,12 +288,19 @@ n_samples)
             v = p1 - p2
             alpha = np.arctan2(v[1], v[0])
             p3 = p2 + d * np.array((np.cos(alpha), np.sin(alpha)))
-            plt.plot([p1[0], p2[0]], [p1[1], p2[1]], marker='o', **kwargs)
-            plt.plot([p3[0], p2[0]], [p3[1], p2[1]], marker='o', **kwargs)
+            if ax is None:
+                plt.plot([p1[0], p2[0]], [p1[1], p2[1]], marker='o', **kwargs)
+                plt.plot([p3[0], p2[0]], [p3[1], p2[1]], marker='o', **kwargs)
+            else:
+                ax.plot([p1[0], p2[0]], [p1[1], p2[1]], marker='o', **kwargs)
+                ax.plot([p3[0], p2[0]], [p3[1], p2[1]], marker='o', **kwargs)
 
-    def plot_number_measurements(self, basis, mask=None, legend=False):
+    def plot_number_measurements(self, basis, mask=None, legend=False, ax=None):
         #  mask is n_samples x n_anchors.
         trajectory = self.get_sampling_points(basis=basis)
+        if ax is None:
+            ax = plt.gca()
+
         if legend:
             label1 = '1'
             label2 = '2'
@@ -300,16 +310,16 @@ n_samples)
         for i in range(trajectory.shape[1]):
             point = trajectory[:, i]
             if np.sum(mask[i, :]) == 1:
-                plt.scatter(*point, color='orange', label=label1)
+                ax.scatter(*point, color='orange', label=label1)
                 label1 = None
             elif np.sum(mask[i, :]) == 2:
-                plt.scatter(*point, color='red', label=label2)
+                ax.scatter(*point, color='red', label=label2)
                 label2 = None
             elif np.sum(mask[i, :]) > 2:
-                plt.scatter(*point, color='green', label=label3)
+                ax.scatter(*point, color='green', label=label3)
                 label3 = None
         if legend:
-            plt.legend(title='# measurements')
+            ax.legend(title='# measurements')
 
     def scale_bounding_box(self, box_dims, keep_aspect_ratio=False):
         """Scale trajectory to a given size.
@@ -410,7 +420,7 @@ n_samples)
 
         if plot:
             plt.figure()
-            plt.plot(times[1:], cumulative_distances, label="smooth")
+            plt.plot(times, cumulative_distances, label="smooth")
             plt.plot(new_times, distances, "*", label="requested distances")
             plt.xlabel("time")
             plt.title("distance traveled")

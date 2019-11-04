@@ -18,6 +18,13 @@ def run_notebook(notebook_path):
     with open(notebook_path) as f:
         nb = nbformat.read(f, as_version=4)
 
+    # remove the cells that have been "frozen" with the
+    # nbextension "Freeze".
+    for cell in nb.cells.copy():
+        if 'frozen' in cell.metadata.get("run_control", {}).keys():
+            print('Removing frozen cell.')
+            nb.cells.remove(cell)
+
     proc = ExecutePreprocessor(timeout=600, kernel_name='python')
     proc.allow_errors = False
 
@@ -40,7 +47,12 @@ def run_notebook(notebook_path):
 
 
 if __name__ == '__main__':
-    notebooks = ['UniquenessStudies.ipynb', 'ProblemVisualization.ipynb']
+    notebooks = [
+        'DistanceDistributions.ipynb', 'GenerateAllFigures.ipynb', 'PublicDatasets.ipynb',
+        'InhouseDataEvaluation.ipynb', 'InhouseTrajectoryEstimation.ipynb', 'IterativeAlgorithms.ipynb', 'Robot.ipynb',
+        'TheoryTesting.ipynb', 'UniquenessStudies.ipynb'
+    ]
+
     for notebook in notebooks:
         print('running notebook {}...'.format(notebook))
         nb, errors = run_notebook(notebook)
