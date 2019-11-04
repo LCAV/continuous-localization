@@ -23,7 +23,10 @@ def add_noise(D, noise_sigma, noise_to_square=False):
 
 
 def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwargs):
-    """ Create a mask of shape n_anchors x n_measurements.
+    """ 
+    NOT CURRENTLY USED (but can be useful at some point).
+    
+    Create a mask of shape n_anchors x n_measurements.
     
     :param strategy: strategy to use. Currently implemented:
     - 'minimal': We randomly delete measures such that we only keep measurements from
@@ -139,26 +142,13 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
     return mask
 
 
-def create_mask_in_range(D, range_limit=5):
-    ''' Create mask where only points in range are seen.'''
-    mask = np.zeros(D.shape)
-    mask[np.sqrt(D) <= range_limit] = 1.0
-    return mask
-
-
-def calculate_snr(D, D_noisy):
-    noise_vector = D_noisy - D
-    snr = np.var(D.flatten()) / np.var(noise_vector.flatten())
-    return 10 * np.log10(snr)
-
-
 def get_D(anchors, samples):
-    ''' Create squared distance matrix with 
+    """ Create squared distance matrix with 
 
     :param samples: n_positions x dim trajectory points.
     :return D: matrix of squared distances (n_positions + n_anchors) x (n_positions + n_anchors) #TODO why +?
 
-    '''
+    """
     X = np.hstack([samples, anchors])
     G = X.T @ X
     D = np.outer(np.ones(X.shape[1]), np.diag(G)) + np.outer(np.diag(G), np.ones(X.shape[1])) - 2 * G
