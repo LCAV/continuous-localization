@@ -8,24 +8,25 @@ import unittest
 
 from baseline_solvers import *
 from trajectory import Trajectory
-from environment import Environment
-from measurements import get_measurements
+from measurements import get_measurements, create_anchors
 
 
 class TestBaselineSolvers(unittest.TestCase):
     def setUp(self):
         self.traj = Trajectory(n_complexity=5, dim=2)
-        self.env = Environment(n_anchors=4)
+        self.n_anchors = 4
         self.basis = []
         self.D_topright = []
 
     def set_measurements(self, seed=None):
         #  random trajectory and anchors
         self.traj.set_coeffs(seed=seed)
-        self.env.set_random_anchors(seed=seed)
+        if seed is not None:
+            np.random.seed(seed)
+        self.anchors = create_anchors(self.traj.dim, self.n_anchors)
 
         # get measurements
-        self.basis, self.D_topright = get_measurements(self.traj, self.env.anchors, seed=seed, n_samples=20)
+        self.basis, self.D_topright = get_measurements(self.traj, self.anchors, seed=seed, n_samples=20)
 
     def improve_with_gradientDescent(self, coeffs_est):
         """ Make sure result gets better after running a few iters of grad descent. """
@@ -40,7 +41,7 @@ class TestBaselineSolvers(unittest.TestCase):
             print("err_raw was already good enough.")
             return
 
-        coeffs_grad, __ = gradientDescent(self.env.anchors, self.basis, coeffs_est, self.D_topright, maxIters=10)
+        coeffs_grad, __ = gradientDescent(self.anchors, self.basis, coeffs_est, self.D_topright, maxIters=10)
         err_refined = np.linalg.norm(coeffs_grad - self.traj.coeffs)
 
         np.testing.assert_array_almost_equal(coeffs_grad, self.traj.coeffs, decimal=2)
@@ -54,7 +55,7 @@ class TestBaselineSolvers(unittest.TestCase):
             self.set_measurements(seed=i)
 
             # check noiseless methods.
-            coeffs_est = customMDS(self.D_topright, self.basis, self.env.anchors)
+            coeffs_est = customMDS(self.D_topright, self.basis, self.anchors)
             np.testing.assert_array_almost_equal(coeffs_est, self.traj.coeffs, decimal=2)
 
             self.improve_with_gradientDescent(coeffs_est)

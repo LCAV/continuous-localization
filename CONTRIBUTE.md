@@ -29,7 +29,7 @@ vulture *.py
 
 We use the *frozen* tag for each cell which should not be executed, for example because it entails some heavy computation. This tag is easily added by enabling the nbextension [Freeze](https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/nbextensions/freeze/readme.html).
 
-The following lines of code can be run to install and enable the extension. After installation 3 buttons appear in the notebook, and the * button 
+The following lines of code can be run to install and enable the extension. After installation, 3 buttons appear in the notebook, and the * button 
 corresponds to *freezing* a cell.
 
 ```

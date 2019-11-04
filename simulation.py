@@ -12,9 +12,8 @@ import os
 import time
 import logging
 
-from environment import Environment
 from global_variables import DIM
-from measurements import get_measurements, create_mask, add_noise
+from measurements import get_measurements, create_mask, add_noise, create_anchors
 from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
 from trajectory import Trajectory
 import hypothesis as h
@@ -127,12 +126,11 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
 
                         for _ in range(n_its):
 
-                            trajectory = Trajectory(n_complexity)
-                            environment = Environment(n_anchors)
+                            trajectory = Trajectory(n_complexity, dim=DIM)
+                            anchors_coord = create_anchors(DIM, n_anchors)
                             trajectory.set_coeffs(seed=None)
-                            environment.set_random_anchors(seed=None)
 
-                            basis, D_topright = get_measurements(trajectory, environment.anchors, n_samples=n_positions)
+                            basis, D_topright = get_measurements(trajectory, anchors_coord, n_samples=n_positions)
                             distances = np.sqrt(D_topright)
                             D_topright = add_noise(D_topright, noise_sigma, parameters["noise_to_square"])
                             mask = create_mask(n_positions,
@@ -148,20 +146,17 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                                          n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == semidefRelaxationNoiseless):
                                     X = semidefRelaxationNoiseless(D_topright,
-                                                                   environment.anchors,
+                                                                   anchors_coord,
                                                                    basis,
                                                                    chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'rightInverseOfConstraints':
-                                    X = rightInverseOfConstraints(D_topright, environment.anchors, basis)
+                                    X = rightInverseOfConstraints(D_topright, anchors_coord, basis)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'alternativePseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright, environment.anchors, basis)
+                                    P_hat = alternativePseudoInverse(D_topright, anchors_coord, basis)
                                 elif solver == 'weightedPseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright,
-                                                                     environment.anchors,
-                                                                     basis,
-                                                                     weighted=True)
+                                    P_hat = alternativePseudoInverse(D_topright, anchors_coord, basis, weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
@@ -170,7 +165,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
                                 _, D_estimated = get_measurements(trajectory_estimated,
-                                                                  environment.anchors,
+                                                                  anchors_coord,
                                                                   n_samples=n_positions)
                                 estimated_distances = np.sqrt(D_estimated)
 

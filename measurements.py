@@ -22,6 +22,10 @@ def add_noise(D, noise_sigma, noise_to_square=False):
     return D_noisy
 
 
+def create_anchors(dim, n_anchors):
+    return np.random.rand(dim, n_anchors)
+
+
 def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwargs):
     """ 
     NOT CURRENTLY USED (but can be useful at some point).
