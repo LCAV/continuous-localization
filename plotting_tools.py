@@ -19,11 +19,7 @@ def make_dirs_safe(path):
 
 def savefig(fig, name):
     make_dirs_safe(name)
-    try:
-        fig.savefig(name, bbox_inches='tight', pad_inches=0)
-        print('saved as', name)
-    except:
-        print('could not save figure under {} for some reason.'.format(name))
+    fig.savefig(name, bbox_inches='tight', pad_inches=0)
 
 
 def add_scalebar(ax, size=5, size_vertical=1, loc='lower left'):
