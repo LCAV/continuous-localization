@@ -3,8 +3,9 @@ sudo: required
 install: 
   - pip install -r requirements.txt
 python:
-  - "3.5"
+  - "3.6"
 script:
-  - python runner.py
+  - ./scripts/download_datasets Plaza2
+  - ./scripts/run_important_notebooks
   - pytest test/
   - make html

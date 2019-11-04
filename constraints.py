@@ -15,12 +15,12 @@ import numpy as np
 
 
 def verify_dimensions(D_topright, anchors, basis):
-    '''
+    """
     :param D_topright: n_positions x n_anchors
     :param anchors: dim x n_anchors
     :param basis: n_complexity x n_positions
 
-    '''
+    """
     n_positions, n_anchors = D_topright.shape
     n_complexity = basis.shape[0]
     dim = anchors.shape[0]

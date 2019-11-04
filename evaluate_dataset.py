@@ -480,7 +480,7 @@ def compute_distance_matrix(df,
                             chosen_distance='distance',
                             dimension=3,
                             robot_height=0):
-    '''
+    """
     :param df: dataset which has time, distance, anchor_id data.
     :param anchors_df: dataset of anchors data. 
     :param anchor_names: list of anchor names to use. Set to None to use all.
@@ -490,7 +490,7 @@ def compute_distance_matrix(df,
     :param robot_height: if dimension is 2, use this for robot height.
 
     :return: squared distance matrix of shape n_measurements x n_anchors.
-    '''
+    """
 
     if anchor_names is None:
         anchor_names = list(anchors_df.anchor_name.unique())
