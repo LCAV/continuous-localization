@@ -1,30 +1,20 @@
-import matplotlib.pyplot as plt
-import matplotlib.ticker as tck
 import numpy as np
 from scipy import special
 import time
 import warnings
-import plotting_tools  # to avoid cyclic imports
-
-
-def get_anchors(n_anchors, n_dimensions=2, check=True):
-    full_rank = False
-    extension = np.ones((1, n_anchors))
-    anchors = np.random.rand(n_dimensions, n_anchors)
-    if check:
-        while not full_rank:
-            # check if the extended anchors are linearly independent
-            # we would ideally like to check if any subset of anchors
-            # of the size n_dimensions + 1 is full rank
-            extended = np.concatenate([anchors, extension])
-            if np.linalg.matrix_rank(extended) > n_dimensions:
-                full_rank = True
-            else:
-                anchors = np.random.rand(n_dimensions, n_anchors)
-    return anchors
+import measurements as m
 
 
 def get_frame(n_constraints, n_positions):
+    """Generate frame (basis) the fast way, without crating the trajectory.
+    It speeds up simulations compared to Trajectory.get_basis.
+
+    :param n_constraints: mode size
+    :param n_positions: number of samples
+
+    :return: a frame - an evaluated uniformly basis of bandlimited functions
+    of size (n_constraints x n_positions)
+    """
     Ks = np.arange(n_constraints).reshape((n_constraints, 1))
     Ns = np.arange(n_positions).reshape((n_positions, 1))
     return np.cos(Ks @ Ns.T * np.pi / n_positions)
@@ -37,14 +27,14 @@ def get_left_submatrix(idx_a, idx_f, anchors, frame):
     Trows of the matrix are tensor product of extended anchors and frame vectors,
     which means that the whole matrix is (n_dimensions+1) * n_constraints x n_measurements dimensional.
     This is because it seems to be a more natural representation - for localising just one point,
-    the full matrix is reducted to the (extended) left submatrix.
+    the full matrix is reduced to the (extended) left submatrix.
 
     :param idx_a: list of anchor indexes for each measurement
     :param idx_f: list of frame indexes for each measurement
     :param anchors: matrix of all available anchors, of size n_dimensions x n_anchors
     :param frame: matrix of all frame vectors, of size n_points x n_constraints
 
-    :return: left part of the constrain matrix
+    :return: left part of the constrain matrix of size (n_dimensions+1) * n_constraints x n_measurements
     """
 
     f_vect = [frame[:, i] for i in idx_f]
@@ -62,7 +52,7 @@ def get_reduced_right_submatrix(idx_f, frame):
     :param idx_f: list of frame indexes for each measurement
     :param frame: matrix of all frame vectors, of size n_constraints x n_positions
 
-    :return: right part of the constrain matrix
+    :return: right part of the constrain matrix of size (n_constraints - 1) x n_measurements.
     """
 
     n_constraints, n_positions = frame.shape
@@ -75,6 +65,15 @@ def get_reduced_right_submatrix(idx_f, frame):
 
 
 def get_full_matrix(idx_a, idx_f, anchors, frame):
+    """ Get full matrix in the reduced form (that can be invertible)
+
+    :param idx_a: list of anchor indexes for each measurement
+    :param idx_f: list of frame indexes for each measurement
+    :param anchors: matrix of all available anchors, of size n_dimensions x n_anchors
+    :param frame: matrix of all frame vectors, of size n_points x n_constraints
+
+    :return: the constrain matrix ((n_dimensions+2) * n_constraints - 1 ) x n_measurements
+    """
     return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame),
                            get_reduced_right_submatrix(idx_f, frame)],
                           axis=1)
@@ -98,82 +97,6 @@ def indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions):
     matrix = np.zeros((n_anchors, n_positions))
     matrix[idx_a, idx_f] = 1
     return matrix
-
-
-def probability_few_anchors(n_dimensions, n_constraints, n_positions):
-    """Calculate probability of size the smallest matrix being invertible with minimal number of anchors.
-
-    Smallest matrix that can invertible has to have (n_dimensions+1)n_constraints rows,
-    and the smallest number of needed anchors is n_dimensions + 1. The behaviour is qualitatively different
-    for n_dimensions + 1 anchors than for more anchors."""
-
-    total = special.binom((n_dimensions + 1) * n_positions, (n_dimensions + 1) * n_constraints)
-    full = special.binom(n_positions, n_constraints)**(n_dimensions + 1)
-    return full / total
-
-
-# TODO(FD): not used, what to do with this? Add a test in test/test_hypothesis?
-def probability_few_anchors_limit(n_dimensions, n_constraints, anchors_limit=False):
-    """Calculate analytical limit of probability_few_anchors.
-
-    Based on known binomial symbol limits for minimum number of anchors, fixed number of constrains and large number of
-    positions.
-    Can be also used to calculate limit for minimum number of positions, fixed number of dimensions and large number
-    of anchors.
-
-    :param n_dimensions: number of dimensions D
-    :param n_constraints: number of constrains K
-    :param anchors_limit: if true, calculate limit for many anchors, not for many measurements
-    :return:
-        float: a limit of probability of the left hand side matrix being full rank, as number of positions (or number of
-        constrains) goes to infinity
-    """
-    if anchors_limit:
-        (n_dimensions, n_constraints) = (n_constraints - 1, n_dimensions + 1)
-
-    return np.sqrt(n_dimensions + 1) / (np.sqrt(2 * np.pi * n_constraints)**n_dimensions)
-
-
-def probability_upper_bound(n_dimensions, n_constraints, n_positions, n_anchors, position_wise=False):
-    """Calculate upper bound on the probability of matrix being full rank,
-    assuming that the number of measurements is exactly n_constraints * (n_dimensions + 1).
-    This assumption allows for speed up calculations.
-
-    :param n_dimensions: number of dimensions D
-    :param n_constraints: number of constrains K
-    :param n_positions: number of positions along trajectory N
-    :param n_anchors: number of anchors M
-    :param position_wise: if True, calculates the upper bound based on partitions of positions and not anchors.
-    The equations are the same for both cases, but for readability purposes the naming convention for partition of
-    anchors is used rather than abstract notation
-    :return:
-        float: upper bound on probability of the left hand side of the matrix being full rank
-    """
-
-    if position_wise:
-        (n_dimensions, n_constraints) = (n_constraints - 1, n_dimensions + 1)
-        (n_anchors, n_positions) = (n_positions, n_anchors)
-
-    start = time.time()
-
-    max_index = n_constraints + 1
-    n_measurements = n_constraints * (n_dimensions + 1)
-    upper_bound_combinations = 0
-
-    for part_nr in range(max_index**n_anchors):
-        partition = np.unravel_index(part_nr, [max_index] * n_anchors)
-        if sum(partition) == n_measurements:  # go through all partition of measurements between anchors
-            new_combinations = 1
-            for k in partition:
-                new_combinations *= special.binom(n_positions, k)
-            upper_bound_combinations += new_combinations
-
-    total_combinations = special.binom(n_positions * n_anchors, n_measurements)
-    end = time.time()
-    if end - start > 1:
-        print("Upper bound, position {}, positions {}, elapsed time: {:.2f}s".format(
-            n_positions, position_wise, end - start))
-    return upper_bound_combinations / total_combinations
 
 
 def limit_condition(p, bins, measurements):
@@ -209,13 +132,13 @@ def partition_frequency(partition):
     return total / np.prod(special.factorial(counts))
 
 
-def probability_upper_bound_any_measurements(n_dimensions,
-                                             n_constraints,
-                                             n_positions,
-                                             n_anchors,
-                                             n_measurements,
-                                             position_wise=False,
-                                             full_matrix=False):
+def probability_upper_bound(n_dimensions,
+                            n_constraints,
+                            n_positions,
+                            n_anchors,
+                            n_measurements,
+                            position_wise=False,
+                            full_matrix=False):
     """Calculate upper bound on the probability of matrix being full rank,
     assuming that the number of measurements is exactly n_constraints * (n_dimensions + 1).
     This assumption allows for speed up calculations.
@@ -279,69 +202,20 @@ def probability_upper_bound_any_measurements(n_dimensions,
     return upper_bound_sum * common_factor
 
 
-# TODO(FD): not used, what to do with this? Add a test in test/test_hypothesis?
-def left_independence_estimation(n_constraints, min_anchors, poisson_mean, repetitions=10000, use_limits=False):
-    """
-    Estimate joint and marginal probabilities of the left hand side matrix satisfying
-    certain anchor and positions conditions necessary for the matrix to be full rank
-
-
-    :param n_constraints: number of constrains K
-    :param min_anchors: minimum number of anchors (D+1)
-    :param poisson_mean: mean of the poisson variable added n_constraints
-    and min_anchors to obtain number of positions and number of anchors
-    :param repetitions: number of times to generate data
-    :param use_limits: if True uses new limit conditions, otherwise use two out of four old conditions
-    :return:
-        tuple (number of good row configurations, number of good row and column configurations,
-        number of entirely good row configurations, total number of tests made
-    """
-
-    anchors_ok = 0
-    positions_ok = 0
-    both_ok = 0
-    total = 0
-    for _ in range(repetitions):
-        n_anchors = min_anchors + np.random.poisson(poisson_mean)
-        n_positions = n_constraints + np.random.poisson(poisson_mean)
-        p = min(1, (min_anchors * n_constraints) / (n_anchors * n_positions))
-        matrix = np.random.binomial(1, p, size=(n_positions, n_anchors))
-        # Proceed only if we have enough measurements
-        if np.sum(matrix) >= n_constraints * min_anchors:
-            total += 1
-            positions_feasible = True
-            anchors_feasible = True
-            if use_limits:
-                anchors_feasible = limit_condition(-np.sort(-np.sum(matrix, axis=0)), min_anchors, n_constraints)
-                positions_feasible = limit_condition(-np.sort(-np.sum(matrix, axis=1)), n_constraints, min_anchors)
-            else:
-                for part_nr in range(2**n_positions):
-                    partition = np.unravel_index(part_nr, [2] * n_positions)
-                    if sum(partition) == (n_positions - (n_constraints - 1)):
-                        # it sets feasible to false!
-                        if np.sum(np.multiply(partition, np.sum(matrix, axis=1))) < min_anchors:
-                            positions_feasible = False
-                            break
-                for part_nr in range(2**n_anchors):
-                    partition = np.unravel_index(part_nr, [2] * n_anchors)
-                    if sum(partition) == (n_anchors - (min_anchors - 1)):
-                        # it sets feasible to false!
-                        if np.sum(np.multiply(partition, np.sum(matrix, axis=0))) < n_constraints:
-                            anchors_feasible = False
-                            break
-
-            if anchors_feasible:
-                anchors_ok += 1
-            if positions_feasible:
-                positions_ok += 1
-            if anchors_feasible and positions_feasible:
-                both_ok += 1
-
-    return anchors_ok, positions_ok, both_ok, total
-
-
 def matrix_rank_experiment(params):
-    """ TODO (michalina) document """
+    """Run simulations to estimate probability of matrix being full rank for different number of measurements
+
+     :param params: all parameters of the simulation, might contain:
+        n_dimensions: number of dimensions
+        n_constraints: number of constrains / degrees of freedom of the trajectory
+        n_positions: number of positions at which measurements are taken
+        n_repetitions: number of runs with the same parameters
+        full_matrix: if True simulate the whole matrix, otherwise only the left part
+        n_anchors_list: list of number number of anchors f
+        one_per_time: if True, number of measurements per time/position is limited to 1
+        fixed_n_measurements: if present, the number of measurements is fixed, and the number of positions/times very
+        incompatible with `one_per_time`
+     """
 
     n_measurements = 0
     n_positions = 0
@@ -380,7 +254,7 @@ def matrix_rank_experiment(params):
     frame_condition = np.zeros_like(ranks)
     wrong_matrices = []
     for a_idx, n_anchors in enumerate(n_anchors_list):
-        anchors = get_anchors(n_anchors, params["n_dimensions"])
+        anchors = m.create_anchors(n_anchors=n_anchors, dim=params["n_dimensions"], check=True)
         # iterate over whatever the second parameter is (number of positions or number of measurements)
         for second_idx, second_param in enumerate(second_list):
             if "fixed_n_measurements" in params:
@@ -427,49 +301,3 @@ def matrix_rank_experiment(params):
     if params["full_matrix"]:
         params["max_rank"] += params["n_constraints"] - 1
     return ranks, params
-
-
-def plot_results(
-        ranks,
-        params,
-        directory="results/ranks/",
-        save=False,
-):
-
-    key = "_d{}_c{}_{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["second_key"],
-                                      params["full_matrix"])
-
-    max_rank = params["max_rank"]
-    n_repetitions = ranks.shape[2]
-    x = np.array(params["second_list"])
-    if "fixed_n_measurements" not in params:
-        x = x / max_rank
-
-    f, ax = plt.subplots()
-    for a_idx, n_anchors in enumerate(params["n_anchors_list"]):
-        plt.plot(x,
-                 np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
-                 label="mean rank, {} anchors".format(n_anchors),
-                 color="C{}".format(a_idx),
-                 linestyle='dashed')
-        plt.step(x,
-                 np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
-                 label="probability, {} anchors".format(n_anchors),
-                 color="C{}".format(a_idx),
-                 where='post')
-    if "fixed_n_measurements" in params:
-        plt.xlabel("number of positions")
-    else:
-        plt.xlabel("number of measurements")
-        formatter_text = '%g (D+1)K + (K-1)' if params["full_matrix"] else '%g (D+1)K'
-        ax.xaxis.set_major_formatter(tck.FormatStrFormatter(formatter_text))
-        ax.xaxis.set_major_locator(tck.MultipleLocator(base=1))
-    plt.grid()
-    plt.legend()
-    params["directory"] = directory
-    if save:
-        plt.ylim(bottom=0)
-        matrix_type = "full" if params["full_matrix"] else "left"
-        fname = directory + matrix_type + "_matrix_anchors" + key + ".pdf"
-        plotting_tools.make_dirs_safe(fname)
-        plt.savefig(fname)

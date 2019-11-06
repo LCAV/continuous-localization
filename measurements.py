@@ -22,8 +22,22 @@ def add_noise(D, noise_sigma, noise_to_square=False):
     return D_noisy
 
 
-def create_anchors(dim, n_anchors):
-    return np.random.rand(dim, n_anchors)
+def create_anchors(dim, n_anchors, check=False):
+    if not check:
+        return np.random.rand(dim, n_anchors)
+    full_rank = False
+    extension = np.ones((1, n_anchors))
+    anchors = np.random.rand(dim, n_anchors)
+    while not full_rank:
+        # check if the extended anchors are linearly independent
+        # we would ideally like to check if any subset of anchors
+        # of the size n_dimensions + 1 is full rank
+        extended = np.concatenate([anchors, extension])
+        if np.linalg.matrix_rank(extended) > dim:
+            full_rank = True
+        else:
+            anchors = np.random.rand(dim, n_anchors)
+    return anchors
 
 
 def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwargs):

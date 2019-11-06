@@ -402,3 +402,49 @@ def plot_complexities(traj, D, times, anchors, full_df, list_complexities, srls=
 
     add_scalebar(axs[0], 20, loc='lower left')
     return fig, axs
+
+
+def plot_probabilities(
+        ranks,
+        params,
+        directory="results/ranks/",
+        save=False,
+):
+
+    key = "_d{}_c{}_{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["second_key"],
+                                      params["full_matrix"])
+
+    max_rank = params["max_rank"]
+    n_repetitions = ranks.shape[2]
+    x = np.array(params["second_list"])
+    if "fixed_n_measurements" not in params:
+        x = x / max_rank
+
+    f, ax = plt.subplots()
+    for a_idx, n_anchors in enumerate(params["n_anchors_list"]):
+        plt.plot(x,
+                 np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
+                 label="mean rank, {} anchors".format(n_anchors),
+                 color="C{}".format(a_idx),
+                 linestyle='dashed')
+        plt.step(x,
+                 np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
+                 label="probability, {} anchors".format(n_anchors),
+                 color="C{}".format(a_idx),
+                 where='post')
+    if "fixed_n_measurements" in params:
+        plt.xlabel("number of positions")
+    else:
+        plt.xlabel("number of measurements")
+        formatter_text = '%g (D+1)K + (K-1)' if params["full_matrix"] else '%g (D+1)K'
+        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(formatter_text))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(base=1))
+    plt.grid()
+    plt.legend()
+    params["directory"] = directory
+    if save:
+        plt.ylim(bottom=0)
+        matrix_type = "full" if params["full_matrix"] else "left"
+        fname = directory + matrix_type + "_matrix_anchors" + key + ".pdf"
+        make_dirs_safe(fname)
+        plt.savefig(fname)

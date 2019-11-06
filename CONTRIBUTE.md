@@ -32,17 +32,28 @@ We use the *frozen* tag for each cell which should not be executed, for example 
 The following lines of code can be run to install and enable the extension. After installation, 3 buttons appear in the notebook, and the * button 
 corresponds to *freezing* a cell.
 
+For pip installation:
 ```
 pip install jupyter_contrib_nbextensions
 jupyter contrib nbextension install --user
 jupyter nbextension enable Freeze
 ```
-
-You can then run 
-
+or for Conda installation:
 ```
-python runner.py
+conda install -c conda-forge jupyter_contrib_nbextensions
+jupyter contrib nbextension install --sys-prefix --symlink
+jupyter nbextension enable freeze/main
 ```
+
+You can then test the core notebooks using
+```
+./scripts/run_important_notebooks
+```
+or test a specific notebook using
+```
+python scripts/run_notebooks.py <notebook name>
+```
+
 
 which will execute all python notebooks while skipping the *frozen* cells. The script will crash if any of the notebooks raise an error.
 
