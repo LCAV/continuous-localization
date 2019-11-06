@@ -45,7 +45,38 @@ def get_anchors_and_distances(D, idx, dim=2):
     return np.array(r2).reshape((-1, 1)), anchors
 
 
-def cost_function(C_k_vec, D, A, F, verbose=False):
+def get_m_n(D):
+    """ Get the anchor indices of the flattened distance measurements.
+    """
+    n, m = np.where(D > 0)
+    return np.array(n), np.array(m)
+
+
+def cost_function(C_k_vec, D_sq, A, F, verbose=False):
+    """ Return cost of distance squared.
+
+    :param C_k: trajectory coefficients (dim x K)
+    :param D_sq: squared distance matrix (N x M)
+    :param A: anchor coordinates (dim x M)
+    :param F: trajectory basis functions (K x N)
+
+    :return: vector of residuals.
+    """
+    dim = A.shape[0]
+    C_k = C_k_vec.reshape((dim, -1))
+    R = C_k.dot(F)
+    diff = R[:, :, None] - A[:, None, :]  # dim x N x M
+    D_est_sq = np.linalg.norm(diff, axis=0)**2  # N x M
+
+    # set the missing elements to zero.
+    D_est_sq[D_sq == 0.0] = 0.0
+    assert not np.any(np.isnan(D_est_sq))
+
+    cost = np.power(D_sq - D_est_sq, 2).reshape((-1, ))
+    return cost
+
+
+def cost_jacobian(C_k_vec, D, A, F, verbose=False):
     """ Return maximum likelihood cost of distances.
 
     :param C_k: trajectory coefficients (dim x K)
@@ -53,28 +84,40 @@ def cost_function(C_k_vec, D, A, F, verbose=False):
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
 
-    :return: vector of residuals.
+    :return: (N x K*d) Jacobian matrix.
     """
-    C_k = C_k_vec.reshape((2, -1))
+
+    l = cost_function(C_k_vec, D, A, F)  # cost vector (N)
+    ns, ms = get_m_n(D)
+
+    N = len(l)
+    Kd = len(C_k_vec)
+    dim = A.shape[0]
+    K = Kd / dim
+
+    jacobian = np.empty((N, Kd))  # N x Kd
+
+    C_k = C_k_vec.reshape((dim, -1))
     R = C_k.dot(F)
-    if verbose:
-        print('R  dim x N', R.shape)  # dim x N
-    diff = R[:, :, None] - A[:, None, :]
-    if verbose:
-        print('diff  dim x N x M', diff.shape)
-    D_est = np.linalg.norm(diff, axis=0)  #  dim x N x M
-    if verbose:
-        print('N x M', D_est.shape, D.shape)
-    D_est[D == 0.0] = 0.0
-    assert not np.any(np.isnan(D_est))
-    D[D > 0] = np.sqrt(D[D > 0])
-    nonzero = (D_est - D)[D > 0]
-    return np.power(nonzero, 2).reshape((-1, ))
+    for l_n, m_n, n in zip(l, ms, ns):
+        f_n = F[:, n]
+        assert len(f_n) == K
+
+        jacobian_mat = np.empty(C_k.shape)  # dim x K
+        for d in range(dim):
+            C_k_d = C_k[d, :]
+            assert len(C_k_d) == K
+
+            factor = f_n.dot(C_k_d) - A[d, m_n]
+            jacobian_mat[d, :] = 4 * l_n * f_n * factor
+        jacobian[n, :] = jacobian_mat.reshape((-1, ))
+    return jacobian
 
 
 def least_squares_lm(D, anchors, basis, x0):
-    """ Solve using Levenerg Marquardt. """
+    """ Solve using Levenberg Marquardt. """
     res = least_squares(cost_function, x0=x0, method='lm', args=(D, anchors[:2], basis))
+    print(res.message)
     return res.x.reshape((2, -1))
 
 

@@ -173,7 +173,7 @@ n_samples)
                 np.random.rand(self.dim, self.n_complexity)
         else:
             if coeffs.shape[1] != self.n_complexity:
-                print('Warning:', coeffs.shape, self.n_complexity)
+                print('Warning: coeffs mismatch', coeffs.shape, self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
