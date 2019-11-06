@@ -86,7 +86,6 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
 
     :return: (N x K*d) Jacobian matrix.
     """
-
     l = cost_function(C_k_vec, D, A, F)  # cost vector (N)
     ns, ms = get_m_n(D)
 
@@ -99,24 +98,20 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
 
     C_k = C_k_vec.reshape((dim, -1))
     R = C_k.dot(F)
-    for l_n, m_n, n in zip(l, ms, ns):
+    for j, (l_n, m_n, n) in enumerate(zip(l, ms, ns)):
         f_n = F[:, n]
         assert len(f_n) == K
 
-        jacobian_mat = np.empty(C_k.shape)  # dim x K
-        for d in range(dim):
-            C_k_d = C_k[d, :]
-            assert len(C_k_d) == K
-
-            factor = f_n.dot(C_k_d) - A[d, m_n]
-            jacobian_mat[d, :] = 4 * l_n * f_n * factor
-        jacobian[n, :] = jacobian_mat.reshape((-1, ))
+        # factor is the derivative of the norm squared with respect to C matrix.
+        factor = -2 * (A[:, m_n] - C_k.dot(f_n)).reshape((dim, 1)).dot(f_n.reshape((1, -1)))  # dim x K
+        jacobian_mat = -2 * np.sqrt(l_n) * factor
+        jacobian[j, :] = jacobian_mat.reshape((-1, ))
     return jacobian
 
 
 def least_squares_lm(D, anchors, basis, x0):
     """ Solve using Levenberg Marquardt. """
-    res = least_squares(cost_function, x0=x0, method='lm', args=(D, anchors[:2], basis))
+    res = least_squares(cost_function, jac=cost_jacobian, x0=x0, method='lm', args=(D, anchors[:2], basis))
     print(res.message)
     return res.x.reshape((2, -1))
 

@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-test_lm.py: 
+test_lm.py: Test LM optimization algorithm.
 """
 
 import common
@@ -47,33 +47,49 @@ class TestLM(unittest.TestCase):
         self.set_measurements(seed=i)
         # make sigma very small to test if the cost function
         # behaves well at least around the optimum.
-        sigma = 1e-1
+        sigma = 1e-10
 
-        #
-        delta = 1e-10  #1e-10
         D_noisy = add_noise(self.D_topright, noise_sigma=sigma)
 
         C_k_vec = self.traj.coeffs.reshape((-1, ))
         jacobian = cost_jacobian(C_k_vec, D_noisy, self.anchors, self.basis)
-        print('jacobian')
-        print(jacobian)
 
         cost = cost_function(C_k_vec, D_noisy, self.anchors, self.basis)
         N = len(cost)
         Kd = len(C_k_vec)
-        for k in range(Kd):
-            C_k_delta = C_k_vec.copy()
-            C_k_delta[k] += delta
-            cost_delta = cost_function(C_k_delta, D_noisy, self.anchors, self.basis)
-            for n in range(N):
-                print('two costs', cost_delta[n], cost[n])
-                print('diff', cost_delta[n] - cost[n])
-                jacobian_est = (cost_delta[n] - cost[n]) / delta
-                jacobian_k = jacobian[n, k]
-                print('jac est', jacobian_est)
-                print('jac k', jacobian_k)
+
+        # make delta small enough but not too small.
+        deltas = list(np.logspace(-15, -1, 10))[::-1]
+        previous_jac = 1000
+        convergence_lim = 1e-5
+
+        for delta in deltas:
+            jacobian_est = np.empty((N, Kd))
+            for k in range(Kd):
+                C_k_delta = C_k_vec.copy()
+                C_k_delta[k] += delta
+                cost_delta = cost_function(C_k_delta, D_noisy, self.anchors, self.basis)
+                jacobian_est[:, k] = (cost_delta - cost) / delta
+
+            new_jac = jacobian_est
+            difference = np.sum(np.abs(previous_jac - new_jac))
+            print('convergence:', difference)
+            if np.sum(np.abs(new_jac)) < EPS:
+                print('new jacobian is all zero! use previous jacobian.')
                 break
-            break
+
+            elif difference < convergence_lim:
+                print(f'converged at {delta}.')
+                previous_jac = new_jac
+                break
+            else:  # not converged yet.
+                previous_jac = new_jac
+        jacobian_est = previous_jac
+        print('===== first element =====:')
+        print('jacobian est vs. real:', jacobian_est[0, 0], jacobian[0, 0])
+        print('difference', jacobian_est[0, 0] - jacobian[0, 0])
+        print('==== total difference ===:')
+        print(np.sum(np.abs(jacobian_est - jacobian)))
 
 
 if __name__ == "__main__":
