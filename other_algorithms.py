@@ -3,10 +3,14 @@
 """
 other_algorithms.py: Baseline algorithms to compare against. 
 """
+import pdb
+
 import numpy as np
 from scipy.optimize import least_squares
 
 from pylocus.lateration import SRLS
+
+EPS = 1e-10
 
 
 def calculate_error(Chat, C, error_type='MAE'):
@@ -70,9 +74,11 @@ def cost_function(C_k_vec, D_sq, A, F, verbose=False):
 
     # set the missing elements to zero.
     D_est_sq[D_sq == 0.0] = 0.0
-    assert not np.any(np.isnan(D_est_sq))
+    if np.any(np.isnan(D_est_sq)):
+        raise ValueError('some nans in D_est_sq')
 
-    cost = np.power(D_sq - D_est_sq, 2).reshape((-1, ))
+    nonzero = (D_sq - D_est_sq)[D_sq > 0]
+    cost = np.power(nonzero, 2).reshape((-1, ))
     return cost
 
 
@@ -92,7 +98,7 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
     N = len(l)
     Kd = len(C_k_vec)
     dim = A.shape[0]
-    K = Kd / dim
+    K = int(Kd / dim)
 
     jacobian = np.empty((N, Kd))  # N x Kd
 
@@ -104,15 +110,26 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
 
         # factor is the derivative of the norm squared with respect to C matrix.
         factor = -2 * (A[:, m_n] - C_k.dot(f_n)).reshape((dim, 1)).dot(f_n.reshape((1, -1)))  # dim x K
-        jacobian_mat = -2 * np.sqrt(l_n) * factor
+        if (np.abs(l_n) > EPS):
+            jacobian_mat = -2 * np.sqrt(np.abs(l_n)) * factor
+        else:
+            jacobian_mat = np.zeros((dim, K))
         jacobian[j, :] = jacobian_mat.reshape((-1, ))
+    if np.any(np.isnan(jacobian)):
+        print('Problems in cost_jacobian. Going in debugging mode.')
+        pdb.set_trace()
     return jacobian
 
 
 def least_squares_lm(D, anchors, basis, x0):
     """ Solve using Levenberg Marquardt. """
+    if np.any(np.isnan(x0)):
+        raise ValueError(f'invalid x0 {x0}')
     res = least_squares(cost_function, jac=cost_jacobian, x0=x0, method='lm', args=(D, anchors[:2], basis))
-    print(res.message)
+    if res.success:
+        print('LM succeeded with message:', res.message)
+    else:
+        print('LM failed with message:', res.message)
     return res.x.reshape((2, -1))
 
 
