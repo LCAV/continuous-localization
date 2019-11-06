@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # module REMOVE_OUTPUT
 DESCRIPTION = \
-'''
+"""
     Remove output cells from jupyter python notebook.
     Simplifies version control of jupyter notebooks.\n
 
@@ -13,7 +13,7 @@ DESCRIPTION = \
 
            - remove output with custom backup name 
            python remove_output.py --backup='custom.ipynb' notebook.ipynb
-'''
+"""
 import sys
 import io
 import os

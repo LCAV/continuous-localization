@@ -11,7 +11,6 @@ Welcome to SamplingTrajectories's documentation!
   :caption: Contents:
 
   constraints
-  environment
   trajectory
   simulation
   solvers

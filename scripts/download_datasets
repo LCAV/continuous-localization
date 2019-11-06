@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+mkdir -p datasets
+
+for dataset_name in "$@"
+do
+  echo "$dataset_name"
+  if [ $dataset_name = "Plaza1" ]; then
+    wget https://github.com/gtrll/gpslam/raw/master/matlab/data/Plaza1.mat
+    mv Plaza1.mat datasets/
+    echo "Created datasets/Plaza1.mat"
+  elif [ $dataset_name = "Plaza2" ]; then
+    wget https://github.com/gtrll/gpslam/raw/master/matlab/data/Plaza2.mat
+    mv Plaza2.mat datasets/
+    echo "Created datasets/Plaza2.mat"
+
+  elif [ $dataset_name = "uah1" ]; then
+    wget http://www.robesafe.es/repository/UAHWiFiDataset/data/uah1.mat
+    mv uah1.mat datasets/
+    echo "Created datasets/uah1.mat"
+
+  elif [ $dataset_name = "uah2" ]; then
+    wget http://www.robesafe.es/repository/UAHWiFiDataset/data/uah2.mat
+    mv uah2.mat datasets/
+    echo "Created datasets/uah2.mat"
+  fi
+done

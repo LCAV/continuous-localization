@@ -36,16 +36,15 @@ class TestExact(unittest.TestCase):
         print('ok')
 
     def test_f_multidim(self):
-        from environment import Environment
         from trajectory import Trajectory
-        from measurements import get_measurements
-        environment = Environment(n_anchors=5)
+        from measurements import get_measurements, create_anchors
+        anchors = create_anchors(dim=2, n_anchors=5)
         trajectory = Trajectory(n_complexity=4, dim=2)
-        basis, D_topright = get_measurements(trajectory, environment.anchors, n_samples=10)
+        basis, D_topright = get_measurements(trajectory, anchors, n_samples=10)
 
         eps = 1e-10
-        self.assertTrue(np.all(abs(f_multidim(environment.anchors, basis, D_topright, trajectory.coeffs)) < eps))
-        self.assertTrue(abs(f_onedim(environment.anchors, basis, D_topright, trajectory.coeffs)) < eps)
+        self.assertTrue(np.all(abs(f_multidim(anchors, basis, D_topright, trajectory.coeffs)) < eps))
+        self.assertTrue(abs(f_onedim(anchors, basis, D_topright, trajectory.coeffs)) < eps)
 
 
 if __name__ == "__main__":

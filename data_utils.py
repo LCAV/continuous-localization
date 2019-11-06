@@ -4,16 +4,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.io import loadmat
 import seaborn as sns
 
 from evaluate_dataset import format_anchors_df, format_data_df
 from evaluate_dataset import add_gt_raw, apply_distance_gt
-from iterative_algorithms import build_up_algorithm
-from iterative_algorithms import averaging_algorithm
 from plotting_tools import savefig
 from solvers import alternativePseudoInverse
-from trajectory_creator import get_trajectory
 
 # Need to give different systems a name.
 gt_system_id = "GT"
@@ -133,40 +129,6 @@ def get_smooth_points(C_list, t_list, traj):
     result_df.loc[:, 'py_median'] = result_df['py'].rolling('{}s'.format(mean_window), min_periods=1,
                                                             center=False).median()
     return result_df
-
-
-def filter_D_based_on_ground_truth(traj, ground_truth_pos, D):
-    """  NOT USED FOR NOW.
-
-    If the dataset is in-model, We can try to translate the times to "trajectory space"
-    """
-    from evaluate_dataset import get_length
-
-    lengths = get_length(ground_truth_pos)
-    lengths[np.isnan(lengths)] = 0  # because beginning of lengths can still have nans.
-    assert len(lengths) == D.shape[0], len(lengths)
-
-    # Use only distances for which we have valid ground truth.
-    mask = list(lengths > 0)  # keep first zero length but delete others.
-    mask[0] = True
-    print('original D', D.shape)
-    D = D[mask, :]
-    print('reduced D to', D.shape)
-
-    times = np.array(times)[mask]
-    lengths = lengths[mask]
-
-    assert len(times) == D.shape[0], len(times)
-
-    time_diffs = times[1:] - times[:-1]
-    velocities = lengths[1:] / time_diffs
-    plt.figure()
-    plt.hist(velocities, bins=20)
-    plt.title('velocity histogram')
-
-    distances = np.cumsum(lengths)
-    times, *_ = traj.get_times_from_distances(arbitrary_distances=distances, time_steps=10000)
-    return D, times
 
 
 def plot_distance_errors(this_df, ax=None, **kwargs):

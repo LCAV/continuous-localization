@@ -20,32 +20,6 @@ def make_dirs_safe(path):
 def savefig(fig, name):
     make_dirs_safe(name)
     fig.savefig(name, bbox_inches='tight', pad_inches=0)
-    print('saved as', name)
-
-
-def generate_labels(dims, parameters, indices):
-    title = ""
-    label = []
-    for key, value in dims.items():
-        if len(indices[value]) == 1:
-            title += ", {}: {}".format(key, parameters[key][indices[value][0]])
-        else:
-            label.append(key)
-    return title, label
-
-
-def add_plot_decoration(label, parameters):
-    plt.colorbar()
-    if label[1] != 'measurements':
-        x_val = parameters[label[1]]
-        plt.yticks(range(len(x_val)), x_val)
-        plt.xlabel(label[1])
-    else:
-        plt.xlabel('number of missing measurements')
-    plt.ylabel(label[0])
-    y_val = parameters[label[0]]
-    plt.yticks(range(len(y_val)), y_val)
-    plt.gca().xaxis.tick_bottom()
 
 
 def add_scalebar(ax, size=5, size_vertical=1, loc='lower left'):
@@ -160,7 +134,7 @@ def plot_noise(key,
             error = error[:, None]
 
         if ax is None:
-            fig1, ax1 = plt.subplots()
+            _, ax1 = plt.subplots()
         else:
             ax1 = ax
 

@@ -1,14 +1,12 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 runner.py: Test if notebooks run without error.  
-
 """
 
+from nbconvert.preprocessors import ExecutePreprocessor
 import nbformat
 import os
-
-from nbconvert.preprocessors import ExecutePreprocessor
 
 
 def run_notebook(notebook_path):
@@ -17,6 +15,13 @@ def run_notebook(notebook_path):
 
     with open(notebook_path) as f:
         nb = nbformat.read(f, as_version=4)
+
+    # remove the cells that have been "frozen" with the
+    # nbextension "Freeze".
+    for cell in nb.cells.copy():
+        if 'frozen' in cell.metadata.get("run_control", {}).keys():
+            print('Removing frozen cell.')
+            nb.cells.remove(cell)
 
     proc = ExecutePreprocessor(timeout=600, kernel_name='python')
     proc.allow_errors = False
@@ -40,8 +45,16 @@ def run_notebook(notebook_path):
 
 
 if __name__ == '__main__':
-    notebooks = ['UniquenessStudies.ipynb', 'ProblemVisualization.ipynb']
-    for notebook in notebooks:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Run notebooks from command line, leaving out frozen cells.'
+    )
+    parser.add_argument('filenames', metavar='filename', type=str, nargs='+',
+                        help='name of notebook to run (can add many separated by space).')
+    args = parser.parse_args()
+
+    for notebook in args.filenames:
         print('running notebook {}...'.format(notebook))
         nb, errors = run_notebook(notebook)
-        print('... ok. ')
+        print('... ok')

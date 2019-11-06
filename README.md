@@ -27,6 +27,8 @@ You can install all standard python requirements it (at least) two ways:
     conda env create -f environment.yml
     ```
 
+Not that for some plotting and saving functionalities, you need to have *LaTeX* installed.
+
 ## Contents
 
 

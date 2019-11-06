@@ -7,25 +7,26 @@ import numpy as np
 import unittest
 
 from trajectory import Trajectory
-from environment import Environment
 from constraints import *
-from measurements import get_measurements
+from measurements import get_measurements, create_anchors
 
 
 class TestGeometry(unittest.TestCase):
     def setUp(self):
         self.traj = Trajectory(n_complexity=5, dim=2)
-        self.env = Environment(n_anchors=4)
+        self.n_anchors = 4
         self.basis = []
         self.D_topright = []
 
     def set_measurements(self, seed=None):
         #  random trajectory and anchors
         self.traj.set_coeffs(seed=seed)
-        self.env.set_random_anchors(seed=seed)
+        if seed is not None:
+            np.random.seed(seed)
+        self.anchors = create_anchors(self.traj.dim, self.n_anchors)
 
         # get measurements
-        self.basis, self.D_topright = get_measurements(self.traj, self.env.anchors, seed=seed, n_samples=20)
+        self.basis, self.D_topright = get_measurements(self.traj, self.anchors, seed=seed, n_samples=20)
 
     def test_constraints(self):
         """ Check the correct trajectory satisfies constraints.  """
@@ -37,7 +38,7 @@ class TestGeometry(unittest.TestCase):
             for e_d, e_dprime, delta in zip(e_ds, e_dprimes, deltas):
                 np.testing.assert_equal(e_d.T @ self.traj.Z_opt @ e_dprime, delta)
 
-            t_mns, D_mns = get_constraints_D(self.D_topright, self.env.anchors, self.basis)
+            t_mns, D_mns = get_constraints_D(self.D_topright, self.anchors, self.basis)
 
             for t_mn, D_topright_mn in zip(t_mns, D_mns):
                 t_mn = np.array(t_mn)
@@ -51,7 +52,7 @@ class TestGeometry(unittest.TestCase):
             A, b = get_constraints_identity(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
-            A, b = get_constraints_D(self.D_topright, self.env.anchors, self.basis, vectorized=True, A=A, b=b)
+            A, b = get_constraints_D(self.D_topright, self.anchors, self.basis, vectorized=True, A=A, b=b)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
             A, b = get_constraints_symmetry(self.traj.n_complexity, vectorized=True)
@@ -60,7 +61,7 @@ class TestGeometry(unittest.TestCase):
     def test_all_vectorized(self):
         for i in range(100):
             self.set_measurements(i)
-            A, b = get_constraints_matrix(self.D_topright, self.env.anchors, self.basis)
+            A, b = get_constraints_matrix(self.D_topright, self.anchors, self.basis)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
     def test_C_constraints(self):
@@ -68,7 +69,7 @@ class TestGeometry(unittest.TestCase):
             self.set_measurements(i)
             L = self.traj.coeffs.T.dot(self.traj.coeffs)
 
-            T_A, T_B, b = get_C_constraints(self.D_topright, self.env.anchors, self.basis)
+            T_A, T_B, b = get_C_constraints(self.D_topright, self.anchors, self.basis)
             T = np.c_[T_A, -T_B / 2]
             x = np.r_[self.traj.coeffs.flatten(), L.flatten()]
 

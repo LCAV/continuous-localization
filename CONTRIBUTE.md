@@ -12,15 +12,47 @@ You can run:
 after cloning the repository in order to set up `yapf` formatter
 and git hook for removing non important changes from Jupyter Notebooks. 
 
+### Automatic coverage testing
+
+Unused functions, variables, imports, etc. can be quite reliably detected using the *vulture* package. To include the notebooks, make sure to first convert them to python scripts by running 
+
+```
+jupyter nbconvert --to=python *.ipynb
+```
+
+before checking coverage etc. by running 
+```
+vulture *.py
+```
+
+### Testing notebooks
+
+We use the *frozen* tag for each cell which should not be executed, for example because it entails some heavy computation. This tag is easily added by enabling the nbextension [Freeze](https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/nbextensions/freeze/readme.html).
+
+The following lines of code can be run to install and enable the extension. After installation, 3 buttons appear in the notebook, and the * button 
+corresponds to *freezing* a cell.
+
+```
+pip install jupyter_contrib_nbextensions
+jupyter contrib nbextension install --user
+jupyter nbextension enable Freeze
+```
+
+You can then run 
+
+```
+python runner.py
+```
+
+which will execute all python notebooks while skipping the *frozen* cells. The script will crash if any of the notebooks raise an error.
+
+
 ## Test Suite
 
 To run tests, type in terminal
 
    pytest test/
 
-To see if important notebooks run without error, you can also run
-
-   python runner.py
 
 
 ### Note on SCS dependency:

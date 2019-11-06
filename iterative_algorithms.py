@@ -38,8 +38,6 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None, ve
 
     verify_dimensions(D, anchors, basis, times)
 
-    line_counter = 0
-
     D_k = np.empty((0, D.shape[1]))
     basis_k = np.empty((basis.shape[0], 0))
     C_list = []
@@ -118,7 +116,6 @@ def build_up_algorithm(D, anchors, basis, times, eps=1, verbose=False):
     for d_mn_row, t_n, f_n in zip(D, times, basis.T):
         d_mn_row = d_mn_row.reshape((1, -1))
         ams = anchors[:, d_mn_row[0] > 0]
-        ds = d_mn_row[0, d_mn_row[0] > 0]
         if C_k is None or g(C_k) <= eps:
             D_k = np.r_[D_k, d_mn_row]
             basis_k = np.c_[basis_k, f_n]

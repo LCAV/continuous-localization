@@ -144,7 +144,6 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
 
         # set up nonlinear constraints.
         constraints = []
-        found_enough = False
         for m, a_m in enumerate(anchors.T):
             assert len(a_m) == dim
             for n, f_n in enumerate(basis.T):
@@ -192,21 +191,19 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
 
 
 if __name__ == "__main__":
-    from environment import Environment
-    from measurements import get_measurements
+    from measurements import get_measurements, create_anchors
     from trajectory import Trajectory
 
     trajectory = Trajectory(n_complexity=3, dim=2, model='polynomial')
-    environment = Environment(n_anchors=4)
-
+    np.random.seed(1)
+    anchors = create_anchors(dim=2, n_anchors=4)
     trajectory.set_coeffs(seed=1)
-    environment.set_random_anchors(seed=1)
 
     n_samples = 10
-    basis, D = get_measurements(trajectory, environment, n_samples)
+    basis, D = get_measurements(trajectory, anchors, n_samples)
 
-    assert np.isclose(f_onedim(environment.anchors, basis, D, trajectory.coeffs), 0)
-    assert np.allclose(f_multidim(environment.anchors, basis, D, trajectory.coeffs), 0)
+    assert np.isclose(f_onedim(anchors, basis, D, trajectory.coeffs), 0)
+    assert np.allclose(f_multidim(anchors, basis, D, trajectory.coeffs), 0)
 
-    coeffs_hat = compute_exact(D, environment.anchors, basis)
+    coeffs_hat = compute_exact(D, anchors, basis)
     np.testing.assert_allclose(coeffs_hat, trajectory.coeffs)

@@ -15,9 +15,8 @@ import matplotlib.pylab as plt
 import scipy as sp
 
 # These system_ids are used by the python pipeline, but will be changed to human-readable
-# "GT" and "Range".
-tango_system_id = 7585  # GT
-rtt_system_id = 7592  # Range
+# "GT" and "Range", respectively.
+from global_variables import TANGO_SYSTEM_ID, RTT_SYSTEM_ID
 
 #### Geometry.
 
@@ -45,7 +44,7 @@ def apply_anchor_id(row):
     return row.anchor_id.strip()
 
 
-def apply_system_id(row, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+def apply_system_id(row, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
     if row.system_id == range_system_id:
         return 'Range'
     elif row.system_id == gt_system_id:
@@ -60,14 +59,14 @@ def read_anchors_df(anchorsfile):
     return format_anchors_df(anchors_df)
 
 
-def read_dataset(datafile, anchors_df, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+def read_dataset(datafile, anchors_df, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
     """ Read and preprocess the measurement dataset, a .csv file. """
     data_df = pd.read_csv(datafile, engine='python')
     data_df.loc[:, 'timestamp'] = (data_df.timestamp.values - data_df.timestamp.min()) / 1000.  # in seconds
     return format_data_df(data_df, anchors_df, gt_system_id, range_system_id)
 
 
-def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+def format_anchors_df(anchors_df, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
     """
     Make sure anchors_df is correctly formatted.
     """
@@ -85,7 +84,7 @@ def format_anchors_df(anchors_df, gt_system_id=tango_system_id, range_system_id=
     return anchors_df
 
 
-def format_data_df(data_df, anchors_df=None, gt_system_id=tango_system_id, range_system_id=rtt_system_id):
+def format_data_df(data_df, anchors_df=None, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
     """
     Make sure data df is correctly formatted.
     """
@@ -306,49 +305,6 @@ def get_length(pos_df, plot=False):
     return lengths
 
 
-def find_times(tango_df):
-    """ 
-    This was an attempt at a more straight forward way to find calibraiton
-    or movement times. After all, find_start_times worked better.
-
-    """
-    movement_times = []
-    calibration_times = []
-
-    threshold = 1e-4
-
-    times = tango_df.timestamp
-
-    i = 0
-    l = tango_df.loc[i, "length"]
-    moving = (l >= threshold)
-    if moving:
-        movement_times.append([i, np.inf])
-    else:
-        calibration_times.append([i, np.inf])
-
-    for i in range(1, len(times)):
-        l = tango_df.loc[i, "length"]
-
-        if moving and (l >= threshold):
-            # still moving.
-            pass
-        elif moving and (l <= threshold):
-            # stopped moving.
-            movement_times[-1][1] = i - 1
-            calibration_times.append([i, -1])
-            moving = False
-        elif (not moving) and (l <= threshold):
-            # still not moving.
-            pass
-        elif (not moving) and (l >= threshold):
-            # started moving.
-            calibration_times[-1][1] = i - 1
-            movement_times.append([i, np.inf])
-            moving = True
-    return movement_times, calibration_times
-
-
 def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1], plot=False):
     """ Find the times at which the trajectory started. Can be multiple in one dataset.
 
@@ -472,6 +428,8 @@ def match_reference(reference, points):
 
 def apply_rotation_and_translations(points, rotation, rotation_center, reference_center):
     """
+    NOT CURRENTLY USED (but can be useful at some point).
+
     Rotate and translate points with the transformation returned by match_reference
     Can be applied to arbitrary number of points.
 
@@ -522,7 +480,7 @@ def compute_distance_matrix(df,
                             chosen_distance='distance',
                             dimension=3,
                             robot_height=0):
-    '''
+    """
     :param df: dataset which has time, distance, anchor_id data.
     :param anchors_df: dataset of anchors data. 
     :param anchor_names: list of anchor names to use. Set to None to use all.
@@ -532,7 +490,7 @@ def compute_distance_matrix(df,
     :param robot_height: if dimension is 2, use this for robot height.
 
     :return: squared distance matrix of shape n_measurements x n_anchors.
-    '''
+    """
 
     if anchor_names is None:
         anchor_names = list(anchors_df.anchor_name.unique())
