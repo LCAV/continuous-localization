@@ -124,6 +124,14 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
 def least_squares_lm(D, anchors, basis, x0, verbose=False, squares=True, jacobian=False):
     """ Solve using Levenberg Marquardt. """
 
+    # TODO(FD): maybe move this to a function (or does such a function already exist?
+    dim = anchors.shape[0]
+    M = anchors.shape[1]
+    K = basis.shape[0]
+    N = basis.shape[1]
+    assert D.shape == (N, M), D.shape
+    assert len(x0) == dim * K, f'{len(x0)}!={dim}*{K}'
+
     if np.any(np.isnan(x0)):
         raise ValueError(f'invalid x0 {x0}')
 
@@ -162,7 +170,7 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, squares=True, jacobia
     if res.success:
         if verbose:
             print('LM succeeded with message:', res.message)
-        return res.x.reshape((2, -1))
+        return res.x.reshape((dim, -1))
 
 
 def pointwise_srls(D, anchors, basis, traj, indices):
