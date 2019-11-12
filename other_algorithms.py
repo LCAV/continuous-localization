@@ -121,16 +121,48 @@ def cost_jacobian(C_k_vec, D, A, F, verbose=False):
     return jacobian
 
 
-def least_squares_lm(D, anchors, basis, x0):
+def least_squares_lm(D, anchors, basis, x0, verbose=False, squares=True, jacobian=False):
     """ Solve using Levenberg Marquardt. """
+
     if np.any(np.isnan(x0)):
         raise ValueError(f'invalid x0 {x0}')
-    res = least_squares(cost_function, jac=cost_jacobian, x0=x0, method='lm', args=(D, anchors[:2], basis))
+
+    scipy_verbose = 2 if verbose else 0
+
+    if squares and jacobian:
+        res = least_squares(cost_function,
+                            jac=cost_jacobian,
+                            x0=x0,
+                            method='lm',
+                            args=(D, anchors, basis),
+                            x_scale='jac',
+                            verbose=scipy_verbose)  # xtol=1e-20, ftol=1e-10,
+    elif squares and (not jacobian):
+        res = least_squares(cost_function,
+                            x0=x0,
+                            method='lm',
+                            args=(D, anchors, basis),
+                            x_scale='jac',
+                            verbose=scipy_verbose)  # xtol=1e-20, ftol=1e-10,
+
+    elif (not squares) and (not jacobian):
+        res = least_squares(cost_function,
+                            jac=cost_jacobian,
+                            x0=x0,
+                            method='lm',
+                            args=(D, anchors, basis),
+                            x_scale='jac',
+                            verbose=scipy_verbose)  # xtol=1e-20, ftol=1e-10,
+    elif (not squares) and jacobian:
+        raise NotImplementedError('Cannot do Jacobian without squares.')
+    if not res.success:
+        if verbose:
+            print('LM failed with message:', res.message)
+        return None
     if res.success:
-        print('LM succeeded with message:', res.message)
-    else:
-        print('LM failed with message:', res.message)
-    return res.x.reshape((2, -1))
+        if verbose:
+            print('LM succeeded with message:', res.message)
+        return res.x.reshape((2, -1))
 
 
 def pointwise_srls(D, anchors, basis, traj, indices):
