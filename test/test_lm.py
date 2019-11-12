@@ -19,7 +19,7 @@ N_IT = 100
 VERBOSE = False
 
 
-def test_around_local_minimum(x0, *args):
+def cost_around_local_minimum(x0, *args):
     delta = 1e-10
     res_minimum = cost_function(x0, *args)
     cost_minimum = 0.5 * np.sum(res_minimum**2)
@@ -58,7 +58,7 @@ class TestLM(unittest.TestCase):
             cost = cost_function(C_k_vec, self.D_topright, self.anchors, self.basis)
             self.assertTrue(np.all(cost < EPS))
 
-            test_around_local_minimum(C_k_vec, self.D_topright, self.anchors, self.basis)
+            cost_around_local_minimum(C_k_vec, self.D_topright, self.anchors, self.basis)
 
     def test_convergence(self):
         """ Test that we converge correctly. """
@@ -76,7 +76,7 @@ class TestLM(unittest.TestCase):
             self.assertLessEqual(np.sum(costhat**2), np.sum(cost0**2))
 
             try:
-                test_around_local_minimum(xhat, D_noisy, self.anchors, self.basis)
+                cost_around_local_minimum(xhat, D_noisy, self.anchors, self.basis)
             except Exception as e:
                 print(f'test_convergence failed at seed {i}')
                 print('Error message:', e)
