@@ -88,7 +88,7 @@ def cost_function(C_vec, D_sq, A, F, squared=False, verbose=False):
     return cost
 
 
-def split_cost_function(X_vec, D_sq, A, F, squared=False, verbose=False):
+def split_cost_function(X_vec, D_sq, A, F, squared=True, verbose=False):
     """ Return cost of distance squared, but with cost function split into C and C'C:=L. Therefore the optimization variable is bigger but we only care about the first K*dim elements.
 
     :param X_vec: vector of trajectory coefficients and its squares, of length (dim*K+K*K)
@@ -98,6 +98,10 @@ def split_cost_function(X_vec, D_sq, A, F, squared=False, verbose=False):
 
     :return: vector of residuals.
     """
+
+    if not squared:
+        raise NotImplementedError('Cannot split cost without squares.')
+
     dim = A.shape[0]
     K = F.shape[0]
     N, M = D_sq.shape
@@ -119,8 +123,11 @@ def split_cost_function(X_vec, D_sq, A, F, squared=False, verbose=False):
     return res
 
 
+# TODO(FD) fix this function to pass unit tests.
 def cost_jacobian(C_vec, D, A, F, squared=True, verbose=False):
-    """ Return maximum likelihood cost of distances.
+    """ Return Jacobian of squared distances cost function. 
+
+    WARNING: this function does not pass its unit tests.
 
     :param C_k: trajectory coefficients (dim x K)
     :param D: squared distance matrix (N x M)
@@ -132,7 +139,7 @@ def cost_jacobian(C_vec, D, A, F, squared=True, verbose=False):
     if not squared:
         raise NotImplementedError('cost_jacobian for non-squared distances')
 
-    l = cost_function(C_vec, D, A, F)  # cost vector (N)
+    l = cost_function(C_vec, D, A, F, squared=True)  # cost vector (N)
     ns, ms = get_m_n(D)
 
     N = len(l)
@@ -175,6 +182,11 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, cost='simple', jacobi
     N = basis.shape[1]
     assert D.shape == (N, M), D.shape
     assert len(x0) == dim * K, f'{len(x0)}!={dim}*{K}'
+
+    if jacobian:
+        print(
+            'Warning: the analytical jacobian will be passed to the least squares solver, but it has not passed all tests yet. This might lead to unexpected behavior.'
+        )
 
     if np.any(np.isnan(x0)):
         raise ValueError(f'invalid x0 {x0}')

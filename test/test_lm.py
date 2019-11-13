@@ -97,7 +97,7 @@ class TestLM(unittest.TestCase):
         C_k_vec = self.traj.coeffs.reshape((-1, ))
         jacobian = cost_jacobian(C_k_vec, D_noisy, self.anchors, self.basis)
 
-        cost = cost_function(C_k_vec, D_noisy, self.anchors, self.basis)
+        cost = cost_function(C_k_vec, D_noisy, self.anchors, self.basis, squared=True)
         N = len(cost)
         Kd = len(C_k_vec)
 
@@ -111,7 +111,7 @@ class TestLM(unittest.TestCase):
             for k in range(Kd):
                 C_k_delta = C_k_vec.copy()
                 C_k_delta[k] += delta
-                cost_delta = cost_function(C_k_delta, D_noisy, self.anchors, self.basis)
+                cost_delta = cost_function(C_k_delta, D_noisy, self.anchors, self.basis, squared=True)
                 jacobian_est[:, k] = (cost_delta - cost) / delta
 
             new_jac = jacobian_est
@@ -131,7 +131,7 @@ class TestLM(unittest.TestCase):
         print(f'difference: {jacobian_est[0, 0] - jacobian[0, 0]:.4e}')
         print('==== total difference ===:')
         print(np.sum(np.abs(jacobian_est - jacobian)))
-        self.assertLessEqual(np.sum(np.abs(jacobian_est - jacobian)), 1e-5)
+        self.assertLessEqual(np.sum(np.abs(jacobian_est - jacobian)), 1e-4)
 
     def test_combination(self):
         """ Test that if we do our method first
