@@ -171,7 +171,7 @@ def rightInverseOfConstraints(D_topright, anchors, basis):
     return Z_hat
 
 
-def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False, weighted=False):
+def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weighted=False):
     """ Solve linearised sensor localization problem. 
 
     First parameters are same as for :func:`.semidefRelaxation`. 
@@ -213,7 +213,6 @@ def alternativePseudoInverse(D_topright, anchors, basis, average_with_Q=False, w
     assert len(C_hat) == K * dim + rankT_B
 
     P_hat = C_hat[:dim * K].reshape([dim, K])
-
     if average_with_Q:
         alpha_hat = P_alpha_hat[dim * K:].reshape([K, K])
         Q_hat1 = P_hat.T @ P_hat

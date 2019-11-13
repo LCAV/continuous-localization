@@ -10,9 +10,10 @@ import numpy as np
 import unittest
 
 from baseline_solvers import *
-from trajectory import Trajectory
 from measurements import get_measurements, create_anchors, add_noise
 from other_algorithms import cost_function, cost_jacobian, least_squares_lm
+from solvers import trajectory_recovery
+from trajectory import Trajectory
 
 EPS = 1e-15
 N_IT = 100
@@ -74,7 +75,6 @@ class TestLM(unittest.TestCase):
             xhat = xhat.reshape((-1, ))
             costhat = cost_function(xhat, D_noisy, self.anchors, self.basis)
             self.assertLessEqual(np.sum(costhat**2), np.sum(cost0**2))
-
             try:
                 cost_around_local_minimum(xhat, D_noisy, self.anchors, self.basis)
             except Exception as e:
@@ -85,8 +85,11 @@ class TestLM(unittest.TestCase):
         """ Test with finite differences that Jacobian is correct."""
         i = 1
         self.set_measurements(seed=i)
-        # make sigma very small to test if the cost function
+
+        # TODO(FD):
+        # We make sigma very small to test if the cost function
         # behaves well at least around the optimum.
+        # It is not clear why it does not behave well elsewhere.
         sigma = 1e-10
 
         D_noisy = add_noise(self.D_topright, noise_sigma=sigma)
@@ -113,23 +116,43 @@ class TestLM(unittest.TestCase):
 
             new_jac = jacobian_est
             difference = np.sum(np.abs(previous_jac - new_jac))
-            print('convergence:', difference)
             if np.sum(np.abs(new_jac)) < EPS:
                 print('new jacobian is all zero! use previous jacobian.')
                 break
-
             elif difference < convergence_lim:
-                print(f'converged at {delta}.')
+                print(f'Jacobian converged at delta={delta}.')
                 previous_jac = new_jac
                 break
             else:  # not converged yet.
                 previous_jac = new_jac
         jacobian_est = previous_jac
         print('===== first element =====:')
-        print('jacobian est vs. real:', jacobian_est[0, 0], jacobian[0, 0])
-        print('difference', jacobian_est[0, 0] - jacobian[0, 0])
+        print(f'jacobian est vs. real: {jacobian_est[0, 0]:.4e}, {jacobian[0, 0]:2e}')
+        print(f'difference: {jacobian_est[0, 0] - jacobian[0, 0]:.4e}')
         print('==== total difference ===:')
         print(np.sum(np.abs(jacobian_est - jacobian)))
+        self.assertLessEqual(np.sum(np.abs(jacobian_est - jacobian)), 1e-5)
+
+    def test_combination(self):
+        """ Test that if we do our method first
+        and then apply LM with split method, we do not
+        change the result.
+        """
+        sigma = 0.01
+        tol = 1e-3  # found empirically.
+        for i in range(3):  # works up to 10, but quite slow.
+            self.set_measurements(seed=i)
+            D_noisy = add_noise(self.D_topright, noise_sigma=sigma)
+
+            x0 = trajectory_recovery(D_noisy, self.anchors, self.basis, weighted=False)
+            x1 = least_squares_lm(D_noisy,
+                                  self.anchors,
+                                  self.basis,
+                                  x0=x0.reshape((-1, )),
+                                  cost='split',
+                                  jacobian=False,
+                                  verbose=VERBOSE)
+            assert np.linalg.norm(x0 - x1) < tol, f'for {i}: {np.linalg.norm(x0 - x1)}'
 
 
 if __name__ == "__main__":

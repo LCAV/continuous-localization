@@ -9,7 +9,7 @@ import seaborn as sns
 from evaluate_dataset import format_anchors_df, format_data_df
 from evaluate_dataset import add_gt_raw, apply_distance_gt
 from plotting_tools import savefig
-from solvers import alternativePseudoInverse
+from solvers import trajectory_recovery
 
 # Need to give different systems a name.
 gt_system_id = "GT"

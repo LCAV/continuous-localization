@@ -14,7 +14,7 @@ import logging
 
 from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise, create_anchors
-from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, alternativePseudoInverse
+from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, trajectory_recovery
 from trajectory import Trajectory
 import hypothesis as h
 
@@ -153,14 +153,14 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 elif solver == 'rightInverseOfConstraints':
                                     X = rightInverseOfConstraints(D_topright, anchors_coord, basis)
                                     P_hat = X[:DIM, DIM:]
-                                elif solver == 'alternativePseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright, anchors_coord, basis)
+                                elif solver == 'trajectory_recovery':
+                                    P_hat = trajectory_recovery(D_topright, anchors_coord, basis)
                                 elif solver == 'weightedPseudoInverse':
-                                    P_hat = alternativePseudoInverse(D_topright, anchors_coord, basis, weighted=True)
+                                    P_hat = trajectory_recovery(D_topright, anchors_coord, basis, weighted=True)
                                 else:
                                     raise ValueError(
                                         'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
-                                        ' or "alternativePseudoInverse"')
+                                        ' or "trajectory_recovery"')
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)
