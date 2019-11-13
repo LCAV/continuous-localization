@@ -9,7 +9,7 @@ import unittest
 from measurements import get_measurements, create_mask
 from other_algorithms import least_squares_lm, cost_function, calculate_error
 from other_algorithms import pointwise_srls
-from solvers import alternativePseudoInverse
+from solvers import trajectory_recovery
 from trajectory import Trajectory
 
 eps = 1e-10
@@ -37,7 +37,7 @@ class TestOthers(unittest.TestCase):
         self.assertTrue(np.sum(np.abs(cost_gt)) < eps)
 
         # TODO why does this not work?
-        # Chat = alternativePseudoInverse(D_sparse, self.anchors[:2, :], self.basis, weighted=True)
+        # Chat = trajectory_recovery(D_sparse, self.anchors[:2, :], self.basis, weighted=True)
         #self.assertLess(calculate_error(Chat, self.traj.coeffs), eps)
 
         Chat = self.traj.coeffs
