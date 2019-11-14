@@ -21,27 +21,27 @@ def calculate_error(Chat, C, error_type='MAE'):
         NotImplementedError(error_type)
 
 
-def get_anchors_and_distances(D, idx, dim=2):
+def get_anchors_and_distances(D_sq, idx, dim=2):
     """ Get measurements for pointwise lateration. 
 
     Given squared distance matrix D and time index idx, 
     find all latest distance measurements up to this time index.
 
-    :param D: squared distance matrix (N x M)
+    :param D_sq: squared distance matrix (N x M)
     :param idx: time index for which we want measurements.
 
     :return: ndarray of distances squared (nx1) , 
              list (len n) of corresponding anchor indices.
     """
-    assert idx >= 0 and idx < D.shape[0]
+    assert idx >= 0 and idx < D_sq.shape[0]
     r2 = []
     anchors = []
     counter = 0
-    for a_id in range(D.shape[1]):
-        indices = np.where(D[:idx + 1, a_id] > 0)[0]
+    for a_id in range(D_sq.shape[1]):
+        indices = np.where(D_sq[:idx + 1, a_id] > 0)[0]
         if len(indices) > 0:
             latest_idx = indices[-1]
-            r2.append(D[latest_idx, a_id])
+            r2.append(D_sq[latest_idx, a_id])
             anchors.append(a_id)
             counter += 1
             if counter > dim + 1:
@@ -70,13 +70,14 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
         return None
 
 
-def cost_function(C_vec, D_sq, A, F, squared=False, verbose=False):
+def cost_function(C_vec, D_sq, A, F, squared=False):
     """ Return cost of distance.
 
     :param C_vec: trajectory coefficients (1 x dim*K)
-    :param D: squared distance matrix (N x M)
+    :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
+    :param squared: if True, the distances in the cost function are squared. 
 
     :return: vector of residuals.
     """
@@ -102,19 +103,20 @@ def cost_function(C_vec, D_sq, A, F, squared=False, verbose=False):
     return cost
 
 
-def split_cost_function(X_vec, D_sq, A, F, squared=True, verbose=False):
+def split_cost_function(X_vec, D_sq, A, F, squared=True):
     """ Return cost of distance squared, but with cost function split into C and C'C:=L. Therefore the optimization variable is bigger but we only care about the first K*dim elements.
 
     :param X_vec: vector of trajectory coefficients and its squares, of length (dim*K+K*K)
-    :param D: squared distance matrix (N x M)
+    :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
+    :param squared: only here for constistency with cost_function. Has to be set to True or an error is raised.
 
     :return: vector of residuals.
     """
 
     if not squared:
-        raise NotImplementedError('Cannot split cost without squares.')
+        raise ValueError('Cannot split cost without squares.')
 
     dim = A.shape[0]
     K = F.shape[0]
@@ -138,15 +140,16 @@ def split_cost_function(X_vec, D_sq, A, F, squared=True, verbose=False):
 
 
 # TODO(FD) fix this function to pass unit tests.
-def cost_jacobian(C_vec, D, A, F, squared=True, verbose=False):
+def cost_jacobian(C_vec, D_sq, A, F, squared=True):
     """ Return Jacobian of squared distances cost function. 
 
     WARNING: this function does not pass its unit tests.
 
-    :param C_k: trajectory coefficients (dim x K)
-    :param D: squared distance matrix (N x M)
+    :param C_vec: trajectory coefficients (dim x K)
+    :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
+    :param squared: if True, the distances in the cost function are squared. Non-squared Jacobian not implemented yet.
 
     :return: (N x K*d) Jacobian matrix.
     """
