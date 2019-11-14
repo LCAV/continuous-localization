@@ -49,11 +49,25 @@ def get_anchors_and_distances(D, idx, dim=2):
     return np.array(r2).reshape((-1, 1)), anchors
 
 
-def get_m_n(D):
-    """ Get the anchor indices of the flattened distance measurements.
-    """
-    n, m = np.where(D > 0)
-    return np.array(n), np.array(m)
+def init_lm(coeffs_real, method='ellipse', **kwargs):
+    if 'ellipse' in method:
+        coeffs = np.zeros(coeffs_real.shape)
+        center = coeffs_real[:, 0]
+        rx = np.max(coeffs_real[0, 1:]) - np.min(coeffs_real[0, 1:])
+        ry = np.max(coeffs_real[1, 1:]) - np.min(coeffs_real[1, 1:])
+        coeffs[0, 0] = center[0]
+        coeffs[1, 0] = center[1]
+        coeffs[0, 1] = rx
+        coeffs[1, 2] = ry
+        return coeffs
+    elif 'noise' in method:
+        sigma = kwargs.get('sigma', 0.1)
+        return coeffs_real + np.random.normal(scale=sigma)
+    elif 'real' in method:
+        return coeffs_real
+    else:
+        raise NotImplementedError(method)
+        return None
 
 
 def cost_function(C_vec, D_sq, A, F, squared=False, verbose=False):
@@ -140,7 +154,7 @@ def cost_jacobian(C_vec, D, A, F, squared=True, verbose=False):
         raise NotImplementedError('cost_jacobian for non-squared distances')
 
     l = cost_function(C_vec, D, A, F, squared=True)  # cost vector (N)
-    ns, ms = get_m_n(D)
+    ns, ms = np.where(D > 0)
 
     N = len(l)
     Kd = len(C_vec)
