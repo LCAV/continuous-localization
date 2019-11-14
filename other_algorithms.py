@@ -156,8 +156,8 @@ def cost_jacobian(C_vec, D_sq, A, F, squared=True):
     if not squared:
         raise NotImplementedError('cost_jacobian for non-squared distances')
 
-    l = cost_function(C_vec, D, A, F, squared=True)  # cost vector (N)
-    ns, ms = np.where(D > 0)
+    l = cost_function(C_vec, D_sq, A, F, squared=True)  # cost vector (N)
+    ns, ms = np.where(D_sq > 0)
 
     N = len(l)
     Kd = len(C_vec)
