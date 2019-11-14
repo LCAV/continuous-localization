@@ -28,23 +28,26 @@ def solve_for_times(times, R, C, trajectory):
         grad = np.diag(grad_L_F.T.dot(F_prime))
         return grad
 
-    res = minimize(L, x0=times, args=(R, C), jac=grad_L)
+    # Nelder-Mead seems to work better than BFGS, BFGS often gives a warning.
+    res = minimize(L, x0=times, args=(R, C), method='Nelder-Mead', options=dict(maxiter=200))
+    #options=dict(xatol=1e-10, fatol=1e-10, maxiter=200))
+    #res = minimize(L, x0=times, args=(R, C), jac=grad_L, method='BFGS')
     if not res.success:
-        print('Warning: optimization did not succeed. Message:', res.message)
+        print('Warning: optimization did not succeed. Message of scipy.optimize.minimize:', res.message)
     return res.x
 
 
-def fit_trajectory(trajectory, R, max_iter=10):
-    """ Fit a trajectory to positions. 
+def fit_trajectory_and_times(R, trajectory, max_iter=100, times=None):
+    """ Fit a trajectory to positions (times and coefficients).
 
-    :param trajectory: Trajectory object.
     :param R: matrix of coordinates to fit trajectory to. Nxdim
-    :param max_iter:
+    :param trajectory: Trajectory object.
+    :param max_iter: max iterations.
 
     """
     N = R.shape[1]
-    print('N', N)
-    times = np.linspace(0, trajectory.period / 3.0, N)
+    if times is None:
+        times = trajectory.get_times(N)
 
     K = trajectory.n_complexity
     d = trajectory.dim
@@ -59,6 +62,23 @@ def fit_trajectory(trajectory, R, max_iter=10):
 
         times = solve_for_times(times, R, C, trajectory)
     return C, times
+
+
+def fit_trajectory(R, times, traj):
+    """ Fit trajectory to positions (coefficients only). 
+    
+    :param R: position coordinates (dim x N)
+    :param times: list of corresponding times
+    :param traj: Trajectory instance, of the model to be fitted.
+
+    :return: fitted trajectory coefficients (dim x K)
+    """
+    F = traj.get_basis(times=times)
+    assert R.shape[0] == traj.dim
+    assert F.shape[0] == traj.n_complexity
+    assert F.shape[1] == R.shape[1]
+    Chat = solve_for_C(R, F)
+    return np.array(Chat, dtype=np.float32)
 
 
 if __name__ == "__main__":
@@ -77,7 +97,7 @@ if __name__ == "__main__":
         new_trajectory = trajectory.copy()
 
         # fit coefficients of new trajectory
-        C, times = fit_trajectory(new_trajectory, coords_original)
+        C, times = fit_trajectory_and_times(coords_original, new_trajectory, max_iter=10)
         new_trajectory.set_coeffs(coeffs=C)
 
         # plot results

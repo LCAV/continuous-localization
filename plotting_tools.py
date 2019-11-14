@@ -324,7 +324,7 @@ def plot_subsample(traj, D, times, anchors, full_df, n_measurements_list):
 
     import hypothesis as h
     from other_algorithms import pointwise_srls
-    from solvers import alternativePseudoInverse
+    from solvers import trajectory_recovery
 
     basis = traj.get_basis(times=times)
     fig, axs = plt.subplots(1, len(n_measurements_list), sharex=True, sharey=True)
@@ -350,7 +350,7 @@ def plot_subsample(traj, D, times, anchors, full_df, n_measurements_list):
             times_small = np.array(times)[indices]
             basis_small = traj.get_basis(times=times_small)
 
-            Chat = alternativePseudoInverse(D_small, anchors[:2, :], basis_small, weighted=True)
+            Chat = trajectory_recovery(D_small, anchors[:2, :], basis_small, weighted=True)
 
             coeffs = np.dstack([coeffs, Chat])
             traj.set_coeffs(coeffs=Chat)
@@ -376,14 +376,14 @@ def plot_subsample(traj, D, times, anchors, full_df, n_measurements_list):
 
 def plot_complexities(traj, D, times, anchors, full_df, list_complexities, srls=True):
     from other_algorithms import pointwise_srls
-    from solvers import alternativePseudoInverse
+    from solvers import trajectory_recovery
 
     fig, axs = plt.subplots(1, len(list_complexities), sharex=True, sharey=True)
     for ax, n_complexity in zip(axs, list_complexities):
         traj.set_n_complexity(n_complexity)
         basis = traj.get_basis(times=times)
 
-        Chat = alternativePseudoInverse(D, anchors[:2, :], basis, weighted=True)
+        Chat = trajectory_recovery(D, anchors[:2, :], basis, weighted=True)
 
         traj.set_coeffs(coeffs=Chat)
 

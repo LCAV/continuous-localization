@@ -21,7 +21,7 @@ parameters = [
         'noise_sigmas': noise_simgas,
         'success_thresholds': [0.0] * len(noise_simgas),
         'noise_to_square': True,
-        'solver': 'alternativePseudoInverse',
+        'solver': 'trajectory_recovery',
         'sampling_strategy': 'single_time'
     },
     {
@@ -47,7 +47,7 @@ parameters = [
         'noise_sigmas': noise_simgas,
         'success_thresholds': [0.0] * len(noise_simgas),
         "noise_to_square": False,
-        'solver': 'alternativePseudoInverse',
+        'solver': 'trajectory_recovery',
         'sampling_strategy': 'single_time'
     },
     {
@@ -60,7 +60,7 @@ parameters = [
         'noise_sigmas': [1],
         'success_thresholds': [0.0],
         'noise_to_square': True,
-        'solver': 'alternativePseudoInverse',
+        'solver': 'trajectory_recovery',
         'sampling_strategy': 'single_time'
     },
 ]

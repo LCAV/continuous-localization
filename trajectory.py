@@ -67,7 +67,7 @@ class Trajectory(object):
     def get_times(self, n_samples):
         """ Get times appropriate for this trajectory model. """
         if self.model == 'polynomial':
-            times = np.linspace(0, TMAX, n_samples)
+            times = np.linspace(0, self.period, n_samples)
         elif self.model == 'bandlimited' or self.model == 'full_bandlimited':
             part = 1.0 if self.params['full_period'] else 0.5
             times = np.linspace(0, part * self.period, n_samples)
@@ -173,7 +173,7 @@ n_samples)
                 np.random.rand(self.dim, self.n_complexity)
         else:
             if coeffs.shape[1] != self.n_complexity:
-                print('Warning:', coeffs.shape, self.n_complexity)
+                print('Warning: coeffs mismatch', coeffs.shape, self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
@@ -191,6 +191,8 @@ n_samples)
 
     def get_sampling_points(self, times=None, basis=None):
         """ Get points where we get measurements.
+
+        :return: sampling points of shape dimxN.
         
         """
         if basis is None:

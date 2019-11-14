@@ -8,7 +8,7 @@ iterative_algorithms.py: Contains functions to build up the trajectory iterative
 import numpy as np
 import matplotlib.pylab as plt
 
-from solvers import alternativePseudoInverse
+from solvers import trajectory_recovery
 
 
 def verify_dimensions(D, anchors, basis, times):
@@ -61,7 +61,7 @@ def averaging_algorithm(D, anchors, basis, times, t_window=1.0, n_times=None, ve
             basis_k = np.c_[basis_k, f_n]
 
         try:
-            C_k = alternativePseudoInverse(D_k, anchors, basis_k)
+            C_k = trajectory_recovery(D_k, anchors, basis_k)
             # We need this somehow for numercial reasons.
             # Otherwise sometimes the tests fail because -0. != 0.
             C_k[np.abs(C_k) <= 1e-10] = 0.0
@@ -122,7 +122,7 @@ def build_up_algorithm(D, anchors, basis, times, eps=1, verbose=False):
             tk.append(t_n)
 
             try:
-                C_test = alternativePseudoInverse(D_k, anchors, basis_k)
+                C_test = trajectory_recovery(D_k, anchors, basis_k)
                 # TODO find a sensible general threshold here.
                 assert g(C_test) < 2 * eps
                 C_k = C_test

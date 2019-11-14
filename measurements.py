@@ -7,16 +7,22 @@ measurements.py: Functions to generate measurements from setup.
 import math
 import numpy as np
 
+EPS = 1e-10
+
 
 def add_noise(D, noise_sigma, noise_to_square=False):
+    " Add noise to distances (not squared), leaving out zero distances. "
     D_noisy = np.copy(D)
 
     if noise_sigma > 0:
         noise_vector = noise_sigma * np.random.normal(size=D.shape)
+        # do not add noise to zero(=missing) elements.
+        noise_vector[np.abs(D) < EPS] = 0.0
 
         if noise_to_square:
             D_noisy += noise_vector
         else:
+            # add noise to distances, not squares.
             D_noisy[D_noisy > 0] = np.sqrt(D_noisy[D_noisy > 0])
             D_noisy = np.power(D_noisy + noise_vector, 2)
     return D_noisy
@@ -164,8 +170,9 @@ def get_D(anchors, samples):
     """ Create squared distance matrix with 
 
     :param samples: n_positions x dim trajectory points.
-    :return D: matrix of squared distances (n_positions + n_anchors) x (n_positions + n_anchors) #TODO why +?
+    :param anchors: n_anchors x dim anchor points. 
 
+    :return D: matrix of squared distances (n_positions + n_anchors) x (n_positions + n_anchors)
     """
     X = np.hstack([samples, anchors])
     G = X.T @ X
