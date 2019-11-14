@@ -29,7 +29,7 @@ def solve_for_times(times, R, C, trajectory):
         return grad
 
     # Nelder-Mead seems to work better than BFGS, BFGS often gives a warning.
-    res = minimize(L, x0=times, args=(R, C), method='Nelder-Mead')
+    res = minimize(L, x0=times, args=(R, C), method='Nelder-Mead', options=dict(maxiter=200))
     #options=dict(xatol=1e-10, fatol=1e-10, maxiter=200))
     #res = minimize(L, x0=times, args=(R, C), jac=grad_L, method='BFGS')
     if not res.success:
