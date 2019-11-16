@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-evaluate_dataset.py: Functions and pipeline to evaluate one dataset. 
+evaluate_dataset.py: Functions and pipeline to evaluate datasets. 
 
-See notebook RealExperiments for analysis for analysis and plotting of the 
+See notebook PublicDatasets for analysis and plotting of the 
 intermediate results. 
 
 """

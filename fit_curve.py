@@ -76,7 +76,7 @@ def fit_trajectory(R, times, traj):
     F = traj.get_basis(times=times)
     assert R.shape[0] == traj.dim
     assert F.shape[0] == traj.n_complexity
-    assert F.shape[1] == R.shape[1]
+    assert F.shape[1] == R.shape[1], f'{F.shape, R.shape}'
     Chat = solve_for_C(R, F)
     return np.array(Chat, dtype=np.float32)
 

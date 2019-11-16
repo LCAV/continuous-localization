@@ -36,17 +36,13 @@ def get_anchors_and_distances(D_sq, idx, dim=2):
     assert idx >= 0 and idx < D_sq.shape[0]
     r2 = []
     anchors = []
-    counter = 0
     for a_id in range(D_sq.shape[1]):
         indices = np.where(D_sq[:idx + 1, a_id] > 0)[0]
         if len(indices) > 0:
             latest_idx = indices[-1]
             r2.append(D_sq[latest_idx, a_id])
             anchors.append(a_id)
-            counter += 1
-            if counter > dim + 1:
-                break  # enough measurements for lateration.
-    return np.array(r2).reshape((-1, 1)), anchors
+    return np.array(r2).reshape((-1, 1)), np.array(anchors)
 
 
 def init_lm(coeffs_real, method='ellipse', **kwargs):
@@ -259,15 +255,68 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, cost='simple', jacobi
         return res.x[:dim * K].reshape((dim, K))
 
 
-def pointwise_srls(D, anchors, basis, traj, indices):
-    """ Solve using point-wise SRLS. """
+def pointwise_srls(D, anchors, traj, indices):
+    """ Solve using point-wise SRLS. 
+
+    :param indices: points at which we want to compute SRLS.
+
+    :return: points, valid_indices
+      - points: coordinates of shape (N x dim)
+      - valid_indices: vector of corresponding indices. 
+    """
     points = []
-    for idx in indices[::traj.dim + 1]:
+    valid_indices = []
+    for idx in indices:
         r2, a_indices = get_anchors_and_distances(D, idx)
-        if len(r2) > traj.dim + 1:
-            anchors_srls = anchors[:2, a_indices].T  #N x d
-            weights = np.ones(r2.shape)
-            points.append(SRLS(anchors_srls, weights, r2))
-        else:
+
+        # too many measurements
+        if len(r2) > traj.dim + 2:
+            print(f'SRLS: too many measurements available! choosing random subset of {traj.dim + 1}')
+            choice = np.random.choice(len(r2), traj.dim + 1)
+            r2 = r2[choice]
+            a_indices = a_indices[choice]
+            assert len(r2) == traj.dim + 1
+            assert len(a_indices) == traj.dim + 1
+
+        # too few measurements
+        elif len(r2) < traj.dim + 2:
             print('SRLS: skipping {} cause not enough measurements'.format(idx))
-    return points
+            continue
+
+        anchors_srls = anchors[:2, a_indices].T  #N x d
+        weights = np.ones(r2.shape)
+        points.append(SRLS(anchors_srls, weights, r2))
+        valid_indices.append(idx)
+    return np.array(points), valid_indices
+
+
+def apply_algorithm(traj, D, times, anchors, method='ours'):
+    from fit_curve import fit_trajectory
+    from solvers import trajectory_recovery
+    if method == 'ours':
+        basis = traj.get_basis(times=times)
+        Chat = trajectory_recovery(D, anchors, basis, weighted=True)
+        return Chat, None
+    elif method == 'SRLS':
+        # TODO(FD) this is a quick hack, make this work.
+        indices = range(D.shape[0])[traj.dim + 1::3]
+        points, indices = pointwise_srls(D, anchors, traj, indices)
+        times = np.array(times)[indices]
+        Chat = fit_trajectory(points.T, times=times, traj=traj)
+        return Chat, points
+    else:
+        raise NotImplementedError(method)
+
+
+def error_measure(points_gt, points_estimated, measure='mse'):
+    """
+
+    :param points_gt: ground truth positions (N x dim)
+    :param points_estimated: estimated positions (N x dim)
+    """
+    assert points_gt.shape == points_estimated.shape, f'{points_gt.shape}, {points_estimated.shape}'
+
+    if measure == 'mse':
+        return np.mean((points_gt - points_estimated)**2)
+    else:
+        raise NotImplementedError(measure)

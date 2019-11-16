@@ -181,7 +181,7 @@ n_samples)
                 np.random.rand(self.dim, self.n_complexity)
         else:
             if coeffs.shape[1] != self.n_complexity:
-                print('Warning: coeffs mismatch', coeffs.shape, self.n_complexity)
+                print('Warning: coeffs mismatch', coeffs.shape[1], self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
@@ -193,7 +193,7 @@ n_samples)
         """ Set new complexity and cut or pad coefficients with zeros if necessary. """
         new_coeffs = np.zeros((self.dim, n_complexity))
         keep = min(self.n_complexity, n_complexity)
-        new_coeffs[:, :keep] = self.coeffs[:, :keep]
+        new_coeffs[:, :keep] = self.coeffs[:self.dim, :keep]
         self.coeffs = new_coeffs
         self.n_complexity = n_complexity
 
