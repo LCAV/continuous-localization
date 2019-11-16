@@ -229,7 +229,7 @@ def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weight
     return P_hat
 
 
-def exactSolution(D_topright, anchors, basis, method='grid', verbose=False):
+def exact_solution(D_topright, anchors, basis, method='grid', verbose=False):
     """ Compute the exact solution.  Just a wrapper of the function compute_exact from exact_solution, added here for consistency.
     """
     from exact_solution import compute_exact
