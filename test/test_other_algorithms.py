@@ -7,7 +7,7 @@ import numpy as np
 import unittest
 
 from measurements import get_measurements, create_mask
-from other_algorithms import least_squares_lm, cost_function, calculate_error
+from other_algorithms import least_squares_lm, cost_function, error_measure
 from other_algorithms import pointwise_srls, get_grid, pointwise_rls
 from solvers import trajectory_recovery
 from trajectory import Trajectory
@@ -43,7 +43,7 @@ class TestOthers(unittest.TestCase):
         Chat = self.traj.coeffs
         x0 = Chat.copy().reshape((-1, ))
         Cref = least_squares_lm(D_sparse, self.anchors, self.basis, x0)
-        self.assertLess(calculate_error(Cref, self.traj.coeffs), eps)
+        self.assertLess(error_measure(Cref, self.traj.coeffs), eps)
 
     def test_pointwise_srls(self):
         points, __ = pointwise_srls(self.D_gt, self.anchors, self.traj, self.indices)
