@@ -255,15 +255,54 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, cost='simple', jacobi
         return res.x[:dim * K].reshape((dim, K))
 
 
-def pointwise_srls(D, anchors, traj, indices):
-    """ Solve using point-wise SRLS. 
+def get_grid(anchors, grid_size=1.0):
+    x_range, y_range = np.array([np.min(anchors, axis=1), np.max(anchors, axis=1)]).T
+    xx, yy = np.meshgrid(
+        np.arange(*x_range, step=grid_size),
+        np.arange(*y_range, step=grid_size),
+    )
+    grid = np.c_[xx.flatten(), yy.flatten()]
+    return grid
+
+
+def RLS(anchors, r2, grid, interpolation='nearest'):
+    """ Get RLS estimate.
+
+    :param r2: list of measured distances (length M)
+    :param anchors: anchor coordinates (M x dim)
+    :param grid: grid coordinates (N x dim)
+
+    :param interpolation: How to interpolate.
+      - 'nearest' (default): return minimum grid point.
+    """
+    assert len(r2) == anchors.shape[0]
+    assert grid.shape[1] == anchors.shape[1]
+    r2 = r2.flatten()
+
+    D_estimated = np.linalg.norm(anchors[None, :, :] - grid[:, None, :], axis=2)  # N x M
+    cost = np.sum((D_estimated - np.sqrt(r2[None, :]))**2, axis=1)
+    if interpolation == 'nearest':
+        argmin = np.argmin(cost)
+        return grid[argmin, :]
+
+
+def pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None):
+    """ Solve using point-wise lateration. 
 
     :param indices: points at which we want to compute SRLS.
+    :param method: Method to use. Currently supported:
+        - 'rls': Range Least-Squares (need to give grid)
+        - 'srls': SRLS
+    :param grid: coordinates of grid for RLS(N_grid x dim) 
 
     :return: points, valid_indices
       - points: coordinates of shape (N x dim)
       - valid_indices: vector of corresponding indices. 
     """
+
+    assert anchors.shape[0] == traj.dim
+    assert anchors.shape[1] == D.shape[1], f'{anchors.shape}, {D.shape}'
+
     points = []
     valid_indices = []
     for idx in indices:
@@ -271,23 +310,39 @@ def pointwise_srls(D, anchors, traj, indices):
 
         # too many measurements
         if len(r2) > traj.dim + 2:
-            print(f'SRLS: too many measurements available! choosing random subset of {traj.dim + 1}')
-            choice = np.random.choice(len(r2), traj.dim + 1)
+            #print(f'SRLS: too many measurements available! choosing random subset of {traj.dim + 2}')
+            choice = np.random.choice(len(r2), traj.dim + 2, replace=False)
             r2 = r2[choice]
             a_indices = a_indices[choice]
-            assert len(r2) == traj.dim + 1
-            assert len(a_indices) == traj.dim + 1
+            assert len(r2) == traj.dim + 2
+            assert len(a_indices) == traj.dim + 2
 
         # too few measurements
         elif len(r2) < traj.dim + 2:
             print('SRLS: skipping {} cause not enough measurements'.format(idx))
             continue
 
-        anchors_srls = anchors[:2, a_indices].T  #N x d
+        anchors_here = anchors[:2, a_indices].T  #N x d
         weights = np.ones(r2.shape)
-        points.append(SRLS(anchors_srls, weights, r2))
+
+        if method == 'srls':
+            estimate = SRLS(anchors_here, weights, r2)
+        elif method == 'rls':
+            estimate = RLS(anchors_here, r2, grid=grid)
+        else:
+            raise NotImplementedError(method)
+
+        points.append(estimate)
         valid_indices.append(idx)
     return np.array(points), valid_indices
+
+
+def pointwise_srls(D, anchors, traj, indices):
+    return pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None)
+
+
+def pointwise_rls(D, anchors, traj, indices, grid):
+    return pointwise_lateration(D, anchors, traj, indices, method='rls', grid=grid)
 
 
 def apply_algorithm(traj, D, times, anchors, method='ours'):
