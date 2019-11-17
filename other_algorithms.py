@@ -13,12 +13,20 @@ from pylocus.lateration import SRLS
 EPS = 1e-10
 
 
-def calculate_error(Chat, C, error_type='MAE'):
-    """ Return error measure between C and Chat. """
-    if error_type == 'MAE':
-        return np.mean(np.abs(Chat - C))
+def error_measure(points_gt, points_estimated, measure='mse'):
+    """
+    :param points_gt: ground truth positions (N x dim)
+    :param points_estimated: estimated positions (N x dim)
+    :param measure: method to use ('mae' or 'mse')
+    """
+    assert points_gt.shape == points_estimated.shape, f'{points_gt.shape}, {points_estimated.shape}'
+
+    if measure == 'mse':
+        return np.mean((points_gt - points_estimated)**2)
+    elif measure == 'mae':
+        return np.mean(np.abs(points_gt - points_estimated))
     else:
-        NotImplementedError(error_type)
+        raise NotImplementedError(measure)
 
 
 def get_anchors_and_distances(D_sq, idx, dim=2):
@@ -319,7 +327,7 @@ def pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None):
 
         # too few measurements
         elif len(r2) < traj.dim + 2:
-            print('SRLS: skipping {} cause not enough measurements'.format(idx))
+            #print('SRLS: skipping {} cause not enough measurements'.format(idx))
             continue
 
         anchors_here = anchors[:2, a_indices].T  #N x d
@@ -348,30 +356,36 @@ def pointwise_rls(D, anchors, traj, indices, grid):
 def apply_algorithm(traj, D, times, anchors, method='ours'):
     from fit_curve import fit_trajectory
     from solvers import trajectory_recovery
-    if method == 'ours':
+    if method == 'ours-weighted':
         basis = traj.get_basis(times=times)
         Chat = trajectory_recovery(D, anchors, basis, weighted=True)
-        return Chat, None
-    elif method == 'SRLS':
-        # TODO(FD) this is a quick hack, make this work.
-        indices = range(D.shape[0])[traj.dim + 1::3]
+        return Chat, None, None
+    elif method == 'ours':
+        basis = traj.get_basis(times=times)
+        Chat = trajectory_recovery(D, anchors, basis, weighted=False)
+        return Chat, None, None
+    elif method == 'srls':
+        indices = range(D.shape[0])[traj.dim + 2::3]
         points, indices = pointwise_srls(D, anchors, traj, indices)
         times = np.array(times)[indices]
         Chat = fit_trajectory(points.T, times=times, traj=traj)
-        return Chat, points
+        return Chat, points, indices
+    elif method == 'rls':
+        indices = range(D.shape[0])[traj.dim + 2::3]
+        grid = get_grid(anchors, grid_size=0.5)
+        points, indices = pointwise_rls(D, anchors, traj, indices, grid=grid)
+        times = np.array(times)[indices]
+        Chat = fit_trajectory(points.T, times=times, traj=traj)
+        return Chat, points, indices
+    elif method == 'lm-ellipse':
+        basis = traj.get_basis(times=times)
+        c0 = init_lm(traj.coeffs, method='ellipse').flatten()
+        Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
+    elif method == 'lm-ours':
+        basis = traj.get_basis(times=times)
+        c0 = trajectory_recovery(D, anchors, basis, weighted=True).flatten()
+        Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
     else:
         raise NotImplementedError(method)
-
-
-def error_measure(points_gt, points_estimated, measure='mse'):
-    """
-
-    :param points_gt: ground truth positions (N x dim)
-    :param points_estimated: estimated positions (N x dim)
-    """
-    assert points_gt.shape == points_estimated.shape, f'{points_gt.shape}, {points_estimated.shape}'
-
-    if measure == 'mse':
-        return np.mean((points_gt - points_estimated)**2)
-    else:
-        raise NotImplementedError(measure)

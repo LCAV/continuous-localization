@@ -317,7 +317,7 @@ def plot_tango_2d(data_df, anchors_df, filename=''):
         savefig(fig, filename)
 
 
-def plot_complexities(traj, times, results, points_gt=None, ax=None):
+def plot_complexities(traj, times, results, points_gt=None, ax=None, verbose=False):
     """ Create complexity plots.
 
     :param results: results dict of form {
@@ -344,9 +344,10 @@ def plot_complexities(traj, times, results, points_gt=None, ax=None):
             traj.set_coeffs(coeffs=Chat)
             traj.plot_pretty(times=times, color=color, label=label, ax=ax)
 
-            points_est = traj.get_sampling_points(times=times).T
-            err = error_measure(points_gt, points_est, measure=measure)
-            print(f'{label} {measure} from coeffs: {err:.2e}')
+            if verbose:
+                points_est = traj.get_sampling_points(times=times).T
+                err = error_measure(points_gt, points_est, measure=measure)
+                print(f'{label} {measure} from coeffs: {err:.2e}')
 
         if points is not None:
             for x in points:
