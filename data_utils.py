@@ -17,6 +17,60 @@ range_system_id = "Range"
 gt_anchor_id = "GT"
 
 
+def read_dataset(filename):
+    from trajectory_creator import get_trajectory
+    from scipy.io import loadmat
+    traj = get_trajectory(filename)
+
+    dataname = filename.split('/')[-1].split('.')[0]
+    if dataname == 'uah1':
+        t_window = 1.0
+        min_time = 0
+        max_time = 1000
+    elif dataname == 'Plaza1':
+        t_window = 0.5
+        # choose one:
+        min_time = 0  # first big circle
+        max_time = 200  # first big circle
+        min_time = 510  # first loop
+        max_time = 600  # first loop
+        min_time = 0  # first few loops
+        max_time = 1000  # first few loops.
+    elif dataname == 'Plaza2':
+        t_window = 0.1
+        min_time = 45.1
+        period = 101 - 45
+        num_loops = 2
+        max_time = min_time + num_loops * period
+        traj.period = period
+
+    try:
+        result_dict = loadmat(filename)
+    except FileNotFoundError:
+        raise FileNotFoundError('Could not find {}. Did you run the script download_datasets?'.format(dataset))
+    except Exception as e:
+        print('Unknown reading error with {}. Check if the file looks ok.'.format(filename))
+        raise e
+    print('Successfully read {}'.format(filename))
+
+    full_df, anchors_df = prepare_dataset(result_dict, range_system_id, gt_system_id, [min_time, max_time], t_window)
+    return full_df, anchors_df, traj
+
+
+def get_plotting_params(filename):
+    dataname = filename.split('/')[-1].split('.')[0]
+    if dataname == 'uah1':
+        xlim = 0, 50
+        ylim = -20, 20
+    elif dataname == 'Plaza1':
+        xlim = -50, 10
+        ylim = -20, 75
+    elif dataname == 'Plaza2':
+        xlim = -80, 10
+        ylim = -20, 75
+    return xlim, ylim
+
+
 def create_anchors_df(anchor_data):
     """ Create standard anchors dataframe. 
 
@@ -97,14 +151,15 @@ def get_ground_truth(full_df, times):
     ground_truth_pos = ground_truth_pos.astype(np.float32)
     ground_truth_pos = ground_truth_pos.groupby('timestamp').agg(np.nanmean)
     ground_truth_pos.reset_index(inplace=True)
-    return ground_truth_pos
+    return ground_truth_pos.loc[:, ['px', 'py']]
 
 
-def get_coordinates(anchors_df, anchor_names):
+def get_coordinates(anchors_df, anchor_names=None):
     """ Sort anchors according to names.  """
-    anchors_df = anchors_df.set_index('anchor_name')
-    anchors_df = anchors_df.loc[anchor_names]
-    anchors_df.reset_index(drop=False, inplace=True)
+    if anchor_names is not None:
+        anchors_df = anchors_df.set_index('anchor_name')
+        anchors_df = anchors_df.loc[anchor_names]
+        anchors_df.reset_index(drop=False, inplace=True)
     anchors = anchors_df.loc[:, ['px', 'py', 'pz']].values.astype(np.float32).T
     return anchors
 
