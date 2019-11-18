@@ -55,12 +55,23 @@ class Trajectory(object):
         self.coeffs = None
         self.model = model
         if self.model == 'full_bandlimited':
+            if full_period is False:
+                print('Warning: setting full_period to True')
             full_period = True
         self.period = period
         self.params = {'full_period': full_period}
         if name is not None:
             self.params["name"] = name
         self.set_coeffs(seed=seed, coeffs=coeffs)
+
+    def print(self):
+        print('Trajectory object')
+        print(self.dim)
+        print(self.n_complexity)
+        print(self.coeffs)
+        print(self.model)
+        print(self.period)
+        print(self.params)
 
     def copy(self):
         new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))

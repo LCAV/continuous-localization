@@ -23,6 +23,9 @@ def read_dataset(filename):
     traj = get_trajectory(filename)
 
     dataname = filename.split('/')[-1].split('.')[0]
+    t_window = 1.0
+    min_time = 0
+    max_time = 10000
     if dataname == 'uah1':
         t_window = 1.0
         min_time = 0
@@ -36,6 +39,10 @@ def read_dataset(filename):
         max_time = 600  # first loop
         min_time = 0  # first few loops
         max_time = 1000  # first few loops.
+        min_time = 325  # first line
+        max_time = 350  # first line
+        #min_time = 374  # second line
+        #max_time = 395  # second line
     elif dataname == 'Plaza2':
         t_window = 0.1
         min_time = 45.1
@@ -43,6 +50,28 @@ def read_dataset(filename):
         num_loops = 2
         max_time = min_time + num_loops * period
         traj.period = period
+    elif dataname == 'Gesling1':
+        t_window = 2.0
+        min_time = 36
+        period = 140 - 36
+        num_loops = 2
+        max_time = min_time + num_loops * period
+        traj.period = period
+    elif dataname == 'Gesling2':
+        t_window = 2.0
+        min_time = 23
+        period = 186 - 23
+        num_loops = 1
+        max_time = min_time + num_loops * period
+        traj.period = period
+    elif dataname == 'Gesling3':
+        t_window = 1
+        min_time = 23
+        period = 50
+        num_loops = 1
+        max_time = min_time + num_loops * period
+        if not traj.params['full_period']:
+            traj.period = 2 * period
 
     try:
         result_dict = loadmat(filename)
@@ -58,6 +87,7 @@ def read_dataset(filename):
 
 
 def get_plotting_params(filename):
+    xlim = ylim = (None, None)
     dataname = filename.split('/')[-1].split('.')[0]
     if dataname == 'uah1':
         xlim = 0, 50
@@ -68,6 +98,9 @@ def get_plotting_params(filename):
     elif dataname == 'Plaza2':
         xlim = -80, 10
         ylim = -20, 75
+    elif 'Gesling' in dataname:
+        xlim = -2, 50
+        ylim = -2, 120
     return xlim, ylim
 
 
@@ -119,9 +152,17 @@ def create_full_df(range_data, gt_data):
 
 def prepare_dataset(result_dict, range_system_id, gt_system_id, time_range, t_window, verbose=False):
     min_time, max_time = time_range
-    anchor_data = result_dict['TL']
-    range_data = result_dict['TD']
-    gt_data = result_dict['GT']
+    try:
+        key_anchor = [key for key in result_dict.keys() if 'TL' in key][0]
+        anchor_data = result_dict[key_anchor]
+        key_range = [key for key in result_dict.keys() if 'TD' in key][0]
+        range_data = result_dict[key_range]
+        key_gt = [key for key in result_dict.keys() if 'GT' in key][0]
+        gt_data = result_dict[key_gt]
+    except KeyError:
+        print('Problem reading')
+        print(result_dict.keys())
+        return
 
     anchors_df = create_anchors_df(anchor_data)
     anchors_df = format_anchors_df(anchors_df, range_system_id=range_system_id, gt_system_id=gt_system_id)
@@ -160,7 +201,11 @@ def get_coordinates(anchors_df, anchor_names=None):
         anchors_df = anchors_df.set_index('anchor_name')
         anchors_df = anchors_df.loc[anchor_names]
         anchors_df.reset_index(drop=False, inplace=True)
-    anchors = anchors_df.loc[:, ['px', 'py', 'pz']].values.astype(np.float32).T
+    all_ax = ['px', 'py', 'pz']
+    for ax in all_ax:
+        if any(np.isnan(anchors_df.loc[:, ax].values.astype(np.float32))):
+            all_ax.remove(ax)
+    anchors = anchors_df.loc[:, all_ax].values.astype(np.float32).T
     return anchors
 
 

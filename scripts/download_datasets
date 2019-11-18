@@ -5,19 +5,29 @@ for dataset_name in "$@"
 do
   echo "$dataset_name"
   if [ $dataset_name = "Plaza1" ]; then
-    wget https://github.com/gtrll/gpslam/raw/master/matlab/data/Plaza1.mat
+    wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Plaza1.mat
     mv Plaza1.mat datasets/
     echo "Created datasets/Plaza1.mat"
   elif [ $dataset_name = "Plaza2" ]; then
-    wget https://github.com/gtrll/gpslam/raw/master/matlab/data/Plaza2.mat
+    wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Plaza2.mat
     mv Plaza2.mat datasets/
     echo "Created datasets/Plaza2.mat"
-
+  elif [ $dataset_name = "Gesling1" ]; then
+    wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Gesling1.mat
+    mv Gesling1.mat datasets/
+    echo "Created datasets/Gesling1.mat"
+  elif [ $dataset_name = "Gesling2" ]; then
+    wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Gesling2.mat
+    mv Gesling2.mat datasets/
+    echo "Created datasets/Gesling2.mat"
+  elif [ $dataset_name = "Gesling3" ]; then
+    wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Gesling3.mat
+    mv Gesling3.mat datasets/
+    echo "Created datasets/Gesling3.mat"
   elif [ $dataset_name = "uah1" ]; then
-    wget http://www.robesafe.es/repository/UAHWiFiDataset/data/uah1.mat
+    wget --no-check-certificate http://www.robesafe.es/repository/UAHWiFiDataset/data/uah1.mat
     mv uah1.mat datasets/
     echo "Created datasets/uah1.mat"
-
   elif [ $dataset_name = "uah2" ]; then
     wget http://www.robesafe.es/repository/UAHWiFiDataset/data/uah2.mat
     mv uah2.mat datasets/

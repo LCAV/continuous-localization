@@ -39,7 +39,11 @@ if __name__ == "__main__":
 
     #filename = 'datasets/uah1.mat' # fingers
     #filename = 'datasets/Plaza1.mat'; # zig zag.
-    filename = 'datasets/Plaza2.mat'  # triangle
+    #filename = 'datasets/Plaza2.mat'  # triangle
+    #filename = 'datasets/Gesling1.mat'  #
+    filename = 'datasets/Gesling2.mat'  #
+
+    resultname = 'results/algorithms_Gesling1.pkl'
 
     full_df, anchors_df, traj = read_dataset(filename)
     xlim, ylim = get_plotting_params(filename)
@@ -54,7 +58,6 @@ if __name__ == "__main__":
     methods = ['ours-weighted', 'ours']
     methods += ['lm-ellipse', 'lm-ours']
     methods += ['srls', 'rls']
-    fname = ''  #'results/algorithms_sunday.pkl'
     total_n_it = 2  #0
     anchor_names = None  # use all anchors.
 
@@ -127,9 +130,9 @@ if __name__ == "__main__":
                 mae = error_measure(points_fitted, points_small, 'mae')
                 add_measurement(result_df, 'gt')
 
-            if fname != '':
-                result_df.to_pickle(fname)
-                print('saved as', fname)
+            if resultname != '':
+                result_df.to_pickle(resultname)
+                print('saved as', resultname)
 
             if plotting:
                 ax = axs[i, j]
