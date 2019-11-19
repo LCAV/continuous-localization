@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
 mkdir -p datasets
 
-for dataset_name in "$@"
+echo "got argument $@"
+echo "first: $1"
+
+if [ $1 = "all" ]; then
+  all="Plaza1 Plaza2 Gesling1 Gesling2 Gesling3 uah1 uah2"
+else
+  all="$@"
+fi
+
+for dataset_name in $all
 do
+  if test -f "datasets/$dataset_name.mat"; then
+    echo "datasets/$dataset_name.mat exists."
+    continue
+  fi
+
   echo "$dataset_name"
+  all=$dataset_name = "all"
   if [ $dataset_name = "Plaza1" ]; then
     wget --no-check-certificate https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/data/Plaza1.mat
     mv Plaza1.mat datasets/

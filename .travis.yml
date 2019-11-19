@@ -5,7 +5,7 @@ install:
 python:
   - "3.6"
 script:
-  - ./scripts/download_datasets Plaza2
+  - ./scripts/download_datasets all
   - ./scripts/run_important_notebooks
   - pytest test/
   - make html
