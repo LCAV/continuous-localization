@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-evaluate_dataset.py: Functions and pipeline to evaluate datasets. 
+evaluate_dataset.py: Functions and pipeline to evaluate datasets.
 
 See notebook PublicDatasets for analysis and plotting of the 
 intermediate results. 
@@ -86,7 +86,7 @@ def format_anchors_df(anchors_df, gt_system_id=TANGO_SYSTEM_ID, range_system_id=
 
 def format_data_df(data_df, anchors_df=None, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
     """
-    Make sure data df is correctly formatted.
+    Make sure data data_df is correctly formatted.
     """
     def filter_columns(data_df):
         all_columns = set(data_df.columns)
@@ -103,10 +103,10 @@ def format_data_df(data_df, anchors_df=None, gt_system_id=TANGO_SYSTEM_ID, range
     return data_df
 
 
-def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range"):
+def resample(data_df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range"):
     """ Resample measurements at regular timestamps. 
 
-    :param df: dataframe with measurements. 
+    :param data_df: dataframe with measurements. 
     :param t_range: tuple of min and max time, in seconds.
     :param t_delta: sampling interval, in seconds.
     :param t_window: window width used for median calculation, in seconds.
@@ -119,15 +119,15 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range")
     elif system_id == 'GT':
         fields = ["px", "py", "pz"]
 
-    anchor_ids = df[df.system_id == system_id].anchor_id.unique()
+    anchor_ids = data_df[data_df.system_id == system_id].anchor_id.unique()
 
     len_new_df = len(uniform_times) * len(anchor_ids)
-    new_df = pd.DataFrame(index=range(len_new_df), columns=df.columns)
+    new_df = pd.DataFrame(index=range(len_new_df), columns=data_df.columns)
 
     # distance measurements.
     i = 0
     for anchor_id in anchor_ids:
-        df_anchor = df[df.anchor_id == anchor_id]
+        df_anchor = data_df[data_df.anchor_id == anchor_id]
         system_id = df_anchor.system_id.unique()[0]
         for t in uniform_times:
             if i % 100 == 0:
@@ -143,14 +143,14 @@ def resample(df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range")
     return new_df
 
 
-def add_gt_resampled(new_df, anchors_df, gt_system_id="GT", label='distance_gt'):
-    """ Add ground truth distances to new_df as a new column.
+def add_gt_resampled(data_df, anchors_df, gt_system_id="GT", label='distance_gt'):
+    """ Add ground truth distances to data_df as a new column.
 
     It uses the fact that the dataset is resampled, so we have perfectly synchronized measurements. 
     Therefore it takes less than 0.08 seconds on 4000 rows!! 
     """
-    assert gt_system_id in new_df.system_id.values, '{} not in {}'.format(gt_system_id, new_df.system_id.unique())
-    ground_truths = new_df.loc[new_df.system_id == gt_system_id, ["timestamp", "px", "py", "pz"]].values.astype(
+    assert gt_system_id in data_df.system_id.values, '{} not in {}'.format(gt_system_id, data_df.system_id.unique())
+    ground_truths = data_df.loc[data_df.system_id == gt_system_id, ["timestamp", "px", "py", "pz"]].values.astype(
         np.float32)
 
     for i, row in anchors_df.iterrows():
@@ -166,32 +166,33 @@ def add_gt_resampled(new_df, anchors_df, gt_system_id="GT", label='distance_gt')
         distances_2D = np.linalg.norm(vecs, axis=1)
 
         # make sure that the time ordering is correct.
-        timestamps = new_df.loc[new_df.anchor_id == row.anchor_id, "timestamp"].values.astype(np.float32)
+        timestamps = data_df.loc[data_df.anchor_id == row.anchor_id, "timestamp"].values.astype(np.float32)
         assert np.allclose(timestamps, ground_truths[:, 0])
 
-        new_df.loc[new_df.anchor_id == row.anchor_id, label] = distances
-        new_df.loc[new_df.anchor_id == row.anchor_id, label + '_2D'] = distances_2D
-    return new_df
+        data_df.loc[data_df.anchor_id == row.anchor_id, label] = distances
+        data_df.loc[data_df.anchor_id == row.anchor_id, label + '_2D'] = distances_2D
+    return data_df
 
 
-def add_median_raw(df, t_window=1.0, range_system_id='Range'):
+def add_median_raw(data_df, t_window=1.0, range_system_id='Range'):
     """ Add (centered) median over t_window at each measurement point. 
 
-    :param df: dataframe with measurements. 
+    :param data_df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
 
     """
-    for anchor_id, anchor_df in df[df.system_id == 'Range'].groupby("anchor_id"):
+    for anchor_id, anchor_df in data_df[data_df.system_id == 'Range'].groupby("anchor_id"):
         print('processing', anchor_id)
         for t in anchor_df.timestamp:
             # we want to take into account all measurements that lie within the specified window.
             allowed = anchor_df.loc[np.abs(anchor_df.timestamp - t) <= t_window, "distance"]
-            df.loc[(df.timestamp == t) & (df.anchor_id == anchor_id), "distance_median"] = allowed.median()
-            df.loc[(df.timestamp == t) & (df.anchor_id == anchor_id), "distance_mean"] = allowed.mean()
-    return df
+            data_df.loc[(data_df.timestamp == t) &
+                        (data_df.anchor_id == anchor_id), "distance_median"] = allowed.median()
+            data_df.loc[(data_df.timestamp == t) & (data_df.anchor_id == anchor_id), "distance_mean"] = allowed.mean()
+    return data_df
 
 
-def add_median_raw_rolling(df, t_window=1):
+def add_median_raw_rolling(data_df, t_window=1):
     """ Add (non-cenetered) rolling median over t_window at each measurement point. 
     
     IMPORTANT: this is not centered. Our own implementation add_median_raw is centered. 
@@ -199,39 +200,39 @@ def add_median_raw_rolling(df, t_window=1):
 
     """
 
-    df.sort_values("timestamp", inplace=True)
-    datetimes = [datetime.datetime.fromtimestamp(t / 1000.0) for t in df.timestamp]
-    df.index = [pd.Timestamp(datetime) for datetime in datetimes]
-    for anchor_id, anchor_df in df.groupby('anchor_id'):
+    data_df.sort_values("timestamp", inplace=True)
+    datetimes = [datetime.datetime.fromtimestamp(t / 1000.0) for t in data_df.timestamp]
+    data_df.index = [pd.Timestamp(datetime) for datetime in datetimes]
+    for anchor_id, anchor_df in data_df.groupby('anchor_id'):
         print('processing', anchor_id)
         rolling_data = anchor_df['distance'].rolling('{}s'.format(t_window), min_periods=1, center=False)
-        df.loc[df.anchor_id == anchor_id, "distance_mean"] = rolling_data.mean()
-        df.loc[df.anchor_id == anchor_id, "distance_median"] = rolling_data.median()
-    df.index = range(len(df))
-    return df
+        data_df.loc[data_df.anchor_id == anchor_id, "distance_mean"] = rolling_data.mean()
+        data_df.loc[data_df.anchor_id == anchor_id, "distance_median"] = rolling_data.median()
+    data_df.index = range(len(data_df))
+    return data_df
 
 
-def add_gt_raw(df, t_window=0.1, gt_system_id="GT"):
+def add_gt_raw(data_df, t_window=0.1, gt_system_id="GT"):
     """ Add median over t_window of ground truth position at each measurement point. 
 
-    :param df: dataframe with measurements. 
+    :param data_df: dataframe with measurements. 
     :param t_window: window width used for median calculation, in seconds.
 
     """
-    assert (gt_system_id in df.system_id.values), 'did not find any gt measurements in dataset.'
-    df_gt = df[df.system_id == gt_system_id]
+    assert (gt_system_id in data_df.system_id.values), 'did not find any gt measurements in dataset.'
+    df_gt = data_df[data_df.system_id == gt_system_id]
 
     coords = ['px', 'py', 'pz']
-    if all(pd.isnull(df.pz)):
+    if all(pd.isnull(data_df.pz)):
         coords = ['px', 'py']
 
-    for i, row in df.iterrows():
+    for i, row in data_df.iterrows():
         if row.system_id == gt_system_id:
             continue
         else:
             allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, coords].astype(np.float32).values
-            df.loc[i, coords] = np.nanmedian(allowed, axis=0)
-    return df
+            data_df.loc[i, coords] = np.nanmedian(allowed, axis=0)
+    return data_df
 
 
 def apply_name(row, anchors_df):
@@ -473,7 +474,7 @@ def read_correct_dataset(datafile, anchors_df, use_raw=False):
     return data_df
 
 
-def compute_distance_matrix(df,
+def compute_distance_matrix(data_df,
                             anchors_df,
                             anchor_names=None,
                             times=None,
@@ -481,7 +482,7 @@ def compute_distance_matrix(df,
                             dimension=3,
                             robot_height=0):
     """
-    :param df: dataset which has time, distance, anchor_id data.
+    :param data_df: dataset which has time, distance, anchor_id data.
     :param anchors_df: dataset of anchors data. 
     :param anchor_names: list of anchor names to use. Set to None to use all.
     :param times: the measurement times which we want to use. Set to None to use all.
@@ -495,7 +496,7 @@ def compute_distance_matrix(df,
     if anchor_names is None:
         anchor_names = list(anchors_df.anchor_name.unique())
     if times is None:
-        times = list(df.timestamp.unique())
+        times = list(data_df.timestamp.unique())
 
     n_times = len(times)
     n_anchors = len(anchor_names)
@@ -505,7 +506,7 @@ def compute_distance_matrix(df,
     i = 0
     actually_used_times = []
     for t in times:
-        this_slice = df[(df.anchor_name.isin(anchor_names)) & (df.timestamp == t)]
+        this_slice = data_df[(data_df.anchor_name.isin(anchor_names)) & (data_df.timestamp == t)]
 
         if len(this_slice) == 0:
             continue
@@ -533,3 +534,17 @@ def compute_distance_matrix(df,
 
     D_topright_real[np.isnan(D_topright_real)] = 0.0
     return D_topright_real[:i, :], actually_used_times
+
+
+def compute_anchors(anchors_df, anchor_names=None):
+    """ Sort anchors according to names, and return coordinates"""
+    if anchor_names is not None:
+        anchors_df = anchors_df.set_index('anchor_name')
+        anchors_df = anchors_df.loc[anchor_names]
+        anchors_df.reset_index(drop=False, inplace=True)
+    all_ax = ['px', 'py', 'pz']
+    for ax in all_ax:
+        if any(np.isnan(anchors_df.loc[:, ax].values.astype(np.float32))):
+            all_ax.remove(ax)
+    anchors = anchors_df.loc[:, all_ax].values.astype(np.float32).T
+    return anchors

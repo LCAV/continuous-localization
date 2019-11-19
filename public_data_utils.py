@@ -1,5 +1,11 @@
-#!/usr/bin/env python
-# coding: utf-8
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+public_data_utils.py: Functions related specifically to the public datasets.
+
+The goal of these functions is to create generic pandas dataframes that can be further processed using functions in evaluate_dataset.
+
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -195,42 +201,6 @@ def get_ground_truth(full_df, times):
     return ground_truth_pos.loc[:, ['px', 'py']]
 
 
-def get_coordinates(anchors_df, anchor_names=None):
-    """ Sort anchors according to names.  """
-    if anchor_names is not None:
-        anchors_df = anchors_df.set_index('anchor_name')
-        anchors_df = anchors_df.loc[anchor_names]
-        anchors_df.reset_index(drop=False, inplace=True)
-    all_ax = ['px', 'py', 'pz']
-    for ax in all_ax:
-        if any(np.isnan(anchors_df.loc[:, ax].values.astype(np.float32))):
-            all_ax.remove(ax)
-    anchors = anchors_df.loc[:, all_ax].values.astype(np.float32).T
-    return anchors
-
-
-def get_smooth_points(C_list, t_list, traj):
-    """ Average the obtained trajectories. """
-    result_df = pd.DataFrame(columns=['px', 'py', 't'])
-    for Chat, t in zip(C_list, t_list):
-        traj.set_coeffs(coeffs=Chat)
-        positions = traj.get_sampling_points(times=t)
-        this_df = pd.DataFrame({'px': positions[0, :], 'py': positions[1, :], 't': t})
-        result_df = pd.concat((this_df, result_df))
-    result_df.sort_values('t', inplace=True)
-    result_df.reindex()
-
-    import datetime
-    mean_window = 10
-    datetimes = [datetime.datetime.fromtimestamp(t) for t in result_df.t]
-    result_df.index = [pd.Timestamp(datetime) for datetime in datetimes]
-    result_df.loc[:, 'px_median'] = result_df['px'].rolling('{}s'.format(mean_window), min_periods=1,
-                                                            center=False).median()
-    result_df.loc[:, 'py_median'] = result_df['py'].rolling('{}s'.format(mean_window), min_periods=1,
-                                                            center=False).median()
-    return result_df
-
-
 def plot_distance_errors(this_df, ax=None, **kwargs):
     indices = np.argsort(this_df.distance.values)
     distances = this_df.distance.values[indices]
@@ -267,27 +237,3 @@ def plot_distance_times(full_df):
     axs[i].set_xlabel('time [s]')
     return fig, axs
 
-
-def plot_individual(C_list, t_list, traj):
-    fig, ax = plt.subplots()
-    fig.set_size_inches(10, 7)
-
-    for Chat, t in zip(C_list, t_list):
-        traj.set_coeffs(coeffs=Chat)
-        if len(t) > 0:
-            traj.plot(ax=ax, times=t)
-            #traj.plot(ax=ax, times=t, label='{:.1f}'.format(t[0]))
-    return ax
-
-
-def plot_smooth(result_df):
-    fig, ax = plt.subplots()
-    fig.set_size_inches(10, 7)
-    #plt.scatter(result_df.px, result_df.py, s=1)
-    plt.scatter(result_df.px_median, result_df.py_median, s=2, color='red')
-    plt.plot(result_df.px_median, result_df.py_median, color='red')
-    return ax
-
-
-if __name__ == "__main__":
-    print('see Datasets.ipynb for how to use above functions.')

@@ -8,8 +8,8 @@ import pandas as pd
 from scipy.io import loadmat
 import seaborn as sns
 
-#from data_utils import *
-from data_utils import prepare_dataset, read_dataset, get_coordinates, get_ground_truth, get_plotting_params
+#from public_data_utils import *
+from public_data_utils import prepare_dataset, read_dataset, get_coordinates, get_ground_truth, get_plotting_params
 from evaluate_dataset import compute_distance_matrix
 from fit_curve import fit_trajectory
 from other_algorithms import pointwise_srls, apply_algorithm, error_measure
