@@ -382,7 +382,7 @@ def apply_algorithm(traj, D, times, anchors, method='ours'):
         c0 = init_lm(traj.coeffs, method='ellipse').flatten()
         Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
         return Chat, None, None
-    elif method == 'lm-ours':
+    elif method == 'lm-ours-weighted':
         basis = traj.get_basis(times=times)
         c0 = trajectory_recovery(D, anchors, basis, weighted=True).flatten()
         Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)

@@ -74,7 +74,12 @@ class Trajectory(object):
         print(self.params)
 
     def copy(self):
-        new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))
+        new = Trajectory(self.n_complexity,
+                         self.dim,
+                         self.model,
+                         self.period,
+                         coeffs=np.copy(self.coeffs),
+                         full_period=self.params['full_period'])
         new.params = copy.deepcopy(self.params)
         return new
 

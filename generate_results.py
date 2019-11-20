@@ -8,13 +8,11 @@ import pandas as pd
 from scipy.io import loadmat
 import seaborn as sns
 
-#from public_data_utils import *
-from public_data_utils import prepare_dataset, read_dataset, get_coordinates, get_ground_truth, get_plotting_params
-from evaluate_dataset import compute_distance_matrix
+from public_data_utils import read_dataset, get_ground_truth, get_plotting_params
+from evaluate_dataset import compute_distance_matrix, compute_anchors
 from fit_curve import fit_trajectory
-from other_algorithms import pointwise_srls, apply_algorithm, error_measure
+from other_algorithms import apply_algorithm, error_measure
 from plotting_tools import plot_complexities, add_scalebar
-from trajectory_creator import get_trajectory
 
 
 def test_hypothesis(D, dim, K):
@@ -39,33 +37,33 @@ if __name__ == "__main__":
 
     #filename = 'datasets/uah1.mat' # fingers
     #filename = 'datasets/Plaza1.mat'; # zig zag.
-    #filename = 'datasets/Plaza2.mat'  # triangle
+    filename = 'datasets/Plaza2.mat'  # triangle
     #filename = 'datasets/Gesling1.mat'  #
-    filename = 'datasets/Gesling2.mat'  #
+    #filename = 'datasets/Gesling2.mat'  #
 
-    resultname = 'results/algorithms_Gesling1.pkl'
+    resultname = 'results/algorithms_tuesday.pkl'
 
     full_df, anchors_df, traj = read_dataset(filename)
     xlim, ylim = get_plotting_params(filename)
 
     chosen_distance = 'distance'
+    #chosen_distance = 'distance_gt'
     range_system_id = 'Range'
     assert range_system_id in full_df.system_id.unique()
-    #chosen_distance = 'distance_gt'
 
-    list_complexities = [3, 5]  #, 11, 19]
-    list_measurements = [40, 100]  #, 200, 300, 400, 499]
+    list_complexities = [3, 5, 11, 19]
+    list_measurements = [40, 100, 200, 300, 400, 499]
     methods = ['ours-weighted', 'ours']
-    methods += ['lm-ellipse', 'lm-ours']
+    methods += ['lm-ellipse', 'lm-ours-weighted']
     methods += ['srls', 'rls']
-    total_n_it = 2  #0
+    total_n_it = 20
     anchor_names = None  # use all anchors.
 
     plotting = True
     verbose = True
 
     ##### Bring data in correct form #####
-    anchors = get_coordinates(anchors_df, anchor_names)
+    anchors = compute_anchors(anchors_df, anchor_names)
     times = full_df[full_df.system_id == range_system_id].timestamp.unique()
     D, times = compute_distance_matrix(full_df, anchors_df, anchor_names, times, chosen_distance)
     if np.sum(D > 0) > D.shape[0]:
