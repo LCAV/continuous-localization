@@ -10,11 +10,30 @@ counter = 0
 
 
 def process_line(result_df, line):
+    import re
     if not 'distances: ' in line:
         return
 
+    x = y = z = q = None
+    match = re.search('position: x=(\d+)', line)
+    if match:
+        x = float(match.group(1)) / 1000.
+    match = re.search('y=(\d+)', line)
+    if match:
+        y = float(match.group(1)) / 1000.
+    match = re.search('z=(\d+)', line)
+    if match:
+        z = float(match.group(1)) / 1000.
+    match = re.search('q=(\d+)', line)
+    if match:
+        q = float(match.group(1))
+
+    # TODO(FD) below could be done more elegantly using
+    # the above regex functions.
+
     time = line.split(':')[0]
     device_id = line.split(' location data:')[0][-4:]
+
     data = line.split('distances: ')[-1]
     meas_list = data.split('}, ')
     for arr in meas_list:
@@ -25,7 +44,15 @@ def process_line(result_df, line):
         except Exception as e:
             print('error parsing', length.split('distance=Distance{length='))
             raise
-        result_df.loc[len(result_df)] = dict(time=time, device_id=device_id, anchor_id=anchor_id, distance=d, quality=q)
+        result_df.loc[len(result_df)] = dict(time=time,
+                                             device_id=device_id,
+                                             anchor_id=anchor_id,
+                                             distance=d,
+                                             quality=q,
+                                             px=x,
+                                             py=y,
+                                             pz=z,
+                                             pq=q)
 
 
 def anchor_line(anchor_df, line):
@@ -43,7 +70,7 @@ def anchor_line(anchor_df, line):
 
 
 def parse_file(logfile):
-    result_df = pd.DataFrame(columns=['time', 'device_id', 'anchor_id', 'distance', 'quality'])
+    result_df = pd.DataFrame(columns=['time', 'device_id', 'anchor_id', 'distance', 'quality', 'px', 'py', 'pz', 'pq'])
     anchor_df = pd.DataFrame(columns=['anchor_id', 'px', 'py', 'pz', 'full_id'])
     with open(logfile, 'r') as f:
         counter = 0
@@ -84,5 +111,6 @@ if __name__ == "__main__":
         print('saved as', resultfile)
 
         resultfile = logfile.replace('.txt', '_anchors.pkl')
-        anchor_df.to_pickle(resultfile)
-        print('saved as', resultfile)
+        if not anchor_df.empty:
+            anchor_df.to_pickle(resultfile)
+            print('saved as', resultfile)
