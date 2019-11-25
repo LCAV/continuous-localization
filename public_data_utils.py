@@ -23,7 +23,7 @@ range_system_id = "Range"
 gt_anchor_id = "GT"
 
 
-def read_dataset(filename):
+def read_dataset(filename, verbose=False):
     from trajectory_creator import get_trajectory
     from scipy.io import loadmat
     traj = get_trajectory(filename)
@@ -37,16 +37,11 @@ def read_dataset(filename):
         min_time = 0
         max_time = 1000
     elif dataname == 'Plaza1':
-        t_window = 0.5
-        # choose one:
-        min_time = 0  # first big circle
-        max_time = 200  # first big circle
-        min_time = 510  # first loop
-        max_time = 600  # first loop
-        min_time = 0  # first few loops
-        max_time = 1000  # first few loops.
-        min_time = 325  # first line
-        max_time = 350  # first line
+        t_window = 0.1
+        min_time = 0  #20 straight lines
+        max_time = 2000  # 20 straight lines
+        #min_time = 325  # first line
+        #max_time = 350  # first line
         #min_time = 374  # second line
         #max_time = 395  # second line
     elif dataname == 'Plaza2':
@@ -88,7 +83,11 @@ def read_dataset(filename):
         raise e
     print('Successfully read {}'.format(filename))
 
-    full_df, anchors_df = prepare_dataset(result_dict, range_system_id, gt_system_id, [min_time, max_time], t_window)
+    full_df, anchors_df = prepare_dataset(result_dict,
+                                          range_system_id,
+                                          gt_system_id, [min_time, max_time],
+                                          t_window,
+                                          verbose=verbose)
     return full_df, anchors_df, traj
 
 
@@ -173,10 +172,12 @@ def prepare_dataset(result_dict, range_system_id, gt_system_id, time_range, t_wi
     anchors_df = create_anchors_df(anchor_data)
     anchors_df = format_anchors_df(anchors_df, range_system_id=range_system_id, gt_system_id=gt_system_id)
 
+    if verbose:
+        print('creating full_df...')
     full_df = create_full_df(range_data, gt_data)
     full_df = format_data_df(full_df, anchors_df, gt_system_id=gt_system_id, range_system_id=range_system_id)
     if verbose:
-        print('time going from {:.1f} to {:.1f}'.format(full_df.timestamp.min(), full_df.timestamp.max()))
+        print('...done')
     full_df = full_df[(full_df.timestamp >= min_time) & (full_df.timestamp <= max_time)]
     full_df.loc[:, 'timestamp'] = full_df.timestamp - full_df.timestamp.min()
 
@@ -236,4 +237,3 @@ def plot_distance_times(full_df):
         axs[i].set_ylabel('distance [m]')
     axs[i].set_xlabel('time [s]')
     return fig, axs
-

@@ -74,7 +74,7 @@ def fit_trajectory(R, times, traj):
     :return: fitted trajectory coefficients (dim x K)
     """
     F = traj.get_basis(times=times)
-    assert R.shape[0] == traj.dim
+    assert R.shape[0] == traj.dim, R.shape
     assert F.shape[0] == traj.n_complexity
     assert F.shape[1] == R.shape[1], f'{F.shape, R.shape}'
     Chat = solve_for_C(R, F)

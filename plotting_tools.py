@@ -126,9 +126,7 @@ def plot_noise(key,
 
     for error_type in error_types:
         error = np.mean(results[error_type], axis=-1)
-        print(error.shape)
         error = error.squeeze()
-        print(error.shape)
         measurements = np.arange(min_measurements, max_measurements + 1)[::-1]
         if len(second_dim) == 1:
             error = error[:, None]
