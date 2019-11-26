@@ -12,32 +12,32 @@ import pandas as pd
 
 from public_data_utils import read_dataset, get_plotting_params, get_ground_truth
 from evaluate_dataset import compute_distance_matrix, compute_anchors
-from generate_results import generate_results, generate_suitable_mask
+from generate_results import generate_results, generate_suitable_mask, calibrate, add_gt_fitting
 
 # time intervals in which movement is roughly linear.
 TIME_RANGES = [
     (325, 350),  # backward
     (375, 393),  # forward
-    (410, 445),
+    (412, 445),
     (464, 484),
     (505, 534),
-    (560, 575),
-    (597, 620),
+    (557, 575),
+    (597, 624),
     (640, 670),
-    (840, 863),
+    (840, 867),
     (885, 908),
-    (928, 950),
-    (981, 1000),
-    (1035, 1050),
+    (928, 961),
+    (981, 1003),
+    (1027, 1057),
     (1075, 1095),
     (1120, 1140),
     (1160, 1180),
     (1200, 1230),
     (1250, 1270),
-    (1290, 1318),
+    (1290, 1322),
     (1342, 1358),
 ]
-METHODS = ['ours-weighted', 'lm-ours-weighted', 'srls', 'rls', 'lm-line']
+METHODS = ['ours-weighted', 'ours', 'lm-ours-weighted', 'lm-line', 'srls', 'rls']
 
 if __name__ == "__main__":
     ##### Initialization  #####
@@ -50,7 +50,12 @@ if __name__ == "__main__":
     #filename = 'datasets/Gesling1.mat' # not working
     #filename = 'datasets/Gesling2.mat' # not working
 
-    resultname = 'results/polynomial_monday.pkl'
+    #chosen_distance = 'distance_calib'
+    #resultname = 'results/polynomial_tuesday_calib.pkl'
+    chosen_distance = 'distance'
+    resultname = 'results/polynomial_tuesday.pkl'
+    #chosen_distance = 'distance_gt'
+    #resultname = 'results/polynomial_tuesday_gt.pkl'
 
     full_df, anchors_df, traj = read_dataset(filename, verbose=True)
     xlim, ylim = get_plotting_params(filename)
@@ -63,8 +68,7 @@ if __name__ == "__main__":
         mask = mask | ((full_df.timestamp > time_range[0]) & (full_df.timestamp < time_range[1])).values
     full_df = full_df[mask]
 
-    chosen_distance = 'distance'
-    #chosen_distance = 'distance_gt'
+    calibrate(full_df)
 
     range_system_id = 'Range'
     assert range_system_id in full_df.system_id.unique(), full_df.system_id.unique()
@@ -91,8 +95,6 @@ if __name__ == "__main__":
     n_min = traj.n_complexity * (traj.dim + 2) - 1
     print('need at least', n_min)
 
-    chosen_distance = 'distance'
-    #chosen_distance = 'distance_gt'
     anchor_names = None
 
     ## Construct anchors.
@@ -152,7 +154,9 @@ if __name__ == "__main__":
                     points_small = points_gt[indices, :]
 
                     df = generate_results(traj, D_small, times_small, anchors, points_small, methods=METHODS, n_it=k)
-                    result_df = pd.concat((result_df, df), ignore_index=True)
+                    points_fitted = add_gt_fitting(traj, times_small, points_small, df, n_it=k)
+
+                    result_df = pd.concat((result_df, df), ignore_index=True, sort=False)
                 if resultname != '':
                     result_df.to_pickle(resultname)
                     print('saved as', resultname)

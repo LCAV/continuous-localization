@@ -192,20 +192,22 @@ def add_median_raw(data_df, t_window=1.0, range_system_id='Range'):
     return data_df
 
 
-def add_median_raw_rolling(data_df, t_window=1):
+def add_median_raw_rolling(data_df, t_window=1000, gt_system_id="GT"):
     """ Add (non-cenetered) rolling median over t_window at each measurement point. 
     
     IMPORTANT: this is not centered. Our own implementation add_median_raw is centered. 
     However ours is much much slower...
 
     """
-
     data_df.sort_values("timestamp", inplace=True)
     datetimes = [datetime.datetime.fromtimestamp(t / 1000.0) for t in data_df.timestamp]
     data_df.index = [pd.Timestamp(datetime) for datetime in datetimes]
     for anchor_id, anchor_df in data_df.groupby('anchor_id'):
+        system_id = anchor_df['system_id'].unique()[0]
+        if system_id == gt_system_id:
+            continue
         print('processing', anchor_id)
-        rolling_data = anchor_df['distance'].rolling('{}s'.format(t_window), min_periods=1, center=False)
+        rolling_data = anchor_df['distance'].rolling('{}ms'.format(t_window), min_periods=1, center=False)
         data_df.loc[data_df.anchor_id == anchor_id, "distance_mean"] = rolling_data.mean()
         data_df.loc[data_df.anchor_id == anchor_id, "distance_median"] = rolling_data.median()
     data_df.index = range(len(data_df))
@@ -213,10 +215,10 @@ def add_median_raw_rolling(data_df, t_window=1):
 
 
 def add_gt_raw(data_df, t_window=0.1, gt_system_id="GT"):
-    """ Add median over t_window of ground truth position at each measurement point. 
+    """ Add median over t_window of ground truth position at each measurement point (centered).
 
     :param data_df: dataframe with measurements. 
-    :param t_window: window width used for median calculation, in seconds.
+    :param t_window: double window width used for median calculation, in seconds.
 
     """
     assert (gt_system_id in data_df.system_id.values), 'did not find any gt measurements in dataset.'
@@ -229,9 +231,9 @@ def add_gt_raw(data_df, t_window=0.1, gt_system_id="GT"):
     for i, row in data_df.iterrows():
         if row.system_id == gt_system_id:
             continue
-        else:
-            allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, coords].astype(np.float32).values
-            data_df.loc[i, coords] = np.nanmedian(allowed, axis=0)
+
+        allowed = df_gt.loc[np.abs(df_gt.timestamp - row.timestamp) <= t_window, coords].astype(np.float32).values
+        data_df.loc[i, coords] = np.nanmedian(allowed, axis=0)
     return data_df
 
 

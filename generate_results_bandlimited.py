@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from evaluate_dataset import compute_distance_matrix, compute_anchors
-from generate_results import generate_results, add_gt_fitting, generate_suitable_mask
+from generate_results import generate_results, add_gt_fitting, generate_suitable_mask, calibrate
 from plotting_tools import plot_complexities, add_scalebar
 from public_data_utils import read_dataset, get_ground_truth, get_plotting_params
 
@@ -25,18 +25,25 @@ if __name__ == "__main__":
     #filename = 'datasets/Gesling1.mat'  #
     #filename = 'datasets/Gesling2.mat'  #
 
-    resultname = 'results/algorithms_tuesday.pkl'
+    chosen_distance = 'distance'
+    resultname = 'results/bandlimited_tuesday.pkl'
+
+    #chosen_distance = 'distance_calib'
+    #resultname = 'results/bandlimited_tuesday_calib.pkl'
+
+    #chosen_distance = 'distance_gt'
+    #resultname = 'results/bandlimited_tuesday_gt.pkl'
 
     full_df, anchors_df, traj = read_dataset(filename)
     xlim, ylim = get_plotting_params(filename)
 
-    chosen_distance = 'distance'
-    #chosen_distance = 'distance_gt'
+    calibrate(full_df)
+
     range_system_id = 'Range'
     assert range_system_id in full_df.system_id.unique()
 
-    list_complexities = [3, 5, 11, 19]
-    list_measurements = [40, 100, 200, 300, 400, 499]
+    list_complexities = [5, 11, 19]
+    list_measurements = [100, 200, 300, 400, 499]
     total_n_it = 20
     anchor_names = None  # use all anchors.
 
@@ -73,7 +80,7 @@ if __name__ == "__main__":
                 print(f'n_measurements={n_measurements}')
 
             for n_it in range(total_n_it):
-                indices = generate_suitable_mask(D, dim, K)
+                indices = generate_suitable_mask(D, traj.dim, n_complexity, n_measurements)
 
                 D_small = D[indices, :]
                 times_small = np.array(times)[indices]
@@ -88,7 +95,7 @@ if __name__ == "__main__":
                                                    methods=METHODS)
                 points_fitted = add_gt_fitting(traj, times_small, points_small, current_results, n_it=0)
 
-                result_df = pd.concat((result_df, current_results), ignore_index=True)
+                result_df = pd.concat((result_df, current_results), ignore_index=True, sort=False)
 
             if resultname != '':
                 result_df.to_pickle(resultname)

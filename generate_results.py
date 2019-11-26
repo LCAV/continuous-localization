@@ -13,6 +13,19 @@ from other_algorithms import apply_algorithm, error_measure, cost_function
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']
 
+METHOD_DICT = {
+    'gt': 'GT',
+    'srls raw': 'SRLS',
+    'srls': 'SRLS fitted',
+    'rls raw': 'RLS',
+    'rls': 'RLS fitted',
+    'lm-ellipse': 'LM ellipse',
+    'lm-line': 'LM line',
+    'lm-ours-weighted': 'LM ours',
+    'ours': 'ours',
+    'ours-weighted': 'ours weighted'
+}
+
 
 def generate_suitable_mask(D, dim, K, n_measurements):
     counter = 0
@@ -78,6 +91,20 @@ def generate_results(traj, D_small, times_small, anchors, points_small, methods=
     return current_results
 
 
+def calibrate(original_df, gt_anchor_id='GT'):
+    """ Calibrate for offset and slope. """
+    assert 'distance_gt' in original_df.columns
+    assert 'distance' in original_df.columns
+    for anchor_id, anchor_df in original_df.groupby('anchor_id'):
+        if anchor_id == gt_anchor_id:
+            continue
+        d_gt = anchor_df.distance_gt.values.astype(np.float32)
+        d = anchor_df.distance.values.astype(np.float32)
+        slope, offset = np.polyfit(x=d[~np.isnan(d)], y=d_gt[~np.isnan(d)], deg=1)
+        original_df.loc[original_df.anchor_id == anchor_id, 'distance_calib'] = d * slope + offset
+    print('added distance_calib column.')
+
+
 def add_gt_fitting(traj, times_small, points_small, current_results, n_it=0):
     # fit ground truth to chosen points.
     n_complexity = traj.n_complexity
@@ -90,11 +117,14 @@ def add_gt_fitting(traj, times_small, points_small, current_results, n_it=0):
 
     mse = error_measure(points_fitted, points_small, 'mse')
     mae = error_measure(points_fitted, points_small, 'mae')
+
     current_results.loc[len(current_results)] = dict(plotting=(coeffs, points_fitted),
                                                      n_complexity=n_complexity,
                                                      n_measurements=n_measurements,
                                                      method='gt',
                                                      n_it=n_it,
                                                      mae=mae,
-                                                     mse=mse)
+                                                     mse=mse,
+                                                     cost_rls=None,
+                                                     cost_srls=None)
     return points_fitted

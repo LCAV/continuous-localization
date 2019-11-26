@@ -39,7 +39,7 @@ def read_dataset(filename, verbose=False):
     elif dataname == 'Plaza1':
         t_window = 0.1
         min_time = 0  #20 straight lines
-        max_time = 2000  # 20 straight lines
+        max_time = 1400  # 20 straight lines
         #min_time = 325  # first line
         #max_time = 350  # first line
         #min_time = 374  # second line
@@ -133,18 +133,32 @@ def create_anchors_df(anchor_data):
     return anchors_df
 
 
-def create_full_df(range_data, gt_data):
+def create_full_df(range_data, gt_data, time_range=None):
     """" Create full dataframe. """
-    range_df = pd.DataFrame(columns=['timestamp', 'px', 'py', 'pz', 'distance', 'system_id', 'anchor_id'])
-    range_df.loc[:, 'distance'] = range_data[:, 3]
-    range_df.loc[:, 'timestamp'] = range_data[:, 0]
-    range_df.loc[:, 'anchor_id'] = range_data[:, 2]
+    mask = np.ones(len(range_data), dtype=bool)
+    if time_range is not None:
+        times = range_data[:, 0]
+        times -= min(times)
+        mask = (times > time_range[0]) & (times < time_range[1])
+        if not any(mask):
+            print('empty mask!')
+            print(min(times), max(times), time_range)
+    range_df = pd.DataFrame(columns=['timestamp', 'px', 'py', 'pz', 'distance', 'system_id', 'anchor_id'],
+                            index=range(np.sum(mask)))
+    range_df.loc[:, 'distance'] = range_data[mask, 3]
+    range_df.loc[:, 'timestamp'] = range_data[mask, 0]
+    range_df.loc[:, 'anchor_id'] = range_data[mask, 2]
     range_df.loc[:, 'system_id'] = range_system_id
 
+    mask = np.ones(len(gt_data), dtype=bool)
+    if time_range is not None:
+        times = gt_data[:, 0]
+        times -= min(times)
+        mask = (times > time_range[0]) & (times < time_range[1])
     gt_df = pd.DataFrame(columns=range_df.columns)
-    gt_df.loc[:, 'px'] = gt_data[:, 1]
-    gt_df.loc[:, 'py'] = gt_data[:, 2]
-    gt_df.loc[:, 'timestamp'] = gt_data[:, 0]
+    gt_df.loc[:, 'px'] = gt_data[mask, 1]
+    gt_df.loc[:, 'py'] = gt_data[mask, 2]
+    gt_df.loc[:, 'timestamp'] = gt_data[mask, 0]
     gt_df.loc[:, 'anchor_id'] = gt_anchor_id
     gt_df.loc[:, 'system_id'] = gt_system_id
 
@@ -174,16 +188,17 @@ def prepare_dataset(result_dict, range_system_id, gt_system_id, time_range, t_wi
 
     if verbose:
         print('creating full_df...')
-    full_df = create_full_df(range_data, gt_data)
+    full_df = create_full_df(range_data, gt_data, time_range)
+    if len(full_df) == 0:
+        raise ValueError('empty data frame')
     full_df = format_data_df(full_df, anchors_df, gt_system_id=gt_system_id, range_system_id=range_system_id)
     if verbose:
         print('...done')
-    full_df = full_df[(full_df.timestamp >= min_time) & (full_df.timestamp <= max_time)]
-    full_df.loc[:, 'timestamp'] = full_df.timestamp - full_df.timestamp.min()
 
     if verbose:
         print('adding ground truth...')
-    full_df = add_gt_raw(full_df, t_window=t_window, gt_system_id=gt_system_id)
+    #full_df = add_gt_raw(full_df, t_window=t_window, gt_system_id=gt_system_id)
+    full_df.loc[:, ['px', 'py', 'pz']] = full_df.loc[:, ['px', 'py', 'pz']].fillna(method='ffill', limit=2)
     full_df.loc[:, "distance_gt"] = full_df.apply(
         lambda row: apply_distance_gt(row, anchors_df, gt_system_id=gt_system_id), axis=1)
 
