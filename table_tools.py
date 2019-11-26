@@ -54,7 +54,7 @@ def highlight_both(data, exclude=[0]):
     return [a1 + a2 for a1, a2 in zip(attr1, attr2)]
 
 
-def latex_print(pt, methods, fname='', **kwargs):
+def latex_print(pt, methods, fname='', index_names=True, **kwargs):
     method_names = [METHOD_DICT.get(m, 'unknown') for m in methods]
     pt.index = method_names
 
@@ -64,22 +64,28 @@ def latex_print(pt, methods, fname='', **kwargs):
     print(min_vals)
     print(second_vals.shape)
 
-    column_format = 'l|'
-
+    if index_names:
+        column_format = 'l|'
+    else:
+        column_format = '|'
     N_levels = len(pt.columns.levels[1])
     K_levels = len(pt.columns.levels[2])
     for _ in range(N_levels):
         cols_K = ''.join(['c'] * K_levels)
         column_format += cols_K + '|'
 
-    latex = pt['mean'].to_latex(column_format=column_format, multicolumn_format='|c|', **kwargs)
+    latex = pt['mean'].to_latex(column_format=column_format,
+                                multicolumn_format='c|',
+                                index_names=index_names,
+                                **kwargs,
+                                bold_rows=True)
     for min_val in min_vals.round(2):
-        string = "\\cellcolor{{\\firstcolor}}{}".format(min_val)
-        latex = latex.replace(str(min_val), string, 20)
+        string = " \\cellcolor{{\\firstcolor}}{}".format(min_val)
+        latex = latex.replace(' ' + str(min_val), string, 20)
 
     for min_val in second_vals.round(2):
-        string = "\\cellcolor{{\\secondcolor}}{}".format(min_val)
-        latex = latex.replace(str(min_val), string, 20)
+        string = " \\cellcolor{{\\secondcolor}}{}".format(min_val)
+        latex = latex.replace(' ' + str(min_val), string, 20)
 
     latex = latex.replace('K &', '\\multicolumn{1}{r|}{K} &')
     latex = latex.replace('N &', '\\multicolumn{1}{r|}{N} &')
