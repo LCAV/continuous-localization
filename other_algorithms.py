@@ -87,15 +87,15 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
 
 
 def cost_function(C_vec, D_sq, A, F, squared=False):
-    """ Return cost of distance.
+    """ Return residuals of least squares distance error.
 
-    :param C_vec: trajectory coefficients (1 x dim*K)
+    :param C_vec: trajectory coefficients (length dim*K)
     :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
     :param squared: if True, the distances in the cost function are squared. 
 
-    :return: vector of residuals.
+    :return: vector of residuals (length N)
     """
     dim = A.shape[0]
     C_k = C_vec.reshape((dim, -1))

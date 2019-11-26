@@ -126,7 +126,7 @@ if __name__ == "__main__":
         ## Plot all
         if plotting:
             ax = axs[k]
-            ax.scatter(*points_gt.T, color='black')
+            ax.scatter(*points_gt.T, color='black', s=1.0)
             ax.set_title(f'{time_range[0]}-')
 
         for n_measurements in list_measurements:
@@ -157,16 +157,16 @@ if __name__ == "__main__":
                     result_df.to_pickle(resultname)
                     print('saved as', resultname)
 
-                ## Plot the last one.
-                if not plotting:
-                    continue
+        ## Plot the last one.
+        if not plotting:
+            continue
 
-                traj_plot = traj.copy()
-                for method, df_method in df.groupby('method'):
-                    coeffs, __ = df_method.loc[:, 'plotting'].values[0]
-                    if coeffs is not None:
-                        traj_plot.set_coeffs(coeffs=coeffs)
-                        traj_plot.plot_pretty(ax=ax, times=times, label=method)
+        traj_plot = traj.copy()
+        for method, df_method in df.groupby('method'):
+            coeffs, __ = df_method.loc[:, 'plotting'].values[0]
+            if coeffs is not None:
+                traj_plot.set_coeffs(coeffs=coeffs)
+                traj_plot.plot_pretty(ax=ax, times=times, label=method)
 
     if plotting:
         axs[-1].legend(loc='lower right')

@@ -9,7 +9,7 @@ from scipy.io import loadmat
 import seaborn as sns
 
 from fit_curve import fit_trajectory
-from other_algorithms import apply_algorithm, error_measure
+from other_algorithms import apply_algorithm, error_measure, cost_function
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']
 
@@ -36,24 +36,30 @@ def generate_results(traj, D_small, times_small, anchors, points_small, methods=
     n_complexity = traj.n_complexity
     n_measurements = np.sum(D_small > 0)
     current_results = pd.DataFrame(
-        columns=['n_it', 'n_complexity', 'n_measurements', 'mae', 'mse', 'method', 'plotting'])
+        columns=['n_it', 'n_complexity', 'n_measurements', 'mae', 'mse', 'method', 'plotting', 'cost_rls', 'cost_srls'])
 
     basis_small = traj.get_basis(times=times_small)
 
     for method in methods:
         C_hat, p_hat, lat_idx = apply_algorithm(traj, D_small, times_small, anchors, method=method)
         plotting = (C_hat, p_hat)
-        traj.set_coeffs(coeffs=C_hat)
-        p_fitted = traj.get_sampling_points(times=times_small).T
-        mae = error_measure(p_fitted, points_small, 'mae')
-        mse = error_measure(p_fitted, points_small, 'mse')
+        mae = mse = cost_rls = cost_slrs = None
+        if C_hat is not None:
+            traj.set_coeffs(coeffs=C_hat)
+            p_fitted = traj.get_sampling_points(times=times_small).T
+            mae = error_measure(p_fitted, points_small, 'mae')
+            mse = error_measure(p_fitted, points_small, 'mse')
+            cost_rls = np.sum(cost_function(C_hat.reshape((-1, )), D_small, anchors, basis_small, squared=False))
+            cost_srls = np.sum(cost_function(C_hat.reshape((-1, )), D_small, anchors, basis_small, squared=True))
         current_results.loc[len(current_results)] = dict(plotting=plotting,
                                                          n_complexity=n_complexity,
                                                          n_measurements=n_measurements,
                                                          method=method,
                                                          n_it=n_it,
                                                          mae=mae,
-                                                         mse=mse)
+                                                         mse=mse,
+                                                         cost_rls=cost_rls,
+                                                         cost_srls=cost_srls)
 
         # do raw version if applicable
         if method in ['rls', 'srls']:
@@ -66,7 +72,9 @@ def generate_results(traj, D_small, times_small, anchors, points_small, methods=
                                                              method=method + ' raw',
                                                              n_it=n_it,
                                                              mae=mae,
-                                                             mse=mse)
+                                                             mse=mse,
+                                                             cost_rls=cost_rls,
+                                                             cost_srls=cost_srls)
     return current_results
 
 
