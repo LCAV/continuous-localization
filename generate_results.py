@@ -13,19 +13,6 @@ from other_algorithms import apply_algorithm, error_measure, cost_function
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']
 
-METHOD_DICT = {
-    'gt': 'GT',
-    'srls raw': 'SRLS',
-    'srls': 'SRLS fitted',
-    'rls raw': 'RLS',
-    'rls': 'RLS fitted',
-    'lm-ellipse': 'LM ellipse',
-    'lm-line': 'LM line',
-    'lm-ours-weighted': 'LM ours',
-    'ours': 'ours',
-    'ours-weighted': 'ours weighted'
-}
-
 
 def generate_suitable_mask(D, dim, K, n_measurements):
     counter = 0
