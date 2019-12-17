@@ -50,10 +50,12 @@ if __name__ == "__main__":
     #filename = 'datasets/Gesling1.mat' # not working
     #filename = 'datasets/Gesling2.mat' # not working
 
-    #chosen_distance = 'distance_calib'
-    #resultname = 'results/polynomial_tuesday_calib.pkl'
-    chosen_distance = 'distance'
-    resultname = 'results/polynomial_tuesday.pkl'
+    chosen_distance = 'distance_calib'
+    resultname = 'results/polynomial_tuesday_calib.pkl'
+
+    #chosen_distance = 'distance'
+    #resultname = 'results/polynomial_tuesday.pkl'
+
     #chosen_distance = 'distance_gt'
     #resultname = 'results/polynomial_tuesday_gt.pkl'
 
