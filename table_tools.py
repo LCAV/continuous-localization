@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 METHOD_DICT = {
-    'gt': 'GT',
+    'gt': 'model mismatch',
     'srls raw': 'SRLS',
     'srls': 'SRLS fitted',
     'rls raw': 'RLS',
@@ -58,11 +58,13 @@ def latex_print(pt, methods, fname='', index_names=True, **kwargs):
     method_names = [METHOD_DICT.get(m, 'unknown') for m in methods]
     pt.index = method_names
 
-    min_vals = np.sort(pt['mean'].values[1:, :], axis=0)[0, :].round(4)
-    second_vals = np.sort(pt['mean'].values[1:, :], axis=0)[1, :].round(4)
-    print(min_vals.shape)
-    print(min_vals)
-    print(second_vals.shape)
+    sorted_vals = np.sort(pt['mean'].values[1:, :].round(1), axis=0)
+    min_vals = []  #sorted_vals[0, :]
+    second_vals = []  #sorted_vals[1, :]
+    for column in sorted_vals.T:
+        min_val, second_val = np.unique(column)[:2]
+        min_vals.append(min_val)
+        second_vals.append(second_val)
 
     if index_names:
         column_format = 'l|'
@@ -79,18 +81,31 @@ def latex_print(pt, methods, fname='', index_names=True, **kwargs):
                                 index_names=index_names,
                                 **kwargs,
                                 bold_rows=True)
-    for min_val in min_vals.round(2):
+    for min_val in min_vals:
         string = " \\cellcolor{{\\firstcolor}}{}".format(min_val)
         latex = latex.replace(' ' + str(min_val), string, 20)
 
-    for min_val in second_vals.round(2):
+    for min_val in second_vals:
         string = " \\cellcolor{{\\secondcolor}}{}".format(min_val)
         latex = latex.replace(' ' + str(min_val), string, 20)
 
-    latex = latex.replace('K &', '\\multicolumn{1}{r|}{K} &')
-    latex = latex.replace('N &', '\\multicolumn{1}{r|}{N} &')
-    latex = latex.replace('SRLS  ', '\\midrule SRLS ')
+    latex = latex.replace('\\textbf{K} &', '\\multicolumn{1}{r|}{\\textbf{K}} &')
+    latex = latex.replace('\\textbf{N} &', '\\multicolumn{1}{r|}{\\textbf{N}} &')
+    latex = latex.replace('\\textbf{SRLS  ', '\\midrule \\textbf{SRLS  ')
+    latex = latex.replace('textbf', 'textit')
+    latex = latex.replace('textit{N}', 'textbf{N}')
+    latex = latex.replace('textit{K}', 'textbf{K}')
+    replaces = [5, 11, 19, 2]
+    for r in replaces:
+        latex = latex.replace(f' {r} ', f'\\textbf{{{r}}}')
 
+    replaces = [100, 200, 300, 400, 499]
+    for r in replaces:
+        latex = latex.replace(f'{{{r}}}', f'{{\\textbf{ {r}}}}')
+    replaces = [10, 20, 30, 50]
+    for r in replaces:
+        latex = latex.replace(f' {r} ', f' \\textbf{{{r}}} ')
+    latex = latex.replace('e+0', 'E')
     print(latex)
     if fname != '':
         with open(fname, 'w+') as f:
