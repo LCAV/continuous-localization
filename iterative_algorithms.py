@@ -121,9 +121,9 @@ def build_up_algorithm(D, anchors, basis, times, eps=1, verbose=False):
             D_k = np.r_[D_k, d_mn_row]
             basis_k = np.c_[basis_k, f_n]
             tk.append(t_n)
-
             try:
                 C_test = trajectory_recovery(D_k, anchors, basis_k)
+                assert C_test is not None
                 # TODO find a sensible general threshold here.
                 assert g(C_test) < 2 * eps
                 C_k = C_test
