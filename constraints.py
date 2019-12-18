@@ -180,9 +180,7 @@ def get_C_constraints(D_topright, anchors, basis, weighted=False):
     """ Return constraints TA, TB, and vector b as defined in paper.
 
     :param D_topright: matrix of square distances, of shape n_positions x n_anchors.
-
-    :param weighted: bool, if true return measurements and constraints divided by the weight depended on the distance,
-    in order to normalise errors. Makes sense only when errors are added to distances
+    :param weighted: bool, if true return measurements and constraints divided by the weight depended on the distance, in order to normalise errors. Makes sense only when errors are added to distances
     """
 
     verify_dimensions(D_topright, anchors, basis)

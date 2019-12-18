@@ -130,3 +130,8 @@ results/*.pdf
 
 # Gcode 
 *.gcode
+
+# Vim
+*.swp
+*.swo
+*.swap

@@ -3,7 +3,8 @@
 """
 trajectory.py: Contains the Trajectory class.
 
-The units can be interpreted as 1m
+The units can be interpreted as 1m.
+
 """
 
 import numpy as np
@@ -19,10 +20,10 @@ class Trajectory(object):
     """ Trajectory class.
 
     :member dim: dimension (2 or 3)
-    :member n_complexity: complexity of trajectory. 
-    :member coeffs: coefficients of trajectory. (dim x n_complexity)
-    :member model: trajectory model,
-    either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
+    :member n_complexity: complexity of trajectory
+    :member coeffs: coefficients of trajectory (dim x n_complexity)
+    :member model: trajectory model either bandlimited, full_bandlimited (both sines and cosines) or polynomial.
+
     """
     def __init__(self,
                  n_complexity=3,
@@ -34,6 +35,7 @@ class Trajectory(object):
                  coeffs=None,
                  name=None):
         """
+
         :param n_complexity: complexity of trajectory.
         :param dim: dimension of the trajectory.
         :param model: trajectory model type (either bandlimited, full_bandlimited (both sines and cosines) or
@@ -44,6 +46,7 @@ class Trajectory(object):
         :param coeffs: array of coefficients of shape (dim x n_complexity). If it is given, the dimensions and
         complexity are inferred form it.
         :param name: name of trajectory, for plotting
+
         """
         if coeffs is not None:
             dim, n_complexity = coeffs.shape
@@ -117,7 +120,9 @@ class Trajectory(object):
     def get_basis_prime(self, times=None):
         """ Get basis vector derivatives evaluated at specific times. 
         :param times: vector of times of length n_samples
+
         :return: 1st derivative (in time) of basis vector matrix (n_complexity x 
+
 n_samples)
         """
         n_samples = len(times)
@@ -141,8 +146,11 @@ n_samples)
 
     def get_basis_twoprime(self, times=None):
         """ Get basis vector second derivatives evaluated at specific times. 
+
         :param times: vector of times of length n_samples
+
         :return: 2nd derivative (in time) of basis vector matrix (n_complexity x 
+
 n_samples)
         """
         n_samples = len(times)
@@ -326,13 +334,11 @@ n_samples)
     def scale_bounding_box(self, box_dims, keep_aspect_ratio=False):
         """Scale trajectory to a given size.
         
-        :param box_dims: the dimensions of the desired bounding box (x, y), 
-        the bounding box is assumed to begin at (0, 0)
-        :param keep_aspect_ratio: if true, the second dimension of the bounding 
-        box is ignored, and coefficients are scaled the same in both dimensions
+        :param box_dims: the dimensions of the desired bounding box (x, y), the bounding box is assumed to begin at (0, 0)
+        :param keep_aspect_ratio: if true, the second dimension of the bounding box is ignored, and coefficients are scaled the same in both dimensions
         
-        :return: true bounding box dimensions,
-        no mater if aspect ratio was preserved or not
+        :return: true bounding box dimensions, no mater if aspect ratio was preserved or not
+
         """
 
         points = self.get_continuous_points()
@@ -519,21 +525,16 @@ n_samples)
                                 min_max_distance=0.05,
                                 plot=False):
         """Get the distances for left and right wheel sampled at positions suitable for the robot.
+
         If you need general method you may want to use get_left_and_right_points.
 
         :param width: width of the robot (in meters) that defines the positions of the wheels
         :param time_steps: to how many time steps discretize the trajectory during the calculation
-        :param curvature_decimals: to how many decimal places to round the curvature.
-        Curvature is used to decide where to give the robot new coordinates, and is not used directly in calculation
-        of the paths. We are rounding the curvature and not the radius, because a small change for a small radius
-        will lead to significant change in the trajectory. Rounding curvature at one decimal place corresponds to
-        allowing for the biggest radius of 10m.
-        :param min_max_distance: minimum distance (in meters) that at least one of the wheels have to travel in each
-        segment
+        :param curvature_decimals: to how many decimal places to round the curvature. Curvature is used to decide where to give the robot new coordinates, and is not used directly in calculation of the paths. We are rounding the curvature and not the radius, because a small change for a small radius will lead to significant change in the trajectory. Rounding curvature at one decimal place corresponds to allowing for the biggest radius of 10m.
+        :param min_max_distance: minimum distance (in meters) that at least one of the wheels have to travel in each segment
         :param plot: if true a plot is produced
 
         :return: two arrays of corresponding left and right wheel distances
-
         """
         times = self.get_times(n_samples=time_steps)
         points_left, points_right = self.get_left_and_right_points(times=times, width=width)
