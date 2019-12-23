@@ -67,10 +67,19 @@ def get_trajectory(filename, dim=2):
 
     elif 'Plaza1' in filename:  # zig zag
         #        return Trajectory(dim=2, n_complexity=3, model='bandlimited', period=10, full_period=True)
-        return Trajectory(dim=2, n_complexity=3, model='polynomial')
+        return Trajectory(dim=2, n_complexity=2, model='polynomial')
 
     elif 'Plaza2' in filename:  # loop
         return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=100.3 - 45.1, full_period=True)
+
+    elif 'Gesling1' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=100, full_period=True)
+
+    elif 'Gesling2' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='full_bandlimited', period=100, full_period=True)
+
+    elif 'Gesling3' in filename:
+        return Trajectory(dim=2, n_complexity=3, model='bandlimited', period=100, full_period=False)
 
     elif 'uah1' in filename:
         return Trajectory(dim=2, n_complexity=2, model='polynomial')

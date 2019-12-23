@@ -55,6 +55,8 @@ class Trajectory(object):
         self.coeffs = None
         self.model = model
         if self.model == 'full_bandlimited':
+            if full_period is False:
+                print('Warning: setting full_period to True')
             full_period = True
         self.period = period
         self.params = {'full_period': full_period}
@@ -62,8 +64,22 @@ class Trajectory(object):
             self.params["name"] = name
         self.set_coeffs(seed=seed, coeffs=coeffs)
 
+    def print(self):
+        print('Trajectory object')
+        print(self.dim)
+        print(self.n_complexity)
+        print(self.coeffs)
+        print(self.model)
+        print(self.period)
+        print(self.params)
+
     def copy(self):
-        new = Trajectory(self.n_complexity, self.dim, self.model, self.period, coeffs=np.copy(self.coeffs))
+        new = Trajectory(self.n_complexity,
+                         self.dim,
+                         self.model,
+                         self.period,
+                         coeffs=np.copy(self.coeffs),
+                         full_period=self.params['full_period'])
         new.params = copy.deepcopy(self.params)
         return new
 
@@ -181,7 +197,7 @@ n_samples)
                 np.random.rand(self.dim, self.n_complexity)
         else:
             if coeffs.shape[1] != self.n_complexity:
-                print('Warning: coeffs mismatch', coeffs.shape, self.n_complexity)
+                print('Warning: coeffs mismatch', coeffs.shape[1], self.n_complexity)
             self.coeffs = coeffs
 
         dim = self.coeffs.shape[0]
@@ -193,7 +209,7 @@ n_samples)
         """ Set new complexity and cut or pad coefficients with zeros if necessary. """
         new_coeffs = np.zeros((self.dim, n_complexity))
         keep = min(self.n_complexity, n_complexity)
-        new_coeffs[:, :keep] = self.coeffs[:, :keep]
+        new_coeffs[:, :keep] = self.coeffs[:self.dim, :keep]
         self.coeffs = new_coeffs
         self.n_complexity = n_complexity
 

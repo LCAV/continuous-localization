@@ -13,12 +13,22 @@ from pylocus.lateration import SRLS
 EPS = 1e-10
 
 
-def calculate_error(Chat, C, error_type='MAE'):
-    """ Return error measure between C and Chat. """
-    if error_type == 'MAE':
-        return np.mean(np.abs(Chat - C))
+def error_measure(points_gt, points_estimated, measure='mse'):
+    """
+    :param points_gt: ground truth positions (N x dim)
+    :param points_estimated: estimated positions (N x dim)
+    :param measure: method to use ('mae' or 'mse')
+    """
+    if (points_gt.shape[0] == 0) | (points_estimated.shape[0] == 0):
+        return None
+    assert points_gt.shape == points_estimated.shape, f'{points_gt.shape}, {points_estimated.shape}'
+
+    if measure == 'mse':
+        return np.mean((points_gt - points_estimated)**2)
+    elif measure == 'mae':
+        return np.mean(np.abs(points_gt - points_estimated))
     else:
-        NotImplementedError(error_type)
+        raise NotImplementedError(measure)
 
 
 def get_anchors_and_distances(D_sq, idx, dim=2):
@@ -36,17 +46,13 @@ def get_anchors_and_distances(D_sq, idx, dim=2):
     assert idx >= 0 and idx < D_sq.shape[0]
     r2 = []
     anchors = []
-    counter = 0
     for a_id in range(D_sq.shape[1]):
         indices = np.where(D_sq[:idx + 1, a_id] > 0)[0]
         if len(indices) > 0:
             latest_idx = indices[-1]
             r2.append(D_sq[latest_idx, a_id])
             anchors.append(a_id)
-            counter += 1
-            if counter > dim + 1:
-                break  # enough measurements for lateration.
-    return np.array(r2).reshape((-1, 1)), anchors
+    return np.array(r2).reshape((-1, 1)), np.array(anchors)
 
 
 def init_lm(coeffs_real, method='ellipse', **kwargs):
@@ -60,6 +66,16 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
         coeffs[0, 1] = rx
         coeffs[1, 2] = ry
         return coeffs
+    elif 'line' in method:
+        # 2D line with unit speed in 45 degrees, and 0 center.
+        coeffs = np.zeros(coeffs_real.shape)
+        center = [0, 0]
+        v = np.sqrt(2)
+        coeffs[0, 0] = center[0]
+        coeffs[1, 0] = center[1]
+        coeffs[0, 1] = v
+        coeffs[1, 1] = v
+        return coeffs
     elif 'noise' in method:
         sigma = kwargs.get('sigma', 0.1)
         return coeffs_real + np.random.normal(scale=sigma)
@@ -71,15 +87,15 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
 
 
 def cost_function(C_vec, D_sq, A, F, squared=False):
-    """ Return cost of distance.
+    """ Return residuals of least squares distance error.
 
-    :param C_vec: trajectory coefficients (1 x dim*K)
+    :param C_vec: trajectory coefficients (length dim*K)
     :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
     :param squared: if True, the distances in the cost function are squared. 
 
-    :return: vector of residuals.
+    :return: vector of residuals (length N)
     """
     dim = A.shape[0]
     C_k = C_vec.reshape((dim, -1))
@@ -259,15 +275,145 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, cost='simple', jacobi
         return res.x[:dim * K].reshape((dim, K))
 
 
-def pointwise_srls(D, anchors, basis, traj, indices):
-    """ Solve using point-wise SRLS. """
+def get_grid(anchors, grid_size=1.0):
+    x_range, y_range = np.array([np.min(anchors, axis=1), np.max(anchors, axis=1)]).T
+    xx, yy = np.meshgrid(
+        np.arange(*x_range, step=grid_size),
+        np.arange(*y_range, step=grid_size),
+    )
+    grid = np.c_[xx.flatten(), yy.flatten()]
+    return grid
+
+
+def RLS(anchors, r2, grid, interpolation='nearest'):
+    """ Get RLS estimate.
+
+    :param r2: list of measured distances (length M)
+    :param anchors: anchor coordinates (M x dim)
+    :param grid: grid coordinates (N x dim)
+
+    :param interpolation: How to interpolate.
+      - 'nearest' (default): return minimum grid point.
+    """
+    assert len(r2) == anchors.shape[0]
+    assert grid.shape[1] == anchors.shape[1]
+    r2 = r2.flatten()
+
+    D_estimated = np.linalg.norm(anchors[None, :, :] - grid[:, None, :], axis=2)  # N x M
+    cost = np.sum((D_estimated - np.sqrt(r2[None, :]))**2, axis=1)
+    if interpolation == 'nearest':
+        argmin = np.argmin(cost)
+        return grid[argmin, :]
+
+
+def pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None):
+    """ Solve using point-wise lateration. 
+
+    :param indices: points at which we want to compute SRLS.
+    :param method: Method to use. Currently supported:
+        - 'rls': Range Least-Squares (need to give grid)
+        - 'srls': SRLS
+    :param grid: coordinates of grid for RLS(N_grid x dim) 
+
+    :return: points, valid_indices
+      - points: coordinates of shape (N x dim)
+      - valid_indices: vector of corresponding indices. 
+    """
+
+    assert anchors.shape[0] == traj.dim
+    assert anchors.shape[1] == D.shape[1], f'{anchors.shape}, {D.shape}'
+
     points = []
-    for idx in indices[::traj.dim + 1]:
+    valid_indices = []
+    for idx in indices:
         r2, a_indices = get_anchors_and_distances(D, idx)
-        if len(r2) > traj.dim + 1:
-            anchors_srls = anchors[:2, a_indices].T  #N x d
-            weights = np.ones(r2.shape)
-            points.append(SRLS(anchors_srls, weights, r2))
+
+        # too many measurements
+        if len(r2) > traj.dim + 2:
+            #print(f'SRLS: too many measurements available! choosing random subset of {traj.dim + 2}')
+            choice = np.random.choice(len(r2), traj.dim + 2, replace=False)
+            r2 = r2[choice]
+            a_indices = a_indices[choice]
+            assert len(r2) == traj.dim + 2
+            assert len(a_indices) == traj.dim + 2
+
+        # too few measurements
+        elif len(r2) < traj.dim + 2:
+            #print('SRLS: skipping {} cause not enough measurements'.format(idx))
+            continue
+
+        anchors_here = anchors[:2, a_indices].T  #N x d
+        weights = np.ones(r2.shape)
+
+        if method == 'srls':
+            estimate = SRLS(anchors_here, weights, r2)
+        elif method == 'rls':
+            estimate = RLS(anchors_here, r2, grid=grid)
         else:
-            print('SRLS: skipping {} cause not enough measurements'.format(idx))
-    return points
+            raise NotImplementedError(method)
+
+        points.append(estimate)
+        valid_indices.append(idx)
+    return np.array(points), valid_indices
+
+
+def pointwise_srls(D, anchors, traj, indices):
+    return pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None)
+
+
+def pointwise_rls(D, anchors, traj, indices, grid):
+    return pointwise_lateration(D, anchors, traj, indices, method='rls', grid=grid)
+
+
+def apply_algorithm(traj, D, times, anchors, method='ours'):
+    from fit_curve import fit_trajectory
+    from solvers import trajectory_recovery
+    if method == 'ours-weighted':
+        basis = traj.get_basis(times=times)
+        Chat = trajectory_recovery(D, anchors, basis, weighted=True)
+        return Chat, None, None
+    elif method == 'ours':
+        basis = traj.get_basis(times=times)
+        Chat = trajectory_recovery(D, anchors, basis, weighted=False)
+        return Chat, None, None
+    elif method == 'srls':
+        indices = range(D.shape[0])[traj.dim + 2::3]
+        points, indices = pointwise_srls(D, anchors, traj, indices)
+        times = np.array(times)[indices]
+        Chat = None
+        if points.shape[0] >= traj.n_complexity:
+            Chat = fit_trajectory(points.T, times=times, traj=traj)
+        else:
+            print(f'Warning in apply_algorithm(srls): cannot fit trajectory to points of shape {points.shape}.')
+        return Chat, points, indices
+    elif method == 'rls':
+        indices = range(D.shape[0])[traj.dim + 2::3]
+        grid = get_grid(anchors, grid_size=0.5)
+        points, indices = pointwise_rls(D, anchors, traj, indices, grid=grid)
+        times = np.array(times)[indices]
+        Chat = None
+        if points.shape[0] >= traj.n_complexity:
+            Chat = fit_trajectory(points.T, times=times, traj=traj)
+        else:
+            print(f'Warning in apply_algorithm(rls): cannot fit trajectory to points of shape {points.shape}.')
+        return Chat, points, indices
+    elif method == 'lm-ellipse':
+        basis = traj.get_basis(times=times)
+        c0 = init_lm(traj.coeffs, method='ellipse').flatten()
+        Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
+    elif method == 'lm-line':
+        basis = traj.get_basis(times=times)
+        c0 = init_lm(traj.coeffs, method='line').flatten()
+        Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
+    elif method == 'lm-ours-weighted':
+        basis = traj.get_basis(times=times)
+        c0 = trajectory_recovery(D, anchors, basis, weighted=True)
+        Chat = None
+        if c0 is not None:
+            c0 = c0.flatten()
+            Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
+    else:
+        raise NotImplementedError(method)

@@ -1,0 +1,16 @@
+\begin{tabular}{l|ccc|ccc|ccc|}
+\toprule
+\multicolumn{1}{r|}{\textbf{N}} & \multicolumn{3}{c|}{\textbf{100}} & \multicolumn{3}{c|}{\textbf{300}} & \multicolumn{3}{c|}{\textbf{499}} \\
+\multicolumn{1}{r|}{\textbf{K}} &   \textbf{5} &   \textbf{11}&    \textbf{19}&  \textbf{5} &  \textbf{11}&  \textbf{19}&  \textbf{5} &  \textbf{11}&  \textbf{19}\\
+\midrule
+\textit{model mismatch  } &   3.7 &   1.8 &    1.5 &  3.8 &  2.0 &  1.7 &  3.8 &  2.1 &  1.8 \\
+\midrule \textit{SRLS            } & 137.5 & 141.0 &  114.5 & 22.2 & 22.2 & 21.8 & 13.2 & 13.2 & 13.2 \\
+\textit{SRLS fitted     } &  77.9 & 100.5 & 4378.0 & 18.1 & 17.6 & 17.8 & 15.6 & 14.1 & 13.9 \\
+\textit{RLS             } & 113.6 & 134.3 &  106.1 & 16.5 & 17.2 & 16.2 &  \cellcolor{\secondcolor}9.7 &  \cellcolor{\secondcolor}9.7 &  \cellcolor{\secondcolor}9.7 \\
+\textit{RLS fitted      } &  62.1 &  91.5 & 5971.6 & 13.2 & 12.8 & 12.9 & 10.5 &  \cellcolor{\secondcolor}9.2 &  \cellcolor{\secondcolor}9.4 \\
+\textit{LM ellipse/line } &  \cellcolor{\secondcolor}12.7 & 147.6 &  339.8 & \cellcolor{\secondcolor}11.3 & 25.9 & 13.2 & 11.4 & \cellcolor{\secondcolor}11.5 & 12.0 \\
+\textit{LM ours weighted} &  \cellcolor{\secondcolor}12.7 &  \cellcolor{\secondcolor}13.0 &   \cellcolor{\firstcolor}20.5 & \cellcolor{\secondcolor}11.3 & 11.9 & 12.2 & 11.4 & \cellcolor{\secondcolor}11.5 & 12.0 \\
+\textit{ours            } &  13.9 &  14.1 &   69.5 & 13.2 & \cellcolor{\secondcolor}11.5 & \cellcolor{\secondcolor}11.6 & 13.2 & 11.4 & \cellcolor{\secondcolor}11.3 \\
+\textit{ours weighted   } &  \cellcolor{\firstcolor}10.3 &  \cellcolor{\firstcolor}10.6 &   \cellcolor{\secondcolor}68.2 &  \cellcolor{\firstcolor}8.8 &  \cellcolor{\firstcolor}7.3 &  \cellcolor{\firstcolor}7.3 &  \cellcolor{\firstcolor}8.7 &  \cellcolor{\firstcolor}7.2 &  \cellcolor{\firstcolor}6.9 \\
+\bottomrule
+\end{tabular}
