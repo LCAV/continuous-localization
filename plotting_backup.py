@@ -6,23 +6,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from other_algorithms import pointwise_srls
+from other_algorithms import get_grid, pointwise_rls
 from plotting_tools import remove_ticks, add_scalebar
 from solvers import trajectory_recovery
 
 
 #TODO(FD) below too functions have too much computation. Try to split
 # plotting and processing more cleanly.
-def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list):
+def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list, srls=False, rls=True):
     import hypothesis as h
 
     basis = traj.get_basis(times=times)
     fig, axs = plt.subplots(1, len(n_measurements_list), sharex=True, sharey=True)
 
+    if rls:
+        grid = get_grid(anchors, grid_size=0.5)
+
     alpha = 1.0
     num_seeds = 3
     for ax, n_measurements in zip(axs, n_measurements_list):
         label = 'ours'
-
         coeffs = np.empty([traj.dim, traj.n_complexity, 0])
         colors = {0: 0, 1: 2, 2: 3}
         for seed in range(num_seeds):
@@ -50,11 +53,20 @@ def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list):
         traj.set_coeffs(coeffs=Chat_avg)
         traj.plot_pretty(times=times, color='C0', label=label, ax=ax)
 
-        points, used_indices = pointwise_srls(D, anchors, traj, indices)
-        label = 'SRLS'
-        for x in points:
-            ax.scatter(*x, color='C1', label=label, s=4.0)
-            label = None
+        i = 1
+        if srls:
+            points, used_indices = pointwise_srls(D, anchors, traj, indices)
+            label = 'SRLS'
+            for x in points:
+                ax.scatter(*x, color=f'C{i}', label=label, s=4.0)
+                label = None
+            i += 1
+        if rls:
+            points, used_indices = pointwise_rls(D, anchors, traj, indices, grid)
+            label = 'RLS'
+            for x in points:
+                ax.scatter(*x, color=f'C{i}', label=label, s=4.0)
+                label = None
 
         ax.plot(full_df.px, full_df.py, ls=':', linewidth=1., color='black', label='GPS')
         remove_ticks(ax)
@@ -63,7 +75,10 @@ def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list):
     return fig, axs
 
 
-def plot_complexities_old(traj, D, times, anchors, full_df, list_complexities, srls=True):
+def plot_complexities_old(traj, D, times, anchors, full_df, list_complexities, srls=False, rls=True):
+
+    if rls:
+        grid = get_grid(anchors, grid_size=0.5)
 
     fig, axs = plt.subplots(1, len(list_complexities), sharex=True, sharey=True)
     for ax, n_complexity in zip(axs, list_complexities):
@@ -79,12 +94,22 @@ def plot_complexities_old(traj, D, times, anchors, full_df, list_complexities, s
         ax.set_title('K = {}'.format(traj.n_complexity))
 
         remove_ticks(ax)
+        i = 1
         if srls:
             indices = range(D.shape[0])[::3]
             points, used_indices = pointwise_srls(D, anchors, traj, indices)
             label = 'SRLS'
             for x in points:
-                ax.scatter(*x, color='C1', label=label, s=4.0)
+                ax.scatter(*x, color=f'C{i}', label=label, s=4.0)
+                label = None
+            i += 1
+
+        if rls:
+            indices = range(D.shape[0])[traj.dim + 2::3]
+            points, used_indices = pointwise_rls(D, anchors, traj, indices, grid)
+            label = 'RLS'
+            for x in points:
+                ax.scatter(*x, color=f'C{i}', label=label, s=4.0)
                 label = None
 
     add_scalebar(axs[0], 20, loc='lower left')

@@ -19,6 +19,8 @@ def error_measure(points_gt, points_estimated, measure='mse'):
     :param points_estimated: estimated positions (N x dim)
     :param measure: method to use ('mae' or 'mse')
     """
+    if (points_gt.shape[0] == 0) | (points_estimated.shape[0] == 0):
+        return None
     assert points_gt.shape == points_estimated.shape, f'{points_gt.shape}, {points_estimated.shape}'
 
     if measure == 'mse':
@@ -64,6 +66,16 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
         coeffs[0, 1] = rx
         coeffs[1, 2] = ry
         return coeffs
+    elif 'line' in method:
+        # 2D line with unit speed in 45 degrees, and 0 center.
+        coeffs = np.zeros(coeffs_real.shape)
+        center = [0, 0]
+        v = np.sqrt(2)
+        coeffs[0, 0] = center[0]
+        coeffs[1, 0] = center[1]
+        coeffs[0, 1] = v
+        coeffs[1, 1] = v
+        return coeffs
     elif 'noise' in method:
         sigma = kwargs.get('sigma', 0.1)
         return coeffs_real + np.random.normal(scale=sigma)
@@ -75,15 +87,15 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
 
 
 def cost_function(C_vec, D_sq, A, F, squared=False):
-    """ Return cost of distance.
+    """ Return residuals of least squares distance error.
 
-    :param C_vec: trajectory coefficients (1 x dim*K)
+    :param C_vec: trajectory coefficients (length dim*K)
     :param D_sq: squared distance matrix (N x M)
     :param A: anchor coordinates (dim x M)
     :param F: trajectory basis functions (K x N)
     :param squared: if True, the distances in the cost function are squared. 
 
-    :return: vector of residuals.
+    :return: vector of residuals (length N)
     """
     dim = A.shape[0]
     C_k = C_vec.reshape((dim, -1))
@@ -368,24 +380,40 @@ def apply_algorithm(traj, D, times, anchors, method='ours'):
         indices = range(D.shape[0])[traj.dim + 2::3]
         points, indices = pointwise_srls(D, anchors, traj, indices)
         times = np.array(times)[indices]
-        Chat = fit_trajectory(points.T, times=times, traj=traj)
+        Chat = None
+        if points.shape[0] >= traj.n_complexity:
+            Chat = fit_trajectory(points.T, times=times, traj=traj)
+        else:
+            print(f'Warning in apply_algorithm(srls): cannot fit trajectory to points of shape {points.shape}.')
         return Chat, points, indices
     elif method == 'rls':
         indices = range(D.shape[0])[traj.dim + 2::3]
         grid = get_grid(anchors, grid_size=0.5)
         points, indices = pointwise_rls(D, anchors, traj, indices, grid=grid)
         times = np.array(times)[indices]
-        Chat = fit_trajectory(points.T, times=times, traj=traj)
+        Chat = None
+        if points.shape[0] >= traj.n_complexity:
+            Chat = fit_trajectory(points.T, times=times, traj=traj)
+        else:
+            print(f'Warning in apply_algorithm(rls): cannot fit trajectory to points of shape {points.shape}.')
         return Chat, points, indices
     elif method == 'lm-ellipse':
         basis = traj.get_basis(times=times)
         c0 = init_lm(traj.coeffs, method='ellipse').flatten()
         Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
         return Chat, None, None
-    elif method == 'lm-ours':
+    elif method == 'lm-line':
         basis = traj.get_basis(times=times)
-        c0 = trajectory_recovery(D, anchors, basis, weighted=True).flatten()
+        c0 = init_lm(traj.coeffs, method='line').flatten()
         Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
+        return Chat, None, None
+    elif method == 'lm-ours-weighted':
+        basis = traj.get_basis(times=times)
+        c0 = trajectory_recovery(D, anchors, basis, weighted=True)
+        Chat = None
+        if c0 is not None:
+            c0 = c0.flatten()
+            Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
         return Chat, None, None
     else:
         raise NotImplementedError(method)

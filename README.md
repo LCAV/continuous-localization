@@ -31,6 +31,8 @@ Not that for some plotting and saving functionalities, you need to have *LaTeX* 
 
 ## Contents
 
+### Scripts
+- *generate_results*: code to generate the results for different algorithms (see table in paper).
 
 ### Notebooks
 - *GenerateAllFigures.ipynb*: generate the Figures used in the paper.

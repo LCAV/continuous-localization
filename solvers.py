@@ -196,8 +196,8 @@ def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weight
     u, s, vh = np.linalg.svd(T_B, full_matrices=False)
     num_zero_SVs = len(np.where(s < 1e-10)[0])
     if len(s) - num_zero_SVs != rankT_B:  #This if can be cut, it was just useful for debugging
-        pass
-        # raise ValueError('LOGIC ERROR: T_B not of expected rank!!')
+        print('LOGIC ERROR: T_B not of expected rank!!')
+        return None
 
     T_B_fullrank = u[:, :rankT_B] @ np.diag(s[:rankT_B])
 
