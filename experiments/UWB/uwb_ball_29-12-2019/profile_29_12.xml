@@ -1,0 +1,1040 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Profile version="1">
+    <PropertyWarehouse>
+        <properties>
+            <property>
+                <name>SaveAsExportType</name>
+                <value>1</value>
+                <defaultValue>1</defaultValue>
+            </property>
+            <property>
+                <name>DelayRecord</name>
+                <value>2.000000</value>
+                <defaultValue>2.000000</defaultValue>
+            </property>
+            <property>
+                <name>PlaybackSpeed</name>
+                <value>0.500000</value>
+                <defaultValue>0.500000</defaultValue>
+            </property>
+            <property>
+                <name>DataTypesToDelete</name>
+                <value>25</value>
+                <defaultValue>25</defaultValue>
+            </property>
+            <property>
+                <name>SelectedTabIndexInTabCtrl</name>
+                <value>2</value>
+                <defaultValue>3</defaultValue>
+            </property>
+            <property>
+                <name>MarkerDiameterType</name>
+                <value>0</value>
+                <defaultValue>0</defaultValue>
+            </property>
+            <property>
+                <name>MarkerDiameterForceSize</name>
+                <value>16.000000</value>
+                <defaultValue>16.000000</defaultValue>
+            </property>
+            <property>
+                <name>ShowCameraInformation</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowCameraObjectCoords</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowCameraObjectSize</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>DistortionColor</name>
+                <value>16777215</value>
+                <defaultValue>16777215</defaultValue>
+            </property>
+            <property>
+                <name>Unlabeled3DMarkerColor</name>
+                <value>33023</value>
+                <defaultValue>33023</defaultValue>
+            </property>
+            <property>
+                <name>ShowMarkerLabels</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowLogoOverlay</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>GraphsBGColor</name>
+                <value>2105376</value>
+                <defaultValue>2105376</defaultValue>
+            </property>
+            <property>
+                <name>GraphsAutoscale</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>GraphsPreferredLiveLayout</name>
+                <value>fschiano1</value>
+                <defaultValue>Channel</defaultValue>
+            </property>
+            <property>
+                <name>GraphsPreferredPostLayout</name>
+                <value>Tracks</value>
+                <defaultValue>Live-RigidBody</defaultValue>
+            </property>
+            <property>
+                <name>ShowTwoMarkerDistance</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowThreeMarkerAngle</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowSkeletons</name>
+                <value>true</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>ShowRigidBodies</name>
+                <value>true</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>Name</name>
+                <value>default</value>
+                <defaultValue>default</defaultValue>
+            </property>
+            <property>
+                <name>UserData</name>
+                <value>5</value>
+                <defaultValue>5</defaultValue>
+            </property>
+            <property>
+                <name>MinimumMarkerCount</name>
+                <value>3</value>
+            </property>
+            <property>
+                <name>MaxMarkerDeflection</name>
+                <value>0.003000</value>
+                <defaultValue>0.003000</defaultValue>
+            </property>
+            <property>
+                <name>Smoothing</name>
+                <value>0.000000</value>
+            </property>
+            <property>
+                <name>PredictionTime</name>
+                <value>0.004000</value>
+            </property>
+            <property>
+                <name>TrackingAlgorithmLevel</name>
+                <value>0</value>
+            </property>
+            <property>
+                <name>AutoTrackingAlgorithm</name>
+                <value></value>
+            </property>
+            <property>
+                <name>Color</name>
+                <value>16771840</value>
+                <defaultValue>16771840</defaultValue>
+            </property>
+            <property>
+                <name>DisplayLabel</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>DisplayMarkerQuality</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>DisplayModelReplace</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>BoneColor</name>
+                <value>65535</value>
+                <defaultValue>65535</defaultValue>
+            </property>
+            <property>
+                <name>ShowMarkerLabel</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>ShowAxis</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>SkeletonDefaultMarkerset</name>
+                <value>33</value>
+                <defaultValue>25</defaultValue>
+            </property>
+            <property>
+                <name>LocalInterface</name>
+                <value>4177635520</value>
+                <defaultValue>1677830336</defaultValue>
+            </property>
+            <property>
+                <name>Streaming</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>StreamSubjectPrefix</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>StreamLabeledMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>StreamUnlabeledMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>StreamMarkerSetMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>StreamSkeletons</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>UpAxis</name>
+                <value>2</value>
+                <defaultValue>2</defaultValue>
+            </property>
+            <property>
+                <name>Type</name>
+                <value>0</value>
+                <defaultValue>1</defaultValue>
+            </property>
+            <property>
+                <name>MulticastAddress</name>
+                <value>1663762415</value>
+                <defaultValue>16777440</defaultValue>
+            </property>
+            <property>
+                <name>VRPNStreaming</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>TrackdStreaming</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>CameraColor</name>
+                <value>13145650</value>
+                <defaultValue>13145650</defaultValue>
+            </property>
+            <property>
+                <name>PCObjectFilterMinSize</name>
+                <value>0</value>
+                <defaultValue>0</defaultValue>
+            </property>
+            <property>
+                <name>PCObjectFilterObjectROIIntrusionDetection</name>
+                <value>1</value>
+            </property>
+            <property>
+                <name>CameraExposure</name>
+                <value>250</value>
+                <defaultValue>250</defaultValue>
+            </property>
+            <property>
+                <name>ImagerScanRate</name>
+                <value>100</value>
+                <defaultValue>0</defaultValue>
+            </property>
+            <property>
+                <name>ExternalTriggerFreq</name>
+                <value>0.000000</value>
+                <defaultValue>0.000000</defaultValue>
+            </property>
+            <property>
+                <name>MarkerLocation</name>
+                <value>1,7.04853e-043,0</value>
+                <defaultValue>1,7.04853e-043,0</defaultValue>
+            </property>
+            <property>
+                <name>SelectCamera</name>
+                <value>true</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>SelectRigidBody</name>
+                <value>true</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>SelectTrackMarker</name>
+                <value>true</value>
+                <defaultValue>true</defaultValue>
+            </property>
+            <property>
+                <name>DialogExportGroupPath</name>
+                <value>C:/Users/lnstreit/Desktop/data/241219</value>
+                <defaultValue>C:/Users/stewart/Documents</defaultValue>
+            </property>
+            <property>
+                <name>DialogOtherGroupPath</name>
+                <value>//files3/data/lnstreit/My Documents/OptiTrack</value>
+                <defaultValue>Z:/optitrack</defaultValue>
+            </property>
+            <property>
+                <name>DialogProfileGroupPath</name>
+                <value>C:/Users/duembgen/Documents/OptiTrack</value>
+                <defaultValue>C:/ProgramData/OptiTrack/Motive/Profiles/</defaultValue>
+            </property>
+            <property>
+                <name>DialogTakeGroupPath</name>
+                <value>//files3/data/lnstreit/My Documents/OptiTrack/src</value>
+                <defaultValue>C:/Optitrack_user_data/LIS_Fabian_Schilling</defaultValue>
+            </property>
+            <property>
+                <name>PCResidual</name>
+                <value>0.003074</value>
+                <defaultValue>0.002981</defaultValue>
+            </property>
+            <property>
+                <name>PCMaxRayLength</name>
+                <value>15.543815</value>
+                <defaultValue>15.807049</defaultValue>
+            </property>
+            <property>
+                <name>TrajNumPasses</name>
+                <value>1</value>
+                <defaultValue>1</defaultValue>
+            </property>
+            <property>
+                <name>TrajRBAssistedPredictionRadius</name>
+                <value>10</value>
+                <defaultValue>10</defaultValue>
+            </property>
+            <property>
+                <name>Maximum2DPoints</name>
+                <value>512</value>
+                <defaultValue>512</defaultValue>
+            </property>
+            <property>
+                <name>TrajTrajectoryBased</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterQualityStats</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterRigidBodies</name>
+                <value>true</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterRigidBodyMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterBones</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVEporterBoneMarkers</name>
+                <value>false</value>
+                <defaultValue>false</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterRotationType</name>
+                <value>1</value>
+                <defaultValue>1</defaultValue>
+            </property>
+            <property>
+                <name>CSVExporterFilename</name>
+                <value>C:/Users/lnstreit/Desktop/data/241219/1kg_20g_pos2.csv</value>
+                <defaultValue>C:/Users/stewart/Documents/Pendulum_SteadyRotation.csv</defaultValue>
+            </property>
+            <property>
+                <name>BVHExporterUnits</name>
+                <value>0</value>
+                <defaultValue>0</defaultValue>
+            </property>
+            <property>
+                <name>C3DExporterXAxis</name>
+                <value>0</value>
+            </property>
+            <property>
+                <name>C3DExporterYAxis</name>
+                <value>5</value>
+            </property>
+            <property>
+                <name>C3DExporterZAxis</name>
+                <value>2</value>
+            </property>
+        </properties>
+    </PropertyWarehouse>
+    <MouseActions version="1">
+        <assignment name="ExpandSelectInView">
+            <buttons invertX="0" invertY="0">
+                <left/>
+            </buttons>
+            <modifiers>
+                <shift/>
+            </modifiers>
+        </assignment>
+        <assignment name="PanView">
+            <buttons invertX="0" invertY="0">
+                <middle/>
+            </buttons>
+            <modifiers/>
+        </assignment>
+        <assignment name="RotateView">
+            <buttons invertX="0" invertY="0">
+                <right/>
+            </buttons>
+            <modifiers/>
+        </assignment>
+        <assignment name="ScrubTime">
+            <buttons invertX="0" invertY="0">
+                <left/>
+            </buttons>
+            <modifiers>
+                <alt/>
+            </modifiers>
+        </assignment>
+        <assignment name="SelectInView">
+            <buttons invertX="0" invertY="0">
+                <left/>
+            </buttons>
+            <modifiers/>
+        </assignment>
+        <assignment name="ToggleSelectInView">
+            <buttons invertX="0" invertY="0">
+                <left/>
+            </buttons>
+            <modifiers>
+                <ctrl/>
+            </modifiers>
+        </assignment>
+        <assignment name="ZoomView">
+            <buttons invertX="0" invertY="0">
+                <wheel/>
+            </buttons>
+            <modifiers/>
+        </assignment>
+    </MouseActions>
+    <KeyActions>
+        <hotkeys version="1">
+            <hotkey key="Key_Space" action="StartStopRecordOrPlayback"/>
+            <hotkey key="Key_QuoteDbl" action="ToggleViewTrackedRays"/>
+            <hotkey key="Key_A" action="IncrementBackward"/>
+            <hotkey key="Key_B" action="EndSelection"/>
+            <hotkey key="Key_C" action="FillSelectedCubic"/>
+            <hotkey key="Key_D" action="ToggleQuickSelect"/>
+            <hotkey key="Key_E" action="Rotate3DObject"/>
+            <hotkey key="Key_F" action="FrameSelectedInView"/>
+            <hotkey key="Key_G" action="ToggleFollowSelected"/>
+            <hotkey key="Key_I" action="SetVideoToMJPEGMode"/>
+            <hotkey key="Key_O" action="SetVideoToObjectMode"/>
+            <hotkey key="Key_P" action="SampleProbe"/>
+            <hotkey key="Key_Q" action="Select3DObject"/>
+            <hotkey key="Key_R" action="Scale3DObject"/>
+            <hotkey key="Key_S" action="IncrementForward"/>
+            <hotkey key="Key_T" action="ToggleEditAssets"/>
+            <hotkey key="Key_U" action="SetVideoToGrayScaleMode"/>
+            <hotkey key="Key_V" action="StartSelection"/>
+            <hotkey key="Key_W" action="Move3DObject"/>
+            <hotkey key="Key_X" action="SmoothSelectedNodesSelectedTime"/>
+            <hotkey key="Key_Z" action="FindNextGap"/>
+            <hotkey key="Key_AsciiTilde" action="ToggleLiveEdit"/>
+            <hotkey key="Key_QuoteDbl" action="ToggleViewUntrackedRays">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_B" action="Deselect">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_C" action="FillSelectedPattern">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_D" action="Unlabel">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_F" action="FrameAllInView">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_V" action="SelectAll">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_X" action="SmoothAllNodesSelectedTime">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Z" action="FindPreviousGap">
+                <modifiers>
+                    <ShiftModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_1" action="CalibrationLayout">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_2" action="CreateAssetsLayout">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_3" action="CaptureLayout">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_4" action="EditLayout">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_5" action="UserLayout1">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_6" action="UserLayout2">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_7" action="UserLayout3">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_8" action="UserLayout4">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_9" action="UserLayout5">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_O" action="OpenFile">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_P" action="ClearSamples">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_R" action="ResetSkeletonTracking">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_S" action="SaveTake">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_T" action="CreateRigidBody">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Y" action="Redo">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Z" action="Undo">
+                <modifiers>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_C" action="FillSelectedModel">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_P" action="StartCalibration">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_S" action="SaveTakeAs">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Z" action="Redo">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Z" action="Undo">
+                <modifiers>
+                    <ControlModifier/>
+                    <AltModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_S" action="ExportData">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                    <AltModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Left" action="StepTimeBackward">
+                <modifiers>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Up" action="PageTimeForward">
+                <modifiers>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Right" action="StepTimeForward">
+                <modifiers>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Down" action="PageTimeBackward">
+                <modifiers>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Left" action="Rewind">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+            <hotkey key="Key_Right" action="FastForward">
+                <modifiers>
+                    <ShiftModifier/>
+                    <ControlModifier/>
+                    <ExtendedModifier/>
+                </modifiers>
+            </hotkey>
+        </hotkeys>
+    </KeyActions>
+    <PropertyDefinitionWarehouse version="1">
+        <definitions>
+            <definition>
+                <name>MaxMarkerDeflection</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>MinimumMarkerCount</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>NodeName</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>PredictionTime</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>Smoothing</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>TrackingAlgorithmLevel</name>
+                <advanced>true</advanced>
+            </definition>
+            <definition>
+                <name>UserData</name>
+                <advanced>true</advanced>
+            </definition>
+        </definitions>
+    </PropertyDefinitionWarehouse>
+    <LabelingPanel>
+        <properties>
+            <property>
+                <name>LabelingRange</name>
+                <value>0</value>
+                <defaultValue>0</defaultValue>
+            </property>
+            <property>
+                <name>SplitViewMode</name>
+                <value>false</value>
+            </property>
+        </properties>
+    </LabelingPanel>
+    <TakeManager version="1">
+        <sessions>
+            <session path="C:/Optitrack_user_data/Calib/"/>
+        </sessions>
+        <current_session path="C:/Optitrack_user_data/Calib/"/>
+    </TakeManager>
+    <NodeAssets>
+        <rigid_body version="1.1" id="d572003bc6768c9d:89008a0228b511ea">
+            <markers>
+                <marker id="0:d667">
+                    <position>-0.141974,-0.00243273,0.0643694</position>
+                    <size>0.0201152</size>
+                    <residual>0.000838134</residual>
+                    <label_id>1</label_id>
+                </marker>
+                <marker id="0:d689">
+                    <position>-0.0528486,0.036686,-0.00862002</position>
+                    <size>0.0135651</size>
+                    <residual>0.000671132</residual>
+                    <label_id>2</label_id>
+                </marker>
+                <marker id="0:d68c">
+                    <position>0.0430834,-0.0166427,0.132879</position>
+                    <size>0.0209334</size>
+                    <residual>0.001013</residual>
+                    <label_id>3</label_id>
+                </marker>
+                <marker id="0:d69b">
+                    <position>0.112082,-0.017976,-0.0705397</position>
+                    <size>0.0177044</size>
+                    <residual>0.000735938</residual>
+                    <label_id>4</label_id>
+                </marker>
+                <marker id="0:d69e">
+                    <position>0.0396574,0.000365421,-0.118089</position>
+                    <size>0.0158223</size>
+                    <residual>0.000687767</residual>
+                    <label_id>5</label_id>
+                </marker>
+                <marker id="0:c3d8">
+                    <position>0.0522956,0.0707326,0.024399</position>
+                    <size>0.00919325</size>
+                    <residual>0.000598375</residual>
+                    <label_id>6</label_id>
+                </marker>
+                <marker id="0:c3de">
+                    <position>-0.0975246,0.0737758,-0.00403292</position>
+                    <size>0.0186941</size>
+                    <residual>0.000723582</residual>
+                    <label_id>7</label_id>
+                </marker>
+            </markers>
+            <properties>
+                <property>
+                    <name>NodeName</name>
+                    <value>drone_1</value>
+                    <defaultValue>drone_1</defaultValue>
+                </property>
+                <property>
+                    <name>Color</name>
+                    <value>16775334</value>
+                    <defaultValue>16775334</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayLabel</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayMarkerQuality</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayModelReplace</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>UserData</name>
+                    <value>5</value>
+                    <defaultValue>5</defaultValue>
+                </property>
+                <property>
+                    <name>MinimumMarkerCount</name>
+                    <value>3</value>
+                </property>
+                <property>
+                    <name>MaxMarkerDeflection</name>
+                    <value>0.003000</value>
+                    <defaultValue>0.003000</defaultValue>
+                </property>
+                <property>
+                    <name>Smoothing</name>
+                    <value>0.000000</value>
+                </property>
+                <property>
+                    <name>PredictionTime</name>
+                    <value>0.004000</value>
+                </property>
+                <property>
+                    <name>TrackingAlgorithmLevel</name>
+                    <value>0</value>
+                </property>
+                <property>
+                    <name>AutoTrackingAlgorithm</name>
+                    <value>Marker Based</value>
+                    <defaultValue>Marker Based</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation0</name>
+                    <value>-0.141974,-0.00243273,0.0643694</value>
+                    <defaultValue>-0.141974,-0.00243273,0.0643694</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation1</name>
+                    <value>-0.0528486,0.036686,-0.00862002</value>
+                    <defaultValue>-0.0528486,0.036686,-0.00862002</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation2</name>
+                    <value>0.0430834,-0.0166427,0.132879</value>
+                    <defaultValue>0.0430834,-0.0166427,0.132879</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation3</name>
+                    <value>0.112082,-0.017976,-0.0705397</value>
+                    <defaultValue>0.112082,-0.017976,-0.0705397</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation4</name>
+                    <value>0.0396574,0.000365421,-0.118089</value>
+                    <defaultValue>0.0396574,0.000365421,-0.118089</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation5</name>
+                    <value>0.0522956,0.0707326,0.024399</value>
+                    <defaultValue>0.0522956,0.0707326,0.024399</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation6</name>
+                    <value>-0.0975246,0.0737758,-0.00403292</value>
+                    <defaultValue>-0.0975246,0.0737758,-0.00403292</defaultValue>
+                </property>
+            </properties>
+            <MarkerNames ReorderMarkers="true">
+                <!--To rename markers, modify the value in the "name" tag.-->
+                <Marker name="Marker1" oldName="Marker1"/>
+                <Marker name="Marker2" oldName="Marker2"/>
+                <Marker name="Marker3" oldName="Marker3"/>
+                <Marker name="Marker4" oldName="Marker4"/>
+                <Marker name="Marker5" oldName="Marker5"/>
+                <Marker name="Marker6" oldName="Marker6"/>
+                <Marker name="Marker7" oldName="Marker7"/>
+                <!--Renaming markers added to a skeletons: If a fourth marker is added manually to the head of a skeleton, then add a tag such as <Marker name="Head_4" oldName="Head_4" /> where the values in name and oldName are the bone segment (case matters) followed by the marker number.-->
+                <!--Skeleton Bone Segment Names: Head, Neck, Chest, Ab, Hip, LShoulder, LUArm, LFArm, LHand, RShoulder, RUArm, RFArm, RHand, LThigh, LShin, LFoot, LToe, RThigh, RShin, RFoot, RToe.-->
+                <!--If "ReorderMarkers = True" the order here persists into the labeling pane.-->
+            </MarkerNames>
+            <MarkerColors>
+                <!--The "name" tag in this section corresponds with the "name" values in <MarkerNames>.-->
+                <Marker name="Marker1" color="166 248 255" movable="false"/>
+                <Marker name="Marker2" color="166 248 255" movable="false"/>
+                <Marker name="Marker3" color="166 248 255" movable="false"/>
+                <Marker name="Marker4" color="166 248 255" movable="false"/>
+                <Marker name="Marker5" color="166 248 255" movable="false"/>
+                <Marker name="Marker6" color="166 248 255" movable="false"/>
+                <Marker name="Marker7" color="166 248 255" movable="false"/>
+                <!--If nothing appears in this section it is because you need to update or generate colors. You can do this in the asset's context menu.-->
+                <!--The movable="false" tag currently is not functioning.-->
+            </MarkerColors>
+            <MarkerSticks>
+                <!--The "origin" and "end" tags in this section correspond with the "name" values in <MarkerNames>-->
+            </MarkerSticks>
+        </rigid_body>
+        <rigid_body version="1.1" id="a7ac9e89a5808e9d:6b8f6b462a2c11ea">
+            <markers>
+                <marker id="0:c3c1">
+                    <position>0.0236026,-0.0557593,0.0219854</position>
+                    <size>0.0132767</size>
+                    <residual>5.60382e-005</residual>
+                    <label_id>1</label_id>
+                </marker>
+                <marker id="0:c3e2">
+                    <position>-0.0358581,-0.0261525,0.0266736</position>
+                    <size>0.0146552</size>
+                    <residual>0.000559293</residual>
+                    <label_id>2</label_id>
+                </marker>
+                <marker id="0:c3f5">
+                    <position>0.0122554,0.0819118,-0.048659</position>
+                    <size>0.01777</size>
+                    <residual>0.000111221</residual>
+                    <label_id>3</label_id>
+                </marker>
+            </markers>
+            <properties>
+                <property>
+                    <name>NodeName</name>
+                    <value>default 01</value>
+                    <defaultValue>default 01</defaultValue>
+                </property>
+                <property>
+                    <name>Color</name>
+                    <value>16771840</value>
+                    <defaultValue>16771840</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayLabel</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayMarkerQuality</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>DisplayModelReplace</name>
+                    <value>true</value>
+                    <defaultValue>true</defaultValue>
+                </property>
+                <property>
+                    <name>UserData</name>
+                    <value>6</value>
+                    <defaultValue>6</defaultValue>
+                </property>
+                <property>
+                    <name>MinimumMarkerCount</name>
+                    <value>3</value>
+                </property>
+                <property>
+                    <name>MaxMarkerDeflection</name>
+                    <value>0.003000</value>
+                    <defaultValue>0.003000</defaultValue>
+                </property>
+                <property>
+                    <name>Smoothing</name>
+                    <value>0.000000</value>
+                </property>
+                <property>
+                    <name>PredictionTime</name>
+                    <value>0.004000</value>
+                </property>
+                <property>
+                    <name>TrackingAlgorithmLevel</name>
+                    <value>0</value>
+                </property>
+                <property>
+                    <name>AutoTrackingAlgorithm</name>
+                    <value>Marker Based</value>
+                    <defaultValue>Marker Based</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation0</name>
+                    <value>0.0236026,-0.0557593,0.0219854</value>
+                    <defaultValue>0.0236026,-0.0557593,0.0219854</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation1</name>
+                    <value>-0.0358581,-0.0261525,0.0266736</value>
+                    <defaultValue>-0.0358581,-0.0261525,0.0266736</defaultValue>
+                </property>
+                <property>
+                    <name>MarkerLocation2</name>
+                    <value>0.0122554,0.0819118,-0.048659</value>
+                    <defaultValue>0.0122554,0.0819118,-0.048659</defaultValue>
+                </property>
+            </properties>
+            <MarkerNames ReorderMarkers="true">
+                <!--To rename markers, modify the value in the "name" tag.-->
+                <Marker name="Marker1" oldName="Marker1"/>
+                <Marker name="Marker2" oldName="Marker2"/>
+                <Marker name="Marker3" oldName="Marker3"/>
+                <!--Renaming markers added to a skeletons: If a fourth marker is added manually to the head of a skeleton, then add a tag such as <Marker name="Head_4" oldName="Head_4" /> where the values in name and oldName are the bone segment (case matters) followed by the marker number.-->
+                <!--Skeleton Bone Segment Names: Head, Neck, Chest, Ab, Hip, LShoulder, LUArm, LFArm, LHand, RShoulder, RUArm, RFArm, RHand, LThigh, LShin, LFoot, LToe, RThigh, RShin, RFoot, RToe.-->
+                <!--If "ReorderMarkers = True" the order here persists into the labeling pane.-->
+            </MarkerNames>
+            <MarkerColors>
+                <!--The "name" tag in this section corresponds with the "name" values in <MarkerNames>.-->
+                <Marker name="Marker1" color="0 235 255" movable="false"/>
+                <Marker name="Marker2" color="0 235 255" movable="false"/>
+                <Marker name="Marker3" color="0 235 255" movable="false"/>
+                <!--If nothing appears in this section it is because you need to update or generate colors. You can do this in the asset's context menu.-->
+                <!--The movable="false" tag currently is not functioning.-->
+            </MarkerColors>
+            <MarkerSticks>
+                <!--The "origin" and "end" tags in this section correspond with the "name" values in <MarkerNames>-->
+            </MarkerSticks>
+        </rigid_body>
+    </NodeAssets>
+    <PaneManager>
+        <Panes>
+            <PANE_12>
+                <ControlDeck CurrentProperty="2"/>
+            </PANE_12>
+            <PANE_22/>
+            <PANE_23>
+                <DataManager>
+                    <Table SelectedModel="Advanced" Sort="3" SortOrder="0">
+                        <Model Name="Simple" ReadOnly="1" TreeOpen="0" Widths="36,35,35,336,39,39,56,59,54,63,169,110,105,110,200"/>
+                        <Model Name="Advanced" ReadOnly="1" TreeOpen="0" Widths="36,35,35,252,39,39,56,59,54,63,169,110,105,110,200"/>
+                        <Model Name="Classic" ReadOnly="1" TreeOpen="0" Widths="36,35,35,195,39,39,56,59,54,63,127,110,105,110,200"/>
+                        <Model Name="Custom 1" ReadOnly="0" TreeOpen="0" Visibility="0,3,4,5" Order="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14" Widths="36,35,35,252,39,39,56,59,54,63,128,110,105,110,200"/>
+                        <Model Name="boh" ReadOnly="0" TreeOpen="0" Visibility="0,3,4,5" Order="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14" Widths="0"/>
+                    </Table>
+                </DataManager>
+            </PANE_23>
+            <PANE_24>
+                <Assets>
+                    <Table SelectedModel="Simple" Sort="1" SortOrder="0">
+                        <Model Name="Simple" ReadOnly="0" TreeOpen="0" Visibility="0,1,2,3" Order="0,1,2,3" Widths="0"/>
+                    </Table>
+                </Assets>
+            </PANE_24>
+            <PANE_25/>
+            <PANE_26/>
+            <PANE_27/>
+            <PANE_28/>
+        </Panes>
+    </PaneManager>
+</Profile>
