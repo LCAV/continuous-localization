@@ -31,14 +31,17 @@ Not that for some plotting and saving functionalities, you need to have *LaTeX* 
 
 ## Contents
 
-### Scripts
-- *generate_results*: code to generate the results for different algorithms (see table in paper).
-
 ### Notebooks
 - *GenerateAllFigures.ipynb*: generate the Figures used in the paper.
+- *PublicDatasets.ipynb*: evaluation of public datasets.
+
+### Scripts (scripts/)
+- *generate_results*: code to generate the results for different algorithms (see table in paper).
 
 ### Other
+- *bin/* Scripts used for formatting and automatic testing of this repository.
 - *datasets/*: Lawnmower and WiFi datasets for range-only localization. See *datasets/README.md* for descriptions.
+
 
 ## Contribute 
 
