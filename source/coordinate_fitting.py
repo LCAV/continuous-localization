@@ -1,7 +1,7 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-coordinate_fitting.py: Fit our model to a trajectory given in coordinates.
+coordinate_fitting.py: Fit the parametric trajectory to given number of coordinates.
+
 """
 
 import numpy as np
@@ -78,35 +78,3 @@ def fit_trajectory(coordinates, times, traj):
     assert basis.shape[1] == coordinates.shape[1], f'{basis.shape, coordinates.shape}'
     coeffs_hat = solve_for_coeffs(coordinates, basis)
     return np.array(coeffs_hat, dtype=np.float32)
-
-
-if __name__ == "__main__":
-    n_complexity = 11
-    dim = 2
-    model = 'full_bandlimited'
-    trajectory = Trajectory(n_complexity=n_complexity, dim=dim, model=model, full_period=True)
-
-    # load real coordinates (choose one)
-    # fnames = ['results/fitting/circle', 'results/fitting/complicated', 'results/fitting/plaza2']
-    fnames = ['results/fitting/plaza2']
-    for fname in fnames:
-        coords_original = np.loadtxt(fname + '.txt', delimiter=',')
-
-        # create a new trajectory
-        new_trajectory = trajectory.copy()
-
-        # fit coefficients of new trajectory
-        coeffs, times = fit_trajectory_and_times(coords_original, new_trajectory, max_iter=10)
-        new_trajectory.set_coeffs(coeffs=coeffs)
-
-        # plot results
-        basis = new_trajectory.get_basis(times=times)
-        coords_reconstructed = new_trajectory.get_sampling_points(basis=basis)
-        plt.figure()
-        plt.title('Trajectory fitting result')
-        plt.plot(*coords_original, color='green', label='original1')
-        plt.plot(*coords_reconstructed, color='green', linestyle=':', label='reconstructed1')
-        plt.legend()
-        plt.savefig(fname + '_fit.png')
-        print('saved as', fname + '_fit.png')
-        plt.show()

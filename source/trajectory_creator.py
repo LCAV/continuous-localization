@@ -1,13 +1,13 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 trajectory_creator.py: Creator of used trajectories.
 """
 
+import numpy as np
+
 from evaluate_dataset import convert_room_to_robot
 from global_variables import ROBOT_HEIGHT
 from trajectory import Trajectory
-import numpy as np
 
 end_points_lines_room = {
     '1': [1.198, 1.416, 0.0],

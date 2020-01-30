@@ -1,14 +1,17 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 other_algorithms.py: Baseline algorithms to compare against. 
 """
+
 import pdb
 
 import numpy as np
 from scipy.optimize import least_squares
 
 from pylocus.lateration import SRLS
+
+from coordinate_fitting import fit_trajectory
+from solvers import trajectory_recovery
 
 EPS = 1e-10
 
@@ -366,8 +369,6 @@ def pointwise_rls(D, anchors, traj, indices, grid):
 
 
 def apply_algorithm(traj, D, times, anchors, method='ours'):
-    from coordinate_fitting import fit_trajectory
-    from solvers import trajectory_recovery
     if method == 'ours-weighted':
         basis = traj.get_basis(times=times)
         Chat = trajectory_recovery(D, anchors, basis, weighted=True)

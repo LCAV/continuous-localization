@@ -8,7 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('../source/')
+from os.path import abspath, dirname
+
+sys.path.append(dirname(abspath(__file__)) + '/../source')
+
 
 class TrajectoryCreator:
     def __init__(self, line, fname=''):
@@ -26,6 +29,7 @@ class TrajectoryCreator:
         cid_press = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         cid_motion = self.fig.canvas.mpl_connect('motion_notify_event', self.onmotion)
         cid_release = self.fig.canvas.mpl_connect('button_release_event', self.onrelease)
+        cid_release = self.fig.canvas.mpl_connect('close_event', self.onclose)
         self.cids = [cid_press, cid_motion, cid_release]
         plt.show()
 
@@ -49,6 +53,9 @@ class TrajectoryCreator:
     def onrelease(self, event):
         self.start = False
 
+    def onclose(self, event):
+        self.start = False
+
         if self.fname != '':
             self.fig.savefig(self.fname + '.png')
             coords = np.array([self.xs, self.ys])
@@ -61,6 +68,12 @@ class TrajectoryCreator:
 
 if __name__ == "__main__":
     from plotting_tools import make_dirs_safe
+    from coordinate_fitting import fit_trajectory_and_times
+    from trajectory import Trajectory
+
+    fname = '../results/fitting/plaza'
+
+    # draw a trajectory
     fig, ax = plt.subplots()
     ax.set_xlim([0, 10])
     ax.set_ylim([0, 10])
@@ -69,9 +82,29 @@ if __name__ == "__main__":
     ax.legend()
     ax.set_aspect('equal')
 
-    fname = '../results/fitting/plaza'
     make_dirs_safe(fname)
     print('Saving as {} as soon as figure is closed.'.format(fname))
 
     ch = TrajectoryCreator(line, fname)
     ch.connect()
+
+    # fit the trajectory
+    coords_original = np.loadtxt(fname + '.txt', delimiter=',')
+    n_complexity = 11
+    dim = 2
+    model = 'full_bandlimited'
+    trajectory = Trajectory(n_complexity=n_complexity, dim=dim, model=model, full_period=True)
+    coeffs, times = fit_trajectory_and_times(coords_original, trajectory, max_iter=10)
+    trajectory.set_coeffs(coeffs=coeffs)
+
+    # plot results
+    basis = trajectory.get_basis(times=times)
+    coords_reconstructed = trajectory.get_sampling_points(basis=basis)
+    plt.figure()
+    plt.title('Trajectory fitting result')
+    plt.plot(*coords_original, color='green', label='original')
+    plt.plot(*coords_reconstructed, color='green', linestyle=':', label='reconstructed')
+    plt.legend()
+    plt.savefig(fname + '_fit.png')
+    print('Saved as', fname + '_fit.png')
+    plt.show()

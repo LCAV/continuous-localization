@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from itertools import cycle
 import matplotlib.pyplot as plt
 from matplotlib import ticker

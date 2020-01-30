@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 trajectory.py: Contains the Trajectory class.
@@ -7,13 +6,14 @@ The units can be interpreted as 1m.
 
 """
 
-import numpy as np
-import math
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
-from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
-
 import copy
+import math
+
+from matplotlib.patches import Circle
+import matplotlib.pyplot as plt
+import numpy as np
+
+from global_variables import DIM, TMAX, TAU, ROBOT_WIDTH, EPSILON
 
 
 class Trajectory(object):

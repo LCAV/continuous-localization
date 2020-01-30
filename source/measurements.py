@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 measurements.py: Functions to generate measurements from setup. 
@@ -11,7 +10,7 @@ EPS = 1e-10
 
 
 def add_noise(D, noise_sigma, noise_to_square=False):
-    " Add noise to distances (not squared), leaving out zero distances. "
+    """ Add noise to distances (not squared), leaving out zero distances. """
     D_noisy = np.copy(D)
 
     if noise_sigma > 0:
@@ -53,88 +52,14 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
     Create a mask of shape n_anchors x n_measurements.
     
     :param strategy: strategy to use. Currently implemented:
-    - 'minimal': We randomly delete measures such that we only keep measurements from
-    exactly dim+1 anchors, and we have measurements at at least n_complexity different time instances, 
-    where dim is the dimension and n_complexity the complexity of the setup. 
-    - 'simple': The first point sees D+1 anchors, and the next K-1 points see only anchor 0 and 1.
-    - 'single': The first d+1 points see d+1 different anchors, all following points see exactly one anchor.
     - 'uniform': Choose uniformly the n_missing (passed via **kwargs) missing measurements
     - 'single_time': At each time/position there is at most one measurement
-
     """
     if seed is not None:
         np.random.seed(seed)
 
     mask = np.empty((n_samples, n_anchors))
-
-    if strategy == 'minimal':
-        mask[:, :] = 0.0
-        n_complexity = kwargs.get('n_complexity')
-        dim = kwargs.get('dim')
-        n_added = kwargs.get('n_added', 0)
-
-        required_samples = dim * n_complexity  # optimal case for quadratic problem
-        required_samples = dim * n_complexity + 2 * n_complexity - 1  # optimal case for linearized problem
-
-        required_anchors = dim + 1
-
-        # indices of anchors
-        anchors_seen = np.random.choice(n_anchors, size=required_anchors, replace=False)
-        # each anchor gets measured by a random sample.
-        samples_ = np.random.choice(n_samples, size=required_anchors, replace=True)
-
-        n_already_seen = len(set(samples_))
-        if verbose:
-            print('already got measurements from {}'.format(set(samples_)))
-
-        samples_missing = set(range(n_samples)).difference(set(samples_))
-        samples_missing = list(samples_missing)
-
-        n_missing = required_samples - n_already_seen
-
-        samples_seen = np.random.choice(samples_missing, size=n_missing, replace=False)
-        #print('got measurements from {} too'.format(samples_seen))
-        anchors_ = np.random.choice(anchors_seen, size=n_missing, replace=True)
-
-        mask[samples_, anchors_seen] = 1.0
-        mask[samples_seen, anchors_] = 1.0
-
-        samples_nnz, anchors_nnz = np.where(mask)
-
-        assert len(set(anchors_nnz)) == required_anchors
-        assert len(set(samples_nnz)) == required_samples
-
-        # randomly add more measurements.
-        ns, ms = np.where(mask == 0)
-        indices = range(len(ns))
-        chosen_indices = np.random.choice(indices, size=n_added, replace=False)
-        mask[ns[chosen_indices], ms[chosen_indices]] = 1.0
-
-    elif strategy == 'simple':
-        dim = kwargs.get('dim')
-        n_complexity = kwargs.get('n_complexity')
-
-        mask[:, :] = 0.0
-        mask[0, :dim + 1] = 1.0
-        mask[1:n_complexity, :dim] = 1.0
-        mask[n_complexity - 1, dim - 1] = 0.0
-        assert np.sum(mask) == dim * n_complexity, np.sum(mask)
-
-    elif strategy == 'single':
-        mask[:, :] = 0.0
-        dim = kwargs.get('dim')
-
-        # the first d+1 points see d+1 different anchors.
-        mask[range(dim + 1), range(dim + 1)] = 1.0
-
-        # all following points see exactly one anchor.
-        choice = np.arange(mask.shape[1])
-        indices = np.random.choice(choice, size=mask.shape[0] - dim - 1, replace=True)
-        for i, idx in enumerate(indices):
-            mask[dim + 1 + i, idx] = 1.0
-        assert np.sum(mask) == mask.shape[0]
-
-    elif strategy == 'uniform':
+    if strategy == 'uniform':
         mask[:, :] = 1.0
         n_missing = kwargs.get('n_missing', 0)
 
@@ -151,17 +76,16 @@ def create_mask(n_samples, n_anchors, strategy, seed=None, verbose=False, **kwar
         # assert correct number of missing measurements
         idx = np.where(mask == 0.0)
         assert n_missing == len(idx[0])
-
     elif strategy == 'single_time':
         n_missing = kwargs.get('n_missing', 0)
         if n_samples < n_missing:
-            raise ValueError("to many measurements {}<{} requested".format(n_samples, n_missing))
+            raise ValueError("too many measurements {}<{} requested".format(n_samples, n_missing))
         mask[:, :] = 0.0
         idx_f = np.random.choice(n_samples, n_samples - n_missing, replace=False)
         idx_a = np.random.choice(n_anchors, n_samples - n_missing, replace=True)
         mask[idx_f, idx_a] = 1.0
     else:
-        raise ValueError('{} is not a valid strategy'.format(strategy))
+        raise NotImplementedError(strategy)
 
     return mask
 

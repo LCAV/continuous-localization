@@ -1,21 +1,19 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 public_data_utils.py: Functions related specifically to the public datasets.
 
-The goal of these functions is to create generic pandas dataframes that can be further processed using functions in evaluate_dataset.
-
+The goal of these functions is to create generic pandas dataframes that can be further processed
+using functions in evaluate_dataset.
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+from scipy.io import loadmat
 
 from evaluate_dataset import format_anchors_df, format_data_df
 from evaluate_dataset import add_gt_raw, apply_distance_gt
-from plotting_tools import savefig
-from solvers import trajectory_recovery
+from trajectory_creator import get_trajectory
 
 # Need to give different systems a name.
 gt_system_id = "GT"
@@ -24,8 +22,6 @@ gt_anchor_id = "GT"
 
 
 def read_dataset(filename, verbose=False):
-    from trajectory_creator import get_trajectory
-    from scipy.io import loadmat
     traj = get_trajectory(filename)
 
     dataname = filename.split('/')[-1].split('.')[0]

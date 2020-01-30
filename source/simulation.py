@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 simulation.py: Generate random trajectories and noisy distance estimates, reconstruct trajectory and save errors.  
@@ -146,9 +145,9 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                                          n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == semidef_relaxation_noiseless):
                                     X = semidef_relaxation_noiseless(D_topright,
-                                                                   anchors_coord,
-                                                                   basis,
-                                                                   chosen_solver=cvxpy.CVXOPT)
+                                                                     anchors_coord,
+                                                                     basis,
+                                                                     chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
                                 elif solver == 'trajectory_recovery':
                                     P_hat = trajectory_recovery(D_topright, anchors_coord, basis)

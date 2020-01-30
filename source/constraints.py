@@ -1,13 +1,8 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-constraints.py: Generate constraints for semidefinite relaxations. 
+constraints.py: Generate constraints for trajectory_recovery and semidefinite relaxations.
 
-This module can be used to generate constraints on Z and on coeffs.
-
-For Z: 
-    Z = [I_D coeffs; coeffs^T L]
-
+Note that Z is defined as Z = [I_D coeffs; coeffs^T L]
 """
 
 from global_variables import DIM

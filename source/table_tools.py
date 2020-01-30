@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 table_tools.py: tools for printing tables to be readily imported in latex.
