@@ -14,7 +14,7 @@ import logging
 
 from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise, create_anchors
-from solvers import OPTIONS, semidefRelaxationNoiseless, rightInverseOfConstraints, trajectory_recovery
+from solvers import OPTIONS, semidef_relaxation_noiseless, trajectory_recovery
 from trajectory import Trajectory
 import hypothesis as h
 
@@ -144,22 +144,19 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             try:
                                 assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
                                                          n_complexity), "insufficient rank"
-                                if (solver is None) or (solver == semidefRelaxationNoiseless):
-                                    X = semidefRelaxationNoiseless(D_topright,
+                                if (solver is None) or (solver == semidef_relaxation_noiseless):
+                                    X = semidef_relaxation_noiseless(D_topright,
                                                                    anchors_coord,
                                                                    basis,
                                                                    chosen_solver=cvxpy.CVXOPT)
                                     P_hat = X[:DIM, DIM:]
-                                elif solver == 'rightInverseOfConstraints':
-                                    X = rightInverseOfConstraints(D_topright, anchors_coord, basis)
-                                    P_hat = X[:DIM, DIM:]
                                 elif solver == 'trajectory_recovery':
                                     P_hat = trajectory_recovery(D_topright, anchors_coord, basis)
-                                elif solver == 'weightedPseudoInverse':
+                                elif solver == 'weighted_trajectory_recovery':
                                     P_hat = trajectory_recovery(D_topright, anchors_coord, basis, weighted=True)
                                 else:
                                     raise ValueError(
-                                        'Solver needs to be "semidefRelaxationNoiseless", "rightInverseOfConstraints"'
+                                        'Solver needs to be "semidef_relaxation_noiseless", "rightInverseOfConstraints"'
                                         ' or "trajectory_recovery"')
 
                                 # calculate reconstruction error with respect to distances

@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 solvers.py: Algorithms used to estimate coefficients from distance measurements. 
@@ -38,7 +37,7 @@ OPTIONS = {
 """
 
 
-def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
+def semidef_relaxation_noiseless(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
     """ Solve semidefinite feasibility problem of sensor localization problem. 
 
     .. centered::
@@ -51,7 +50,7 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
 
         Z \succeq 0
 
-    parameters are same as for semidefRelaxation. 
+    parameters are same as for semidef_relaxation. 
     """
 
     # overwrite predefined options with kwargs.
@@ -86,7 +85,7 @@ def semidefRelaxationNoiseless(D_topright, anchors, basis, chosen_solver=cp.SCS,
     return Z.value
 
 
-def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
+def semidef_relaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs):
     """ Solve semidefinite feasibility problem of sensor localization problem. 
 
     .. centered::
@@ -103,10 +102,11 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs
     In following, N is number of measurements, M is nmber of anchors, dim is dimension 
     and K is trajectory complexity. 
 
-    :param D_topright: N x M
-    :param anchors: dim x M
-    :param basis: K x N
+    :param D_topright: squared distance measurements N x M
+    :param anchors: anchor coordinates dim x M
+    :param basis: basis functions K x N
 
+    :return: trajectory coefficients dim x K
     """
 
     # overwrite predefined options with kwargs.
@@ -148,33 +148,10 @@ def semidefRelaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwargs
     return Z.value
 
 
-def rightInverseOfConstraints(D_topright, anchors, basis):
-    """ Solve linearised sensor localization problem. 
-
-    parameters are same as for semidefRelaxation. 
-    """
-
-    dim, M = anchors.shape
-    K = basis.shape[0]
-
-    #get constraints
-    ConstraintsMat, ConstraintsVec = get_constraints_matrix(D_topright, anchors, basis)
-    ConstraintsMat = np.array(ConstraintsMat)
-    ConstraintsVec = np.array(ConstraintsVec)
-
-    #apply right inverse
-    u, s, vh = np.linalg.svd(ConstraintsMat, full_matrices=False)
-    num_zero_SVs = len(np.where(s < 1e-10)[0])
-    ConstraintsMat_inv = vh[:-num_zero_SVs, :].T @ np.diag(1 / s[:-num_zero_SVs]) @ u[:, :len(s) - num_zero_SVs].T
-    Z_hat = ConstraintsMat_inv @ ConstraintsVec  #right inverse
-    Z_hat = Z_hat.reshape([dim + K, dim + K])
-    return Z_hat
-
-
 def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weighted=False):
     """ Solve linearised sensor localization problem. 
 
-    First parameters are same as for :func:`.semidefRelaxation`. 
+    First parameters are same as for :func:`.semidef_relaxation`. 
 
     :param average_with_Q: option to improve noise robustness by averaging the 
                            estimate of P with the knowledge we have for Q=P^TP
@@ -227,14 +204,3 @@ def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weight
         #TODO PROJECT ONTO AFFINE SUBSPACE
 
     return P_hat
-
-
-def exact_solution(D_topright, anchors, basis, method='grid', verbose=False):
-    """ Compute the exact solution.  Just a wrapper of the function compute_exact from exact_solution, added here for consistency.
-    """
-    from exact_solution import compute_exact
-    return compute_exact(D_topright, anchors, basis, method=method, verbose=verbose)
-
-
-if __name__ == "__main__":
-    print('nothing happens when running this module.')

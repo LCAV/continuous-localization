@@ -45,6 +45,8 @@ class TestExact(unittest.TestCase):
         eps = 1e-10
         self.assertTrue(np.all(abs(f_multidim(anchors, basis, D_topright, trajectory.coeffs)) < eps))
         self.assertTrue(abs(f_onedim(anchors, basis, D_topright, trajectory.coeffs)) < eps)
+        coeffs_hat = np.squeeze(compute_exact(D_topright, anchors, basis))
+        np.testing.assert_allclose(coeffs_hat, trajectory.coeffs)
 
 
 if __name__ == "__main__":

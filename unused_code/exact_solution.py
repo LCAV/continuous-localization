@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 exact_solution.py: Find exact solutoin to the optimization problem.  
@@ -61,7 +60,6 @@ def objective_root(coeffs, anchors, basis, D):
     if len(all_constraints) > dim * K:
         print('Warning: dropping some of the measurements in objective_root.')
     return all_constraints[:dim * K]
-    #return np.full((dim * K, ), f_onedim(anchors, basis, D, coeffs))
 
 
 def quadratic_constraint(coeffs_vec, anchor, distance, basis):
@@ -189,21 +187,8 @@ def compute_exact(D_topright, anchors, basis, guess=None, method='least_squares'
     else:
         raise NotImplementedError('Not implemented:{}'.format(method))
 
-
-if __name__ == "__main__":
-    from measurements import get_measurements, create_anchors
-    from trajectory import Trajectory
-
-    trajectory = Trajectory(n_complexity=3, dim=2, model='polynomial')
-    np.random.seed(1)
-    anchors = create_anchors(dim=2, n_anchors=4)
-    trajectory.set_coeffs(seed=1)
-
-    n_samples = 10
-    basis, D = get_measurements(trajectory, anchors, n_samples)
-
-    assert np.isclose(f_onedim(anchors, basis, D, trajectory.coeffs), 0)
-    assert np.allclose(f_multidim(anchors, basis, D, trajectory.coeffs), 0)
-
-    coeffs_hat = compute_exact(D, anchors, basis)
-    np.testing.assert_allclose(coeffs_hat, trajectory.coeffs)
+def exact_solution(D_topright, anchors, basis, method='grid', verbose=False):
+    """ Compute the exact solution.  Just a wrapper of the function compute_exact from exact_solution, used to be in solvers.py module but not used anymore.
+    """
+    from exact_solution import compute_exact
+    return compute_exact(D_topright, anchors, basis, method=method, verbose=verbose)

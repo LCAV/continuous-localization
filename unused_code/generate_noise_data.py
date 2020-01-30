@@ -34,7 +34,7 @@ parameters = [
         'noise_sigmas': noise_simgas,
         'success_thresholds': [0.0] * len(noise_simgas),
         "noise_to_square": False,
-        'solver': 'weightedPseudoInverse',
+        'solver': 'weighted_trajectory_recovery',
         'sampling_strategy': 'single_time'
     },
     {

@@ -152,30 +152,6 @@ def get_constraints_symmetry(n_complexity, dim=DIM, vectorized=True, A=None, b=N
     return A, b
 
 
-def get_constraints_matrix(D_topright, anchors, basis):
-    """ Generates all possible vectorized constraints and returns full matrix and vector. 
-    
-    Results A, b contains (in this order): 
-    
-    - D constraints (get_constraints_D)
-    - identity constraints (get_constraint_identity)
-    - symmetry constraints (get_constraints_symmetry) 
-    
-    """
-    A = []
-    b = []
-
-    n_complexity = basis.shape[0]
-
-    get_constraints_D(D_topright, anchors, basis, vectorized=True, A=A, b=b)
-    get_constraints_identity(n_complexity, vectorized=True, A=A, b=b)
-    get_constraints_symmetry(n_complexity, vectorized=True, A=A, b=b)
-
-    A = np.array(A)
-    b = np.array(b)
-    return A, b
-
-
 def get_C_constraints(D_topright, anchors, basis, weighted=False):
     """ Return constraints TA, TB, and vector b as defined in paper.
 
