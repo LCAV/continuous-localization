@@ -93,7 +93,7 @@ if [ "$IPYTHON_FILES" ]; then
   echo 'Formatting staged jupyter notebook files. . .'
 
   for file in ${IPYTHON_FILES[@]}; do
-    ./scripts/remove_output ${file} 
+    ./bin/remove_output ${file} 
   done
 
   CHANGED_FILES=(`git diff --name-only ${IPYTHON_FILES[@]}`)

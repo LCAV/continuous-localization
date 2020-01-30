@@ -13,11 +13,11 @@ THIS_PATH=(`pwd`)
 echo $THIS_PAtH
 
 if [ "$GIT_FILES" ]; then
-  ln -s $THIS_PATH/scripts/pre-commit $THIS_PATH/.git/hooks/pre-commit
+  ln -s $THIS_PATH/bin/pre-commit $THIS_PATH/.git/hooks/pre-commit
   echo "created symbolic link $THIS_PATH/.git/hooks/pre-commit"
 else
   echo 'You have to run the script from the git root directory:'
-  echo '    ./scripts/setup_repository'
+  echo '    ./bin/setup_repository'
   exit 1
 fi
 
