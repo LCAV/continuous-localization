@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 evaluate_dataset.py: Functions and pipeline to evaluate datasets.
@@ -14,43 +13,27 @@ import pandas as pd
 import matplotlib.pylab as plt
 import scipy as sp
 
-# These system_ids are used by the python pipeline, but will be changed to human-readable
-# "GT" and "Range", respectively.
+# These system_ids are used by the python measurement pipeline, 
+# but will be changed to better-readable "GT" and "Range", respectively.
 from global_variables import TANGO_SYSTEM_ID, RTT_SYSTEM_ID
 
-#### Geometry.
+### IO 
 
-
-def convert_room_to_robot(x_room):
-    """ Convert coordinates in room reference to robot reference. 
-    """
-    assert x_room.shape[0] == 3
-    assert x_room.ndim > 1 and x_room.shape[1] >= 1
-
-    from math import cos, sin, pi
-
-    theta = pi / 2.0
-    R = np.array([[cos(theta), -sin(theta), 0], [sin(theta), cos(theta), 0], [0, 0, 1]])
-    #origin = np.array([3.4, 3.58, 0.0]).reshape((3, 1))
-    origin = np.array([3.58, 3.4, 0.0]).reshape((3, 1))
-    x_robot = R.dot(x_room - origin)
-    return x_robot
-
-
-#### Dataset processing.
-
-
-def apply_anchor_id(row):
-    return row.anchor_id.strip()
-
-
-def apply_system_id(row, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
-    if row.system_id == range_system_id:
-        return 'Range'
-    elif row.system_id == gt_system_id:
-        return 'GT'
+def read_correct_dataset(datafile, anchors_df, use_raw=False):
+    if use_raw:
+        data_df = read_dataset(datafile, anchors_df)
+        print('reading', datafile)
+        data_df = add_gt_raw(data_df, t_window=0.1)
+        data_df.loc[:, 'distance_tango'] = data_df.apply(lambda row: apply_distance_gt(row, anchors_df), axis=1)
     else:
-        return row.system_id  # do not change.
+        datafile_root = datafile.split('.')[0]
+        resample_name = datafile_root + '_resampled.pkl'
+        print('reading', resample_name)
+        data_df = pd.read_pickle(resample_name)
+        change_system_ids(data_df)
+        data_df = add_gt_resampled(data_df, anchors_df)
+        data_df = format_data_df(data_df, anchors_df)
+    return data_df
 
 
 def read_anchors_df(anchorsfile):
@@ -101,6 +84,145 @@ def format_data_df(data_df, anchors_df=None, gt_system_id=TANGO_SYSTEM_ID, range
     if anchors_df is not None:
         data_df.loc[:, "anchor_name"] = data_df.apply(lambda row: apply_name(row, anchors_df), axis=1)
     return data_df
+
+
+def change_system_ids(data_df):
+    """ Temporary fix while results are still saved with all system ids. """
+    if 'Tango' in data_df.system_id.unique():
+        data_df.loc[data_df.system_id == 'Tango', 'system_id'] = 'GT'
+    if 'RTT' in data_df.system_id.unique():
+        data_df.loc[data_df.system_id == 'RTT', 'system_id'] = 'Range'
+
+
+def apply_anchor_id(row):
+    return row.anchor_id.strip()
+
+
+def apply_system_id(row, gt_system_id=TANGO_SYSTEM_ID, range_system_id=RTT_SYSTEM_ID):
+    if row.system_id == range_system_id:
+        return 'Range'
+    elif row.system_id == gt_system_id:
+        return 'GT'
+    else:
+        return row.system_id  # do not change.
+
+
+#### Geometry.
+
+
+def convert_room_to_robot(x_room):
+    """ Convert coordinates in room reference to robot reference. 
+    """
+    assert x_room.shape[0] == 3
+    assert x_room.ndim > 1 and x_room.shape[1] >= 1
+
+    from math import cos, sin, pi
+
+    theta = pi / 2.0
+    R = np.array([[cos(theta), -sin(theta), 0], [sin(theta), cos(theta), 0], [0, 0, 1]])
+    #origin = np.array([3.4, 3.58, 0.0]).reshape((3, 1))
+    origin = np.array([3.58, 3.4, 0.0]).reshape((3, 1))
+    x_robot = R.dot(x_room - origin)
+    return x_robot
+
+
+def match_reference(reference, points):
+    """ Rotate and shift points to mach reference positions as closely as possible.
+    Note that the order of points matters, not only their position.
+
+    :param reference: 2D array of size (dimension, number of points), that does not change
+    :param points: 2D array of points to rotate, the same size as reference
+    :return:
+        a pair (rotated points, (rotation matrix, rotation center, reference center of mass)))
+    """
+    assert reference.shape == points.shape
+    reference_center = np.mean(reference, axis=1)
+    reference -= reference_center[:, None]
+    rotation_center = np.mean(points, axis=1)
+    points -= rotation_center[:, None]
+    rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
+    points = rotation @ points
+    points += reference_center[:, None]
+    return points, (rotation, rotation_center, reference_center)
+
+
+#### Dataset processing.
+
+
+def compute_distance_matrix(data_df,
+                            anchors_df,
+                            anchor_names=None,
+                            times=None,
+                            chosen_distance='distance',
+                            dimension=3,
+                            robot_height=0):
+    """
+    :param data_df: dataset which has time, distance, anchor_id data.
+    :param anchors_df: dataset of anchors data. 
+    :param anchor_names: list of anchor names to use. Set to None to use all.
+    :param times: the measurement times which we want to use. Set to None to use all.
+    :param chosen_distance: name of distance column to use.
+    :param dimension: calculate distances in this dimension (2 or 3)
+    :param robot_height: if dimension is 2, use this for robot height.
+
+    :return: squared distance matrix of shape n_measurements x n_anchors.
+    """
+
+    if anchor_names is None:
+        anchor_names = list(anchors_df.anchor_name.unique())
+    if times is None:
+        times = list(data_df.timestamp.unique())
+
+    n_times = len(times)
+    n_anchors = len(anchor_names)
+
+    D_topright_real = np.zeros((n_times, n_anchors))
+
+    i = 0
+    actually_used_times = []
+    for t in times:
+        this_slice = data_df[(data_df.anchor_name.isin(anchor_names)) & (data_df.timestamp == t)]
+
+        if len(this_slice) == 0:
+            continue
+
+        # this can be done more elegantly with pandas
+        for anchor_name in this_slice.anchor_name:
+            a_id = anchor_names.index(anchor_name)
+            distance = this_slice.loc[this_slice.anchor_name == anchor_name, chosen_distance].values[0]
+            if dimension == 3:
+                D_topright_real[i, a_id] = distance**2
+            else:
+                if chosen_distance != 'distance_tango_2D':  # we already did this correction.
+                    if not (anchor_name in anchors_df.anchor_name.unique()):
+                        raise ValueError('{} not in {}'.format(anchor_name, anchors_df.anchor_name.unique()))
+                    anchor_height = anchors_df[anchors_df.anchor_name == anchor_name].pz
+                    distance_sq = distance**2 - (anchor_height - robot_height)**2
+                else:
+                    distance_sq = distance**2
+                D_topright_real[i, a_id] = distance_sq
+
+        actually_used_times.append(t)
+        i += 1
+    # If some times did not have valid measurements (not correct anchors, etc.)
+    # then there might be some trailing all-zero rows.
+
+    D_topright_real[np.isnan(D_topright_real)] = 0.0
+    return D_topright_real[:i, :], actually_used_times
+
+
+def compute_anchors(anchors_df, anchor_names=None):
+    """ Sort anchors according to names, and return coordinates"""
+    if anchor_names is not None:
+        anchors_df = anchors_df.set_index('anchor_name')
+        anchors_df = anchors_df.loc[anchor_names]
+        anchors_df.reset_index(drop=False, inplace=True)
+    all_ax = ['px', 'py', 'pz']
+    for ax in all_ax:
+        if any(np.isnan(anchors_df.loc[:, ax].values.astype(np.float32))):
+            all_ax.remove(ax)
+    anchors = anchors_df.loc[:, all_ax].values.astype(np.float32).T
+    return anchors
 
 
 def resample(data_df, t_range=[0, 100], t_delta=0.5, t_window=1.0, system_id="Range"):
@@ -407,146 +529,3 @@ def find_calibration_data(tango_df, start_move_times, start_move_indices, max_le
     # make last trajectory go until the end of dataset.
     calibration_data['trajectory'][-1].append(np.inf)
     return calibration_data
-
-
-def match_reference(reference, points):
-    """ Rotate and shift points to mach reference positions as closely as possible.
-    Note that the order of points matters, not only their position.
-
-    :param reference: 2D array of size (dimension, number of points), that does not change
-    :param points: 2D array of points to rotate, the same size as reference
-    :return:
-        a pair (rotated points, (rotation matrix, rotation center, reference center of mass)))
-    """
-    assert reference.shape == points.shape
-    reference_center = np.mean(reference, axis=1)
-    reference -= reference_center[:, None]
-    rotation_center = np.mean(points, axis=1)
-    points -= rotation_center[:, None]
-    rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
-    points = rotation @ points
-    points += reference_center[:, None]
-    return points, (rotation, rotation_center, reference_center)
-
-
-def apply_rotation_and_translations(points, rotation, rotation_center, reference_center):
-    """
-    NOT CURRENTLY USED (but can be useful at some point).
-
-    Rotate and translate points with the transformation returned by match_reference
-    Can be applied to arbitrary number of points.
-
-    :param points: points to rotate, matrix of size (dimension, number of points), points to rotate
-    :param rotation: rotation matrix of size (dimension, dimension)
-    :param rotation_center: rotation center, vector of length dimension
-    :param reference_center: center of mas of the reference frame, where the points will be shifted,
-    vector of length dimension
-
-    :return:
-        rotated points
-    """
-    points -= rotation_center[:, None]
-    points = rotation @ points
-    points += reference_center[:, None]
-    return points
-
-
-def change_system_ids(data_df):
-    """ Temporary fix while results are still saved with all system ids. """
-    if 'Tango' in data_df.system_id.unique():
-        data_df.loc[data_df.system_id == 'Tango', 'system_id'] = 'GT'
-    if 'RTT' in data_df.system_id.unique():
-        data_df.loc[data_df.system_id == 'RTT', 'system_id'] = 'Range'
-
-
-def read_correct_dataset(datafile, anchors_df, use_raw=False):
-    if use_raw:
-        data_df = read_dataset(datafile, anchors_df)
-        print('reading', datafile)
-        data_df = add_gt_raw(data_df, t_window=0.1)
-        data_df.loc[:, 'distance_tango'] = data_df.apply(lambda row: apply_distance_gt(row, anchors_df), axis=1)
-    else:
-        datafile_root = datafile.split('.')[0]
-        resample_name = datafile_root + '_resampled.pkl'
-        print('reading', resample_name)
-        data_df = pd.read_pickle(resample_name)
-        change_system_ids(data_df)
-        data_df = add_gt_resampled(data_df, anchors_df)
-        data_df = format_data_df(data_df, anchors_df)
-    return data_df
-
-
-def compute_distance_matrix(data_df,
-                            anchors_df,
-                            anchor_names=None,
-                            times=None,
-                            chosen_distance='distance',
-                            dimension=3,
-                            robot_height=0):
-    """
-    :param data_df: dataset which has time, distance, anchor_id data.
-    :param anchors_df: dataset of anchors data. 
-    :param anchor_names: list of anchor names to use. Set to None to use all.
-    :param times: the measurement times which we want to use. Set to None to use all.
-    :param chosen_distance: name of distance column to use.
-    :param dimension: calculate distances in this dimension (2 or 3)
-    :param robot_height: if dimension is 2, use this for robot height.
-
-    :return: squared distance matrix of shape n_measurements x n_anchors.
-    """
-
-    if anchor_names is None:
-        anchor_names = list(anchors_df.anchor_name.unique())
-    if times is None:
-        times = list(data_df.timestamp.unique())
-
-    n_times = len(times)
-    n_anchors = len(anchor_names)
-
-    D_topright_real = np.zeros((n_times, n_anchors))
-
-    i = 0
-    actually_used_times = []
-    for t in times:
-        this_slice = data_df[(data_df.anchor_name.isin(anchor_names)) & (data_df.timestamp == t)]
-
-        if len(this_slice) == 0:
-            continue
-
-        # this can be done more elegantly with pandas
-        for anchor_name in this_slice.anchor_name:
-            a_id = anchor_names.index(anchor_name)
-            distance = this_slice.loc[this_slice.anchor_name == anchor_name, chosen_distance].values[0]
-            if dimension == 3:
-                D_topright_real[i, a_id] = distance**2
-            else:
-                if chosen_distance != 'distance_tango_2D':  # we already did this correction.
-                    if not (anchor_name in anchors_df.anchor_name.unique()):
-                        raise ValueError('{} not in {}'.format(anchor_name, anchors_df.anchor_name.unique()))
-                    anchor_height = anchors_df[anchors_df.anchor_name == anchor_name].pz
-                    distance_sq = distance**2 - (anchor_height - robot_height)**2
-                else:
-                    distance_sq = distance**2
-                D_topright_real[i, a_id] = distance_sq
-
-        actually_used_times.append(t)
-        i += 1
-    # If some times did not have valid measurements (not correct anchors, etc.)
-    # then there might be some trailing all-zero rows.
-
-    D_topright_real[np.isnan(D_topright_real)] = 0.0
-    return D_topright_real[:i, :], actually_used_times
-
-
-def compute_anchors(anchors_df, anchor_names=None):
-    """ Sort anchors according to names, and return coordinates"""
-    if anchor_names is not None:
-        anchors_df = anchors_df.set_index('anchor_name')
-        anchors_df = anchors_df.loc[anchor_names]
-        anchors_df.reset_index(drop=False, inplace=True)
-    all_ax = ['px', 'py', 'pz']
-    for ax in all_ax:
-        if any(np.isnan(anchors_df.loc[:, ax].values.astype(np.float32))):
-            all_ax.remove(ax)
-    anchors = anchors_df.loc[:, all_ax].values.astype(np.float32).T
-    return anchors
