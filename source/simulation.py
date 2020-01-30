@@ -143,7 +143,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             try:
                                 assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
                                                          n_complexity), "insufficient rank"
-                                if (solver is None) or (solver == semidef_relaxation_noiseless):
+                                if (solver is None) or (solver == "semidef_relaxation_noiseless"):
                                     X = semidef_relaxation_noiseless(D_topright,
                                                                      anchors_coord,
                                                                      basis,
@@ -154,9 +154,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 elif solver == 'weighted_trajectory_recovery':
                                     P_hat = trajectory_recovery(D_topright, anchors_coord, basis, weighted=True)
                                 else:
-                                    raise ValueError(
-                                        'Solver needs to be "semidef_relaxation_noiseless", "rightInverseOfConstraints"'
-                                        ' or "trajectory_recovery"')
+                                    raise NotImplementedError(solver)
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)

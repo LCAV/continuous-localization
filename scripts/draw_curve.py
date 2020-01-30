@@ -56,12 +56,14 @@ class TrajectoryCreator:
     def onclose(self, event):
         self.start = False
 
-        if self.fname != '':
+        coords = np.array([self.xs, self.ys])
+        if (self.fname != '') and (len(self.xs) > 0):
             self.fig.savefig(self.fname + '.png')
-            coords = np.array([self.xs, self.ys])
             np.savetxt(self.fname + '.txt', coords, fmt='%.5f', delimiter=',')
 
             print('Saved as {}.txt and *.png'.format(self.fname))
+        elif len(self.xs) == 0:
+            print('Warning: empty trajectory, did not save.')
 
         [self.fig.canvas.mpl_disconnect(cid) for cid in self.cids]
 

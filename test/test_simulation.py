@@ -28,7 +28,9 @@ class TestSimulation(unittest.TestCase):
 
     def test_simulations(self):
         try:
-            run_simulation(self.parameters, self.outfolder, solver="rightInverseOfConstraints")
+            run_simulation(self.parameters, self.outfolder, solver="trajectory_recovery")
+            run_simulation(self.parameters, self.outfolder, solver="weighted_trajectory_recovery")
+            run_simulation(self.parameters, self.outfolder, solver="semidef_relaxation_noiseless")
         except RuntimeError as e:
             self.fail("run_simulation raised exception: " + str(e))
 
