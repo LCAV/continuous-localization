@@ -3,10 +3,10 @@
 """
 constraints.py: Generate constraints for semidefinite relaxations. 
 
-This module can be used to generate constraints on Z and on C.  
+This module can be used to generate constraints on Z and on coeffs.
 
 For Z: 
-    Z = [I_D C; C^T L]
+    Z = [I_D coeffs; coeffs^T L]
 
 """
 

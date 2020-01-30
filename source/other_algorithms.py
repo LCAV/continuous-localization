@@ -120,7 +120,7 @@ def cost_function(C_vec, D_sq, A, F, squared=False):
 
 
 def split_cost_function(X_vec, D_sq, A, F, squared=True):
-    """ Return cost of distance squared, but with cost function split into C and C'C:=L. Therefore the optimization variable is bigger but we only care about the first K*dim elements.
+    """ Return cost of distance squared, but with cost function split into coeffs and coeffs'coeffs:=L. Therefore the optimization variable is bigger but we only care about the first K*dim elements.
 
     :param X_vec: vector of trajectory coefficients and its squares, of length (dim*K+K*K)
     :param D_sq: squared distance matrix (N x M)
@@ -188,7 +188,7 @@ def cost_jacobian(C_vec, D_sq, A, F, squared=True):
         f_n = F[:, n]
         assert len(f_n) == K
 
-        # factor is the derivative of the norm squared with respect to C matrix.
+        # factor is the derivative of the norm squared with respect to coeffs matrix.
         factor = -2 * (A[:, m_n] - C_k.dot(f_n)).reshape((dim, 1)).dot(f_n.reshape((1, -1)))  # dim x K
         if (np.abs(l_n) > EPS):
             jacobian_mat = -2 * np.sqrt(np.abs(l_n)) * factor
@@ -207,7 +207,7 @@ def least_squares_lm(D, anchors, basis, x0, verbose=False, cost='simple', jacobi
     :param cost: Cost function to use, can be either:
         - 'squared': squared distances
         - 'simple': non-squared distances
-        - 'split': split the cost in C'C=L and C, optimize for whole thing at once.
+        - 'split': split the cost in coeffs'coeffs=L and coeffs, optimize for whole thing at once.
     """
     dim = anchors.shape[0]
     M = anchors.shape[1]
@@ -366,7 +366,7 @@ def pointwise_rls(D, anchors, traj, indices, grid):
 
 
 def apply_algorithm(traj, D, times, anchors, method='ours'):
-    from fit_curve import fit_trajectory
+    from coordinate_fitting import fit_trajectory
     from solvers import trajectory_recovery
     if method == 'ours-weighted':
         basis = traj.get_basis(times=times)

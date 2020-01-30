@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.io import loadmat
 import seaborn as sns
 
-from fit_curve import fit_trajectory
+from coordinate_fitting import fit_trajectory
 from other_algorithms import apply_algorithm, error_measure, cost_function
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']

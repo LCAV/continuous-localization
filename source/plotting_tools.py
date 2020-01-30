@@ -336,7 +336,7 @@ def plot_complexities(traj, times, results, points_gt=None, ax=None, verbose=Fal
     i = 0
     measure = 'mse'
     for label, (Chat, points) in results.items():
-        color = f'C{i}'
+        color = f'coeffs{i}'
         i += 1
         if Chat is not None:
             traj.set_coeffs(coeffs=Chat)
@@ -370,12 +370,12 @@ def plot_probabilities(ranks, params, directory="results/ranks/", save=False):
         plt.plot(x,
                  np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
                  label="mean rank, {} anchors".format(n_anchors),
-                 color="C{}".format(a_idx),
+                 color="coeffs{}".format(a_idx),
                  linestyle='dashed')
         plt.step(x,
                  np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
                  label="probability, {} anchors".format(n_anchors),
-                 color="C{}".format(a_idx),
+                 color="coeffs{}".format(a_idx),
                  where='post')
     if "fixed_n_measurements" in params:
         plt.xlabel("number of positions")

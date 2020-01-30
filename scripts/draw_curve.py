@@ -7,8 +7,8 @@ draw_curve.py: draw trajectory and save coordinates.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from plotting_tools import make_dirs_safe
-
+import sys
+sys.path.append('../source/')
 
 class TrajectoryCreator:
     def __init__(self, line, fname=''):
@@ -39,7 +39,6 @@ class TrajectoryCreator:
     def onmotion(self, event):
         if self.start:
             ix, iy = event.xdata, event.ydata
-            print('x = {}, y = {}'.format(ix, iy))
             if (ix is not None) and (iy is not None):
                 self.xs.append(ix)
                 self.ys.append(iy)
@@ -55,37 +54,24 @@ class TrajectoryCreator:
             coords = np.array([self.xs, self.ys])
             np.savetxt(self.fname + '.txt', coords, fmt='%.5f', delimiter=',')
 
-            print('saved as {}.txt and image'.format(self.fname))
+            print('Saved as {}.txt and *.png'.format(self.fname))
 
         [self.fig.canvas.mpl_disconnect(cid) for cid in self.cids]
 
 
 if __name__ == "__main__":
-    import time
-
+    from plotting_tools import make_dirs_safe
     fig, ax = plt.subplots()
     ax.set_xlim([0, 10])
     ax.set_ylim([0, 10])
 
-    coords = np.loadtxt('fitting/test.txt', delimiter=',')
-    ax.plot(coords[0], coords[1], label='previous', color='red')
     line, = ax.plot([], [], label='new')
     ax.legend()
     ax.set_aspect('equal')
 
-    #fname = 'fitting/random_{:.0f}'.format(time.time())
-    #fname = 'fitting/circle'
-    #fname = 'fitting/complicated'
-    #fname = 'fitting/test'
-    fname = 'fitting/plaza2'
+    fname = '../results/fitting/plaza'
     make_dirs_safe(fname)
-    print('saving as', fname)
+    print('Saving as {} as soon as figure is closed.'.format(fname))
 
     ch = TrajectoryCreator(line, fname)
     ch.connect()
-    print('figure was closed, and now what?')
-
-    coords = np.loadtxt('{}.txt'.format(fname), delimiter=',')
-    print(coords.shape)
-
-    # fit trajectory times and coefficients to obtained trajectory.

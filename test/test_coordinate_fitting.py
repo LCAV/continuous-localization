@@ -1,14 +1,14 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-test_fit_curve.py: Test curve fitting.
+test_coordinate_fitting.py: Test curve fitting.
 """
 
 import common
 
 import unittest
 
-from fit_curve import *
+from coordinate_fitting import *
 
 ATOL = 1e-6
 RTOL = 1e-6
