@@ -172,9 +172,6 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
 
                                 robust_increment(successes, indexes)
 
-                                # TODO: why does this not work?
-                                # assert np.testing.assert_array_almost_equal(X[:DIM, DIM:], trajectory.coeffs)
-
                             except cvxpy.SolverError:
                                 logging.info("could not solve n_positions={}, n_missing={}".format(
                                     n_positions, n_missing))

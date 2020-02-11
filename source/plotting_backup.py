@@ -11,7 +11,7 @@ from plotting_tools import remove_ticks, add_scalebar
 from solvers import trajectory_recovery
 
 
-#TODO(FD) below too functions have too much computation. Try to split
+# TODO(FD) below two functions have too much computation. Try to split
 # plotting and processing more cleanly.
 def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list, srls=False, rls=True):
     import hypothesis as h
@@ -76,7 +76,6 @@ def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list, sr
 
 
 def plot_complexities_old(traj, D, times, anchors, full_df, list_complexities, srls=False, rls=True):
-
     if rls:
         grid = get_grid(anchors, grid_size=0.5)
 

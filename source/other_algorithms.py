@@ -147,7 +147,7 @@ def split_cost_function(X_vec, D_sq, A, F, squared=True):
 
     # TODO(FD): below could be written without for loop,
     # but it is only used for testing so performance does not
-    # matter and I didn't want to spend too much time figuring it out.
+    # matter.
     for n, m in zip(ns, ms):
         cost_n = 0.5 * (np.linalg.norm(A[:, m])**2 - D_sq[n, m])
         t_n = np.r_[np.outer(A[:, m], F[:, n]).reshape((-1, )), np.outer(F[:, n], F[:, n]).reshape((-1, ))]

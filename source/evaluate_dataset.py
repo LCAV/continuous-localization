@@ -430,7 +430,7 @@ def get_length(pos_df, plot=False):
     lengths = np.linalg.norm(v, axis=1)
 
     if plot:
-        # TODO this is numerically bad, velocities are extremely noisy...
+        # Below is numerically bad, velocities are extremely noisy...
         # That's why we are not using velocities but lengths.
         d_times = d_t.values.astype(np.float32).reshape((-1, ))
         velocities = lengths / d_times
@@ -502,7 +502,7 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
 
 def find_end_times(tango_df, plot=False):
     """ Find the tines at which movement ends. """
-    # TODO There is a shift of two here but it doesn't matter for now.
+    # TODO(FD) there is a shift of two here but it doesn't matter for now.
     end_times, end_indices = find_start_times(tango_df, thresh_filter=-0.2, pattern=[-1, -1, 1, 1, 1, 1], plot=plot)
     return end_times, end_indices
 
