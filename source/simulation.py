@@ -154,7 +154,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                 elif solver == 'weighted_trajectory_recovery':
                                     P_hat = trajectory_recovery(D_topright, anchors_coord, basis, weighted=True)
                                 else:
-                                    raise NotImplementedError(solver)
+                                    raise ValueError(solver)
 
                                 # calculate reconstruction error with respect to distances
                                 trajectory_estimated = Trajectory(coeffs=P_hat)

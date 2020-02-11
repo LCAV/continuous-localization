@@ -89,4 +89,4 @@ def get_trajectory(filename, dim=2):
         return Trajectory(dim=2, n_complexity=2, model='polynomial')
 
     else:
-        raise NotImplementedError(filename)
+        raise ValueError(filename)

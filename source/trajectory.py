@@ -91,7 +91,7 @@ class Trajectory(object):
             part = 1.0 if self.params['full_period'] else 0.5
             times = np.linspace(0, part * self.period, n_samples)
         else:
-            raise NotImplementedError(self.model)
+            raise ValueError(self.model)
 
         return times
 
@@ -104,7 +104,7 @@ class Trajectory(object):
         :return: basis vector matrix (n_complexity x n_samples)
         """
         if n_samples is None and times is None:
-            raise NotImplementedError('Need to give times or n_samples.')
+            raise ValueError('Need to give times or n_samples.')
         elif times is None:
             times = self.get_times(n_samples)
         elif times is not None and n_samples is not None:
@@ -112,7 +112,7 @@ class Trajectory(object):
         elif times is not None and n_samples is None:
             n_samples = len(times)
         else:
-            raise NotImplementedError('case not treated:', n_samples, times)
+            raise ValueError('case not treated:', n_samples, times)
 
         k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
         n = np.reshape(times, [1, n_samples])
@@ -131,7 +131,7 @@ class Trajectory(object):
             basis[1::2] = 2 * np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
-            raise NotImplementedError(self.model)
+            raise ValueError(self.model)
 
     def get_basis_prime(self, times=None):
         """ Get basis vector derivatives evaluated at specific times. 
@@ -158,7 +158,7 @@ n_samples)
             basis[1::2] = 4 * np.pi * k[1:] / self.period * np.cos(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
-            raise NotImplementedError(self.model)
+            raise ValueError(self.model)
 
     def get_basis_twoprime(self, times=None):
         """ Get basis vector second derivatives evaluated at specific times. 
@@ -186,7 +186,7 @@ n_samples)
             basis[1::2] = -2 * (2 * np.pi * k[1:] / self.period)**2 * np.sin(2 * np.pi * k[1:] * n / self.period)
             return basis
         else:
-            raise NotImplementedError(self.model)
+            raise ValueError(self.model)
 
     def set_coeffs(self, seed=None, coeffs=None, dimension=5):
         if seed is not None:

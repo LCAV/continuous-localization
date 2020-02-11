@@ -31,7 +31,7 @@ def error_measure(points_gt, points_estimated, measure='mse'):
     elif measure == 'mae':
         return np.mean(np.abs(points_gt - points_estimated))
     else:
-        raise NotImplementedError(measure)
+        raise ValueError(measure)
 
 
 def get_anchors_and_distances(D_sq, idx, dim=2):
@@ -85,8 +85,7 @@ def init_lm(coeffs_real, method='ellipse', **kwargs):
     elif 'real' in method:
         return coeffs_real
     else:
-        raise NotImplementedError(method)
-        return None
+        raise ValueError(method)
 
 
 def cost_function(C_vec, D_sq, A, F, squared=False):
@@ -353,7 +352,7 @@ def pointwise_lateration(D, anchors, traj, indices, method='srls', grid=None):
         elif method == 'rls':
             estimate = RLS(anchors_here, r2, grid=grid)
         else:
-            raise NotImplementedError(method)
+            raise ValueError(method)
 
         points.append(estimate)
         valid_indices.append(idx)
@@ -417,4 +416,4 @@ def apply_algorithm(traj, D, times, anchors, method='ours'):
             Chat = least_squares_lm(D, anchors, basis, c0, cost='simple', jacobian=False)
         return Chat, None, None
     else:
-        raise NotImplementedError(method)
+        raise ValueError(method)
