@@ -20,6 +20,30 @@ gt_system_id = "GT"
 range_system_id = "Range"
 gt_anchor_id = "GT"
 
+# time intervals of zig zag trajectory in which movement is roughly linear.
+TIME_RANGES = [
+    (325, 350),  # backward
+    (375, 393),  # forward
+    (412, 445),
+    (464, 484),
+    (505, 534),
+    (557, 575),
+    (597, 624),
+    (640, 670),
+    (840, 867),
+    (885, 908),
+    (928, 961),
+    (981, 1003),
+    (1027, 1057),
+    (1075, 1095),
+    (1120, 1140),
+    (1160, 1180),
+    (1200, 1230),
+    (1250, 1270),
+    (1290, 1322),
+    (1342, 1358),
+]
+
 
 def read_dataset(filename, verbose=False):
     traj = get_trajectory(filename)

@@ -78,20 +78,6 @@ def generate_results(traj, D_small, times_small, anchors, points_small, methods=
     return current_results
 
 
-def calibrate(original_df, gt_anchor_id='GT'):
-    """ Calibrate for offset and slope. """
-    assert 'distance_gt' in original_df.columns
-    assert 'distance' in original_df.columns
-    for anchor_id, anchor_df in original_df.groupby('anchor_id'):
-        if anchor_id == gt_anchor_id:
-            continue
-        d_gt = anchor_df.distance_gt.values.astype(np.float32)
-        d = anchor_df.distance.values.astype(np.float32)
-        slope, offset = np.polyfit(x=d[~np.isnan(d)], y=d_gt[~np.isnan(d)], deg=1)
-        original_df.loc[original_df.anchor_id == anchor_id, 'distance_calib'] = d * slope + offset
-    print('added distance_calib column.')
-
-
 def add_gt_fitting(traj, times_small, points_small, current_results, n_it=0):
     # fit ground truth to chosen points.
     n_complexity = traj.n_complexity

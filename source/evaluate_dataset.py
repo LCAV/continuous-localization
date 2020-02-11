@@ -13,11 +13,12 @@ import pandas as pd
 import matplotlib.pylab as plt
 import scipy as sp
 
-# These system_ids are used by the python measurement pipeline, 
+# These system_ids are used by the python measurement pipeline,
 # but will be changed to better-readable "GT" and "Range", respectively.
 from global_variables import TANGO_SYSTEM_ID, RTT_SYSTEM_ID
 
-### IO 
+### IO
+
 
 def read_correct_dataset(datafile, anchors_df, use_raw=False):
     if use_raw:
@@ -147,6 +148,20 @@ def match_reference(reference, points):
 
 
 #### Dataset processing.
+
+
+def calibrate(original_df, gt_anchor_id='GT'):
+    """ Calibrate for offset and slope. """
+    assert 'distance_gt' in original_df.columns
+    assert 'distance' in original_df.columns
+    for anchor_id, anchor_df in original_df.groupby('anchor_id'):
+        if anchor_id == gt_anchor_id:
+            continue
+        d_gt = anchor_df.distance_gt.values.astype(np.float32)
+        d = anchor_df.distance.values.astype(np.float32)
+        slope, offset = np.polyfit(x=d[~np.isnan(d)], y=d_gt[~np.isnan(d)], deg=1)
+        original_df.loc[original_df.anchor_id == anchor_id, 'distance_calib'] = d * slope + offset
+    print('added distance_calib column.')
 
 
 def compute_distance_matrix(data_df,

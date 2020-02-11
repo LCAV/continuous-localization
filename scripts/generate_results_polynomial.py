@@ -10,33 +10,10 @@ import matplotlib
 import numpy as np
 import pandas as pd
 
-from public_data_utils import read_dataset, get_plotting_params, get_ground_truth
+from public_data_utils import read_dataset, get_plotting_params, get_ground_truth, TIME_RANGES
 from evaluate_dataset import compute_distance_matrix, compute_anchors
 from generate_results import generate_results, generate_suitable_mask, calibrate, add_gt_fitting
 
-# time intervals in which movement is roughly linear.
-TIME_RANGES = [
-    (325, 350),  # backward
-    (375, 393),  # forward
-    (412, 445),
-    (464, 484),
-    (505, 534),
-    (557, 575),
-    (597, 624),
-    (640, 670),
-    (840, 867),
-    (885, 908),
-    (928, 961),
-    (981, 1003),
-    (1027, 1057),
-    (1075, 1095),
-    (1120, 1140),
-    (1160, 1180),
-    (1200, 1230),
-    (1250, 1270),
-    (1290, 1322),
-    (1342, 1358),
-]
 METHODS = ['ours-weighted', 'ours', 'lm-ours-weighted', 'lm-line', 'srls', 'rls']
 
 if __name__ == "__main__":
