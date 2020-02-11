@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import sys
+sys.path.append('../source')
+
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
@@ -101,3 +104,6 @@ def add_gt_fitting(traj, times_small, points_small, current_results, n_it=0):
                                                      cost_rls=None,
                                                      cost_srls=None)
     return points_fitted
+
+
+# TODO(FD): add main part here if appropriate, or move this file to the source/ folder.

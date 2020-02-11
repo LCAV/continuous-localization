@@ -3,7 +3,9 @@
 """
 generate_results_polynomial.py: Generate polynomial results (average over many linear movements).
 """
-# coding: utf-8
+
+import sys
+sys.path.append('../source/')
 
 import matplotlib.pyplot as plt
 import matplotlib
