@@ -51,7 +51,7 @@ If you want to contribute to this repository, please check CONTRIBUTE.md.
 
 To look at documentation locally, run 
 
-   make html
+    make html
 
 and then open the file `build/html/index.html` in a browser. 
 

@@ -33,12 +33,12 @@ class TestGeometry(unittest.TestCase):
         for i in range(100):
             self.set_measurements(i)
 
-            #check the correct trajectory satisfies constraints
+            # check the correct trajectory satisfies constraints
             e_ds, e_dprimes, deltas = get_constraints_identity(self.traj.n_complexity)
             for e_d, e_dprime, delta in zip(e_ds, e_dprimes, deltas):
                 np.testing.assert_equal(e_d.T @ self.traj.Z_opt @ e_dprime, delta)
 
-            t_mns, D_mns = get_constraints_D(self.D_topright, self.anchors, self.basis)
+            t_mns, D_mns = get_extended_constraints(self.D_topright, self.anchors, self.basis)
 
             for t_mn, D_topright_mn in zip(t_mns, D_mns):
                 t_mn = np.array(t_mn)
@@ -52,18 +52,59 @@ class TestGeometry(unittest.TestCase):
             A, b = get_constraints_identity(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
-            A, b = get_constraints_D(self.D_topright, self.anchors, self.basis, vectorized=True, A=A, b=b)
+            A, b = get_extended_constraints(self.D_topright, self.anchors, self.basis, vectorized=True, A=A, b=b)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
             A, b = get_constraints_symmetry(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
+
+class TestGetFrame(unittest.TestCase):
+    def test_dimensions(self):
+        n_constrains = 5
+        n_positions = 13
+        self.assertEqual((n_constrains, n_positions), get_frame(n_constrains, n_positions).shape)
+
+
+class TestGetLeftSubmatrix(unittest.TestCase):
+    def test_dimensions(self):
+        n_anchors = 3
+        n_constrains = 5
+        n_positions = 13
+        ind_a = [0] * 8
+        ind_b = ind_a
+        anchors = create_anchors(2, n_anchors, check=True)
+        frame = get_frame(n_constrains, n_positions)
+        self.assertEqual((len(ind_a), (anchors.shape[0] + 1) * n_constrains),
+                         get_left_submatrix(ind_a, ind_b, anchors, frame, extended=True).shape)
+        self.assertEqual((len(ind_a), anchors.shape[0] * n_constrains),
+                         get_left_submatrix(ind_a, ind_b, anchors, frame, extended=False).shape)
+
+
+class TestGetRightSubmatrix(unittest.TestCase):
+    def test_dimensions(self):
+        n_constrains = 5
+        n_positions = 13
+        idx_f = [0] * 8
+        frame = get_frame(n_constrains, n_positions)
+        self.assertEqual((len(idx_f), n_constrains - 1), get_right_submatrix(idx_f, frame, reduced=True).shape)
+        self.assertEqual((len(idx_f), n_constrains**2), get_right_submatrix(idx_f, frame, reduced=False).shape)
+
+
+class TestGetConstraints(TestGeometry):
+
+    def test_constraints_dimensions(self):
+        self.set_measurements()
+        T_A, T_B, b = get_constraints(self.D_topright, self.anchors, self.basis)
+        first_dim = len(np.nonzero(self.D_topright)[0])
+        self.assertEqual((first_dim, self.anchors.shape[0] * self.basis.shape[0]), T_A.shape)
+        self.assertEqual((first_dim, self.basis.shape[0] * self.basis.shape[0]), T_B.shape)
+
     def test_C_constraints(self):
-        for i in range(100):
+        for i in range(1):
             self.set_measurements(i)
             L = self.traj.coeffs.T.dot(self.traj.coeffs)
-
-            T_A, T_B, b = get_C_constraints(self.D_topright, self.anchors, self.basis)
+            T_A, T_B, b = get_constraints(self.D_topright, self.anchors, self.basis)
             T = np.c_[T_A, -T_B / 2]
             x = np.r_[self.traj.coeffs.flatten(), L.flatten()]
 
