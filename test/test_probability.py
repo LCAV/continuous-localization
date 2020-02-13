@@ -11,37 +11,7 @@ import common
 from collections import Counter
 import unittest
 
-from hypothesis import *
-import measurements as m
-
-
-class TestGetFrame(unittest.TestCase):
-    def test_dimensions(self):
-        n_constrains = 5
-        n_positions = 13
-        self.assertEqual((n_constrains, n_positions), get_frame(n_constrains, n_positions).shape)
-
-
-class TestGetLeftSubmatrix(unittest.TestCase):
-    def test_dimensions(self):
-        n_anchors = 3
-        n_constrains = 5
-        n_positions = 13
-        ind_a = [0] * 8
-        ind_b = ind_a
-        anchors = m.create_anchors(2, n_anchors, check=True)
-        frame = get_frame(n_constrains, n_positions)
-        self.assertEqual((len(ind_a), (anchors.shape[0] + 1) * n_constrains),
-                         get_left_submatrix(ind_a, ind_b, anchors, frame).shape)
-
-
-class TestGetRightSubmatrix(unittest.TestCase):
-    def test_dimensions(self):
-        n_constrains = 5
-        n_positions = 13
-        idx_f = [0] * 8
-        frame = get_frame(n_constrains, n_positions)
-        self.assertEqual((len(idx_f), n_constrains - 1), get_reduced_right_submatrix(idx_f, frame).shape)
+from probability import *
 
 
 class TestRandomIndexes(unittest.TestCase):
@@ -240,9 +210,9 @@ class TestBounds(unittest.TestCase):
 
     def test_limit_condition(self):
         part = (5, 5, 4, 1, 0)
-        self.assertTrue(limit_condition(part, 3, 4))
-        self.assertTrue(limit_condition(part, 3, 5))
-        self.assertFalse(limit_condition(part, 4, 2))
+        self.assertTrue(full_rank_condition(part, 3, 4))
+        self.assertTrue(full_rank_condition(part, 3, 5))
+        self.assertFalse(full_rank_condition(part, 4, 2))
 
     def test_infinity_anchors(self):
         infinity = probability_upper_bound(self.n_dimensions,

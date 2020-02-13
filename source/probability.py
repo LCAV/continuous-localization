@@ -1,86 +1,29 @@
 # -*- coding: utf-8 -*-
-import numpy as np
-from scipy import special
+"""
+probability.py: Functions to estimate the probability [T_A, T_B] being maximal rank,
+using upper bounds and simulations.
+
+"""
+
 import time
 import warnings
+
+import numpy as np
+from scipy import special
+
+import constraints as c
 import measurements as m
 
 
-def get_frame(n_constraints, n_positions):
-    """Generate frame (basis) the fast way, without crating the trajectory.
-    It speeds up simulations compared to Trajectory.get_basis.
-
-    :param n_constraints: mode size
-    :param n_positions: number of samples
-
-    :return: a frame - an evaluated uniformly basis of bandlimited functions
-    of size (n_constraints x n_positions)
-    """
-    Ks = np.arange(n_constraints).reshape((n_constraints, 1))
-    Ns = np.arange(n_positions).reshape((n_positions, 1))
-    return np.cos(Ks @ Ns.T * np.pi / n_positions)
-
-
-def get_left_submatrix(idx_a, idx_f, anchors, frame):
-    """Generated left submatrix in the extended form.
-
-    The extended form means that anchors are extended by 1 making them n_dimensions+1 dimensional.
-    Trows of the matrix are tensor product of extended anchors and frame vectors,
-    which means that the whole matrix is (n_dimensions+1) * n_constraints x n_measurements dimensional.
-    This is because it seems to be a more natural representation - for localising just one point,
-    the full matrix is reduced to the (extended) left submatrix.
-
-    :param idx_a: list of anchor indexes for each measurement
-    :param idx_f: list of frame indexes for each measurement
-    :param anchors: matrix of all available anchors, of size n_dimensions x n_anchors
-    :param frame: matrix of all frame vectors, of size n_points x n_constraints
-
-    :return: left part of the constrain matrix of size (n_dimensions+1) * n_constraints x n_measurements
-    """
-
-    f_vect = [frame[:, i] for i in idx_f]
-    a_extended = [np.concatenate([anchors[:, a], [1]]) for a in idx_a]
-    matrices = [(a[:, None] @ f[None, :]).flatten() for (f, a) in zip(f_vect, a_extended)]
-    return np.array(matrices)
-
-
-def get_reduced_right_submatrix(idx_f, frame):
-    """Generated right submatrix in the reduced form.
-
-    The extended form means the tensor products of frame vectors are reduced to a basis,
-    which means that the size of the submatrix is (n_constraints - 1) x n_measurements.
-
-    :param idx_f: list of frame indexes for each measurement
-    :param frame: matrix of all frame vectors, of size n_constraints x n_positions
-
-    :return: right part of the constrain matrix of size (n_constraints - 1) x n_measurements.
-    """
-
-    n_constraints, n_positions = frame.shape
-    Ks = np.arange(n_constraints, 2 * n_constraints - 1).reshape((n_constraints - 1, 1))
-    Ns = np.arange(n_positions).reshape((n_positions, 1))
-    extended_frame = np.cos(Ks @ Ns.T * np.pi / n_positions)
-    vectors = [extended_frame[:, idx] for idx in idx_f]
-    matrix = np.array(vectors)
-    return np.array(matrix)
-
-
-def get_full_matrix(idx_a, idx_f, anchors, frame):
-    """ Get full matrix in the reduced form (that can be invertible)
-
-    :param idx_a: list of anchor indexes for each measurement
-    :param idx_f: list of frame indexes for each measurement
-    :param anchors: matrix of all available anchors, of size n_dimensions x n_anchors
-    :param frame: matrix of all frame vectors, of size n_points x n_constraints
-
-    :return: the constrain matrix ((n_dimensions+2) * n_constraints - 1 ) x n_measurements
-    """
-    return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame),
-                           get_reduced_right_submatrix(idx_f, frame)],
-                          axis=1)
-
-
 def random_indexes(n_anchors, n_positions, n_measurements, one_per_time=False):
+    """ Generate a random subset of n_measurements, uniformly over all subsets of this size.
+
+    :param n_anchors: number of anchors available
+    :param n_positions: number of positions/time samples available
+    :param n_measurements: total number of measurements to generate
+    :param one_per_time: bool, if true return at most one measurement per position/time sample
+    :return: a pair of lists (anchor indexes, frame indexes), both of lenght n_measurements
+    """
     if one_per_time:
         if n_positions < n_measurements:
             raise ValueError("to many measurements {}>{} requested".format(n_measurements, n_positions))
@@ -100,34 +43,59 @@ def indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions):
     return matrix
 
 
-def limit_condition(p, bins, measurements):
+def full_rank_condition(p, bins, measurements):
     """
-    Calculate the condition from Theorem 1.
+    Calculate the condition from Theorem 1 in Relax and Recover paper.
 
     :param p: a partition **sorted in a descending order**
     :param bins: minimum number of bins that should be possible to fill (D+1 or K)
     :param measurements: minimum number of measurements per bin (K or D+1)
-    :return:
-        true if the condition is satisfied
+
+    :return: true if the condition is satisfied
     """
     missing = np.clip(measurements - np.array(p[:bins]), a_min=0, a_max=None)
     return np.sum(p[bins:]) >= np.sum(missing)
 
 
-def partitions(n, bins):
-    return _partitions(n, bins, n)
+def partitions(n, n_bins):
+    """ Generator of partitions of number n into n_bins bins
+
+    Generates partitions in inverse-lexicographical order. Does not generate duplicates, that is among all
+    partitions that are permutations of a partition p, it generates only one, the first in inverse-lexicographical
+    order, for example if n=5 and n_bins=3, it will generate (5, 0, 0), but not (0, 5, 0), nor (0, 0, 5).
+
+    This behaviour improves speed of simulations that do not depend on the order of elements in the partition (for
+    example, order in which anchors are numbered does not matter)
+
+    :param n: number to divide into permutations (number of balls to distribute)
+    :param n_bins: number of bins to divide into (number of urns)
+    :return: a n_bins-tuple, next partition in the inverse-lexicographical order.
+    """
+
+    return _partitions(n, n_bins, n)
 
 
-def _partitions(n, bins, previous):
+def _partitions(n, n_bins, previous):
+    """Helper function for partitions"""
+
     if n == 0:
-        yield (0, ) * (bins)
-    elif bins * previous >= n:
+        yield (0, ) * (n_bins)
+    elif n_bins * previous >= n:
         for i in range(max(0, n - previous), n):
-            for p in _partitions(i, bins - 1, n - i):
+            for p in _partitions(i, n_bins - 1, n - i):
                 yield (n - i, ) + p
 
 
 def partition_frequency(partition):
+    """ Calculate the number of partitions that are permutations of partition.
+
+    If all entries of a length n partition are different, then there are n! permutations.
+    But if some entries repeat, we would end up counting some permutations twice, so we divide
+    by the number of permutations within each repeating group
+
+    :param partition: a m-tuple, a partition
+    :return: float, number of partitions that are permutations of partition.
+    """
     total = special.factorial(len(partition))
     _, counts = np.unique(partition, return_counts=True)
     return total / np.prod(special.factorial(counts))
@@ -140,9 +108,13 @@ def probability_upper_bound(n_dimensions,
                             n_measurements,
                             position_wise=False,
                             full_matrix=False):
-    """Calculate upper bound on the probability of matrix being full rank,
-    assuming that the number of measurements is exactly n_constraints * (n_dimensions + 1).
-    This assumption allows for speed up calculations.
+    """Calculate upper bound on the probability of matrix being full rank.
+
+    Can be used to calculate upper bounds anchor-wise or position-wise, since the problem is symmetric.
+    In the first case, it iterates over partitions of n_measurements into n_anchors bins, and for each
+    partition checks if `full_rank_condition` (eq (8), Theorem 1, Relax and Recover paper) is satisfied.
+    If yes, then increase the count of "passing" partitions by the number of permutations of this partition.
+    Finally obtain probability by dividing the "passing" partitions by the total number of partitions.
 
     Performance remarks: the anchor bound computation time depends heavily on the number of anchors,
     and similarly the position bound computation depends heavily on the number of positions/times.
@@ -153,17 +125,17 @@ def probability_upper_bound(n_dimensions,
     :param n_dimensions: number of dimensions D
     :param n_constraints: number of constrains K
     :param n_positions: number of positions along trajectory N, if infinity then the model when each measurement is
-    taken at a different position/time is assumed.
+        taken at a different position/time is assumed.
     :param n_anchors: number of anchors M, if infinity then the model when each anchor is used only in one measurement
-    is assumed. This is not realistic and added only to preserve symmetry (see below).
+        is assumed. This is not realistic and added only to preserve symmetry (see below).
     :param position_wise: if True, calculates the upper bound based on partitions of positions and not anchors.
-    The equations are the same for both cases, but for readability purposes the naming convention for partition of
-    anchors is used rather than abstract notation
+        The equations are the same for both cases, but for readability purposes the naming convention for partition of
+        anchors is used rather than abstract notation
     :param n_measurements: total number of measurements taken
     :param full_matrix: if true, returns the  bound on probability of full matrix being of maximal rank. The two
-    necessary conditions are the left submatrix being full rank and having at least (D+2)K-1 measurements
-    :return:
-        float: upper bound on probability of the left hand side of the matrix being full rank
+        necessary conditions are the left submatrix being full rank and having at least (D+2)K-1 measurements
+
+    :return: float, an upper bound on probability of the left hand side of the matrix being full rank
     """
 
     # Because the bound is symmetric, we can swap constrains and dimensions
@@ -172,22 +144,22 @@ def probability_upper_bound(n_dimensions,
         (n_dimensions, n_constraints) = (n_constraints - 1, n_dimensions + 1)
         (n_anchors, n_positions) = (n_positions, n_anchors)
 
-    if np.isinf(n_anchors):
+    # Check corner cases
+    if np.isinf(n_anchors):  # (just for a speed up)
         return 1.0
 
-    start = time.time()
-    if full_matrix:
-        if n_measurements < (n_dimensions + 2) * n_constraints - 1:
-            return 0
+    # condition (7) from Relax and Recover
+    if full_matrix and (n_measurements < (n_dimensions + 2) * n_constraints - 1):
+        return 0
+
+    start = time.time()  # Time the main loop
     upper_bound_sum = 0
     for partition in partitions(n_measurements, n_anchors):
-        if limit_condition(partition, n_dimensions + 1, n_constraints):
+        if full_rank_condition(partition, n_dimensions + 1, n_constraints):
             new_combinations = partition_frequency(partition)
-            # use limit formulation that does not use n_positions
-            if np.isinf(n_positions):
+            if np.isinf(n_positions):  # use limit formulation that does not use n_positions
                 new_combinations /= np.prod(special.factorial(partition))
-            # use general formulation
-            else:
+            else:  # use general formulation
                 new_combinations *= np.prod(special.binom(n_positions, partition))
             upper_bound_sum += new_combinations
 
@@ -205,6 +177,8 @@ def probability_upper_bound(n_dimensions,
 
 def matrix_rank_experiment(params):
     """Run simulations to estimate probability of matrix being full rank for different number of measurements
+
+    %TODO do we use both options? (number of positions fixed and number of measurements fixed?
 
      :param params: all parameters of the simulation, might contain:
         n_dimensions: number of dimensions
@@ -263,23 +237,23 @@ def matrix_rank_experiment(params):
             else:
                 n_measurements = second_param
             for r in range(params["n_repetitions"]):
-                frame = get_frame(params["n_constraints"], n_positions)
+                frame = c.get_frame(params["n_constraints"], n_positions)
                 try:
                     idx_a, idx_f = random_indexes(n_anchors,
                                                   n_positions,
                                                   n_measurements,
                                                   one_per_time=params["one_per_time"])
                     if params["full_matrix"]:
-                        constraints = get_full_matrix(idx_a, idx_f, anchors, frame)
+                        constraints = c.get_reduced_constraints(idx_a, idx_f, anchors, frame)
                     else:
-                        constraints = get_left_submatrix(idx_a, idx_f, anchors, frame)
+                        constraints = c.get_left_submatrix(idx_a, idx_f, anchors, frame, extended=True)
                     ranks[second_idx, a_idx, r] = np.linalg.matrix_rank(constraints)
                     measurement_matrix = indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions)
-                    if limit_condition(-np.sort(-np.sum(measurement_matrix, axis=0)), params["n_constraints"],
-                                       params["n_dimensions"] + 1):
+                    if full_rank_condition(-np.sort(-np.sum(measurement_matrix, axis=0)), params["n_constraints"],
+                                           params["n_dimensions"] + 1):
                         anchor_condition[second_idx, a_idx, r] = 1
-                    if limit_condition(-np.sort(-np.sum(measurement_matrix, axis=1)), params["n_dimensions"] + 1,
-                                       params["n_constraints"]):
+                    if full_rank_condition(-np.sort(-np.sum(measurement_matrix, axis=1)), params["n_dimensions"] + 1,
+                                           params["n_constraints"]):
                         frame_condition[second_idx, a_idx, r] = 1
                     if ranks[second_idx, a_idx, r] < params["n_constraints"] * (params["n_dimensions"] + 1):
                         if frame_condition[second_idx, a_idx, r] * anchor_condition[second_idx, a_idx, r] == 1:

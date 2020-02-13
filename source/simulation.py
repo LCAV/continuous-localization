@@ -4,7 +4,6 @@ simulation.py: Generate random trajectories and noisy distance estimates, recons
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import cvxpy
 import json
 import os
@@ -13,9 +12,9 @@ import logging
 
 from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise, create_anchors
-from solvers import OPTIONS, semidef_relaxation_noiseless, trajectory_recovery
+from solvers import semidef_relaxation_noiseless, trajectory_recovery
 from trajectory import Trajectory
-import hypothesis as h
+import probability as p
 
 
 def robust_increment(arr, idx):
@@ -141,7 +140,7 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
-                                assert h.limit_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
+                                assert p.full_rank_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
                                                          n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == "semidef_relaxation_noiseless"):
                                     X = semidef_relaxation_noiseless(D_topright,

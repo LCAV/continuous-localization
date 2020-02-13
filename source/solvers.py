@@ -67,7 +67,7 @@ def semidef_relaxation_noiseless(D_topright, anchors, basis, chosen_solver=cp.SC
     Z = cp.Variable((dim + K, dim + K), PSD=True)
 
     e_ds, e_dprimes, deltas = get_constraints_identity(K)
-    t_mns, D_mns = get_constraints_D(D_topright, anchors, basis)
+    t_mns, D_mns = get_extended_constraints(D_topright, anchors, basis)
 
     constraints = []
 
@@ -124,7 +124,7 @@ def semidef_relaxation(D_topright, anchors, basis, chosen_solver=cp.SCS, **kwarg
     eps = cp.Variable((1))
 
     e_ds, e_dprimes, deltas = get_constraints_identity(K)
-    t_mns, D_mns = get_constraints_D(D_topright, anchors, basis)
+    t_mns, D_mns = get_extended_constraints(D_topright, anchors, basis)
 
     constraints = []
 
@@ -163,7 +163,7 @@ def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weight
     K = basis.shape[0]
 
     #get constraints
-    T_A, T_B, b = get_C_constraints(D_topright, anchors, basis, weighted=weighted)
+    T_A, T_B, b = get_constraints(D_topright, anchors, basis, weighted=weighted)
 
     Ns, Ms = np.where(D_topright > 0)
     Ns_that_see_an_anchor = len(np.unique(Ns))
