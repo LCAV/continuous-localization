@@ -1,7 +1,0 @@
-{
-  "anchors_file":"data/anchors/robot_test.csv",
-  "systems": [
-    "rtt", 
-    "tango"
-  ]
-}

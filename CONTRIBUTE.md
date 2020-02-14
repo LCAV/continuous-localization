@@ -7,7 +7,7 @@ Check Guidelines.md for the detailed formatting rules.
 We use automatic `yapf` formatting specified in setup.cfg, and used with yapf version 0.28.0.
 You can run:
 
-    ./scripts/setup_repository
+    ./bin/setup_repository
    
 after cloning the repository in order to set up `yapf` formatter
 and git hook for removing non important changes from Jupyter Notebooks. 
@@ -47,11 +47,11 @@ jupyter nbextension enable freeze/main
 
 You can then test the core notebooks using
 ```
-./scripts/run_important_notebooks
+./bin/run_important_notebooks
 ```
 or test a specific notebook using
 ```
-python scripts/run_notebooks.py <notebook name>
+python bin/run_notebooks.py <notebook name>
 ```
 
 

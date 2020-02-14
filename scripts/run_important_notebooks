@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-./scripts/run_notebooks GenerateAllFigures.ipynb TheoryTesting.ipynb PublicDatasets.ipynb 
