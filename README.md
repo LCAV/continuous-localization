@@ -1,6 +1,6 @@
-# SamplingTrajectories
+# Relax and Recover: Guaranteed Range-Only Continuous Localization 
 
-[![Build Status](https://travis-ci.com/duembgen/SamplingTrajectories.svg?token=VrsjbT3JmKFwqdG5e1cc&branch=master)](https://travis-ci.com/duembgen/SamplingTrajectories)
+[![Build Status](https://travis-ci.com/LCAV/continuous-localization.svg?branch=master)](https://travis-ci.com/LCAV/continuous-localization)
 
 ## Authors
 
@@ -12,9 +12,9 @@ Created by (in alphabetic order):
 
 ## Installation
 
-Get this package using:
+Get this repository using:
 
-    git clone  https://github.com/duembgen/SamplingTrajectories.git
+    git clone  https://github.com/LCAV/continuous-localization.git
 
 You can install all standard python requirements it (at least) two ways:
  
