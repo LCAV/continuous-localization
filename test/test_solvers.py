@@ -7,10 +7,11 @@ from cvxpy import CVXOPT
 import numpy as np
 import unittest
 
-from solvers import *
+from solvers import semidef_relaxation_noiseless
 from trajectory import Trajectory
 from measurements import get_measurements, create_anchors
 
+DIM = 2
 
 class TestSolvers(unittest.TestCase):
     def setUp(self):
@@ -28,7 +29,7 @@ class TestSolvers(unittest.TestCase):
         # get measurements
         self.basis, self.D_topright = get_measurements(self.traj, self.anchors, seed=seed, n_samples=20)
 
-    def test_semidefRelaxationNoiseless(self):
+    def test_semidef_relaxation_noiseless(self):
         """ Check noiseless error. """
 
         for i in range(10):
@@ -36,7 +37,7 @@ class TestSolvers(unittest.TestCase):
             self.set_measurements(seed=i)
 
             # check noiseless methods.
-            X = semidefRelaxationNoiseless(self.D_topright,
+            X = semidef_relaxation_noiseless(self.D_topright,
                                            self.anchors,
                                            self.basis,
                                            chosen_solver=CVXOPT,

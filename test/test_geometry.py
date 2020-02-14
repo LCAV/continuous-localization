@@ -58,12 +58,6 @@ class TestGeometry(unittest.TestCase):
             A, b = get_constraints_symmetry(self.traj.n_complexity, vectorized=True)
             np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
 
-    def test_all_vectorized(self):
-        for i in range(100):
-            self.set_measurements(i)
-            A, b = get_constraints_matrix(self.D_topright, self.anchors, self.basis)
-            np.testing.assert_array_almost_equal(A @ self.traj.Z_opt.flatten(), b)
-
     def test_C_constraints(self):
         for i in range(100):
             self.set_measurements(i)

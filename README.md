@@ -1,6 +1,6 @@
-# SamplingTrajectories
+# Relax and Recover: Guaranteed Range-Only Continuous Localization 
 
-[![Build Status](https://travis-ci.com/duembgen/SamplingTrajectories.svg?token=VrsjbT3JmKFwqdG5e1cc&branch=master)](https://travis-ci.com/duembgen/SamplingTrajectories)
+[![Build Status](https://travis-ci.com/LCAV/continuous-localization.svg?branch=master)](https://travis-ci.com/LCAV/continuous-localization)
 
 ## Authors
 
@@ -12,9 +12,9 @@ Created by (in alphabetic order):
 
 ## Installation
 
-Get this package using:
+Get this repository using:
 
-    git clone  https://github.com/duembgen/SamplingTrajectories.git
+    git clone  https://github.com/LCAV/continuous-localization.git
 
 You can install all standard python requirements it (at least) two ways:
  
@@ -31,14 +31,17 @@ Not that for some plotting and saving functionalities, you need to have *LaTeX* 
 
 ## Contents
 
-### Scripts
-- *generate_results*: code to generate the results for different algorithms (see table in paper).
-
 ### Notebooks
 - *GenerateAllFigures.ipynb*: generate the Figures used in the paper.
+- *PublicDatasets.ipynb*: evaluation of public datasets.
+
+### Scripts (scripts/)
+- *generate_results*: code to generate the results for different algorithms (see table in paper).
 
 ### Other
+- *bin/* Scripts used for formatting and automatic testing of this repository.
 - *datasets/*: Lawnmower and WiFi datasets for range-only localization. See *datasets/README.md* for descriptions.
+
 
 ## Contribute 
 
@@ -48,7 +51,9 @@ If you want to contribute to this repository, please check CONTRIBUTE.md.
 
 To look at documentation locally, run 
 
-   make html
+```
+make html
+```
 
 and then open the file `build/html/index.html` in a browser. 
 

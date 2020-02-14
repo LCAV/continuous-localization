@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# coeffs extensions
 *.so
 
 # Distribution / packaging
@@ -106,14 +106,12 @@ ENV/
 # pytest
 .pytest_cache/
 
+# own files
 Literature/
 results/test
 results/ranks
+results/fitting
 test/results
-fitting/
-experiments/robot_test/plots
-experiments/robot_test/*.pkl
-experiments/robot_test/*.json
 results/*/*.pdf
 results/get_distances/
 results/one_per_time/
