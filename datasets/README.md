@@ -7,10 +7,6 @@ The WiFi and Lawnmower datasets can be automatically downloaded by running the s
 
 ## Dataset descriptions
 
-### Drone datasets
-
-*all folders*: from https://grvc.us.es/staff/felramfab/roslam_datasets/datasets.html.  These datasets are not currently used. 
-
 ### Wifi Indoor localization
 
 
