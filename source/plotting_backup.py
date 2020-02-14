@@ -8,13 +8,13 @@ import numpy as np
 from other_algorithms import pointwise_srls
 from other_algorithms import get_grid, pointwise_rls
 from plotting_tools import remove_ticks, add_scalebar
+from probability import full_rank_condition
 from solvers import trajectory_recovery
 
 
 # TODO(FD) below two functions have too much computation. Try to split
 # plotting and processing more cleanly.
 def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list, srls=False, rls=True):
-    import hypothesis as h
 
     basis = traj.get_basis(times=times)
     fig, axs = plt.subplots(1, len(n_measurements_list), sharex=True, sharey=True)
@@ -36,7 +36,7 @@ def plot_subsample_old(traj, D, times, anchors, full_df, n_measurements_list, sr
             mask = (D_small > 0).astype(np.float)
 
             p = np.sort(np.sum(mask, axis=0))[::-1]
-            if not h.limit_condition(list(p), traj.dim + 1, traj.n_complexity):
+            if not full_rank_condition(list(p), traj.dim + 1, traj.n_complexity):
                 print("insufficient rank")
 
             times_small = np.array(times)[indices]

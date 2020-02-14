@@ -182,7 +182,6 @@ def get_constraints(distance_matrix, anchors, basis, weighted=False):
     :param basis: matrix of all basis vectors, of size n_constraints x n_positions
     :param weighted: bool, if true return measurements and constraints divided by the weight depended on the distance,
         in order to normalise errors. Makes sense only when errors are added to distances
-
     """
 
     verify_dimensions(distance_matrix, anchors, basis)
@@ -214,7 +213,7 @@ def get_right_submatrix(idx_f, frame, reduced=False):
     :param reduced: bool, if true, the reduced form is returned
 
     :return: right part of the constrain matrix of size n_constraints**2 x n_measurements.
-    or (n_constraints - 1) x n_measurements if reduced is true
+        or (n_constraints - 1) x n_measurements if reduced is true
     """
 
     if reduced:
@@ -238,8 +237,11 @@ def get_reduced_constraints(idx_a, idx_f, anchors, frame):
 
     :return: the constrain matrix ((n_dimensions+2) * n_constraints - 1 ) x n_measurements
     """
-    return np.concatenate([get_left_submatrix(idx_a, idx_f, anchors, frame, extended=True),
-                           get_right_submatrix(idx_f, frame, reduced=True)], axis=1)
+    return np.concatenate([
+        get_left_submatrix(idx_a, idx_f, anchors, frame, extended=True),
+        get_right_submatrix(idx_f, frame, reduced=True)
+    ],
+                          axis=1)
 
 
 def get_frame(n_constraints, n_positions):

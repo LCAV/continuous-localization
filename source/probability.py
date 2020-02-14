@@ -15,30 +15,30 @@ import constraints as c
 import measurements as m
 
 
-def random_indexes(n_anchors, n_positions, n_measurements, one_per_time=False):
+def random_indexes(n_anchors, n_times, n_measurements, one_per_time=False):
     """ Generate a random subset of n_measurements, uniformly over all subsets of this size.
 
     :param n_anchors: number of anchors available
-    :param n_positions: number of positions/time samples available
+    :param n_times: number of positions/time samples available
     :param n_measurements: total number of measurements to generate
     :param one_per_time: bool, if true return at most one measurement per position/time sample
     :return: a pair of lists (anchor indexes, frame indexes), both of lenght n_measurements
     """
     if one_per_time:
-        if n_positions < n_measurements:
-            raise ValueError("to many measurements {}>{} requested".format(n_measurements, n_positions))
-        idx_f = np.random.choice(n_positions, n_measurements, replace=False)
+        if n_times < n_measurements:
+            raise ValueError("to many measurements {}>{} requested".format(n_measurements, n_times))
+        idx_f = np.random.choice(n_times, n_measurements, replace=False)
         idx_a = np.random.choice(n_anchors, n_measurements, replace=True)
     else:
-        if n_positions * n_anchors < n_measurements:
-            raise ValueError("to many measurements {}>{}x{} requested ".format(n_measurements, n_positions, n_anchors))
-        indexes = np.random.choice(n_positions * n_anchors, n_measurements, replace=False)
-        idx_a, idx_f = np.unravel_index(indexes, (n_anchors, n_positions))
+        if n_times * n_anchors < n_measurements:
+            raise ValueError("to many measurements {}>{}x{} requested ".format(n_measurements, n_times, n_anchors))
+        indexes = np.random.choice(n_times * n_anchors, n_measurements, replace=False)
+        idx_a, idx_f = np.unravel_index(indexes, (n_anchors, n_times))
     return idx_a.tolist(), idx_f.tolist()
 
 
-def indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions):
-    matrix = np.zeros((n_anchors, n_positions))
+def indexes_to_matrix(idx_a, idx_f, n_anchors, n_times):
+    matrix = np.zeros((n_anchors, n_times))
     matrix[idx_a, idx_f] = 1
     return matrix
 
@@ -103,7 +103,7 @@ def partition_frequency(partition):
 
 def probability_upper_bound(n_dimensions,
                             n_constraints,
-                            n_positions,
+                            n_times,
                             n_anchors,
                             n_measurements,
                             position_wise=False,
@@ -124,7 +124,7 @@ def probability_upper_bound(n_dimensions,
 
     :param n_dimensions: number of dimensions D
     :param n_constraints: number of constrains K
-    :param n_positions: number of positions along trajectory N, if infinity then the model when each measurement is
+    :param n_times: number of positions along trajectory N, if infinity then the model when each measurement is
         taken at a different position/time is assumed.
     :param n_anchors: number of anchors M, if infinity then the model when each anchor is used only in one measurement
         is assumed. This is not realistic and added only to preserve symmetry (see below).
@@ -142,7 +142,7 @@ def probability_upper_bound(n_dimensions,
     # to obtain the second type of bound
     if position_wise:
         (n_dimensions, n_constraints) = (n_constraints - 1, n_dimensions + 1)
-        (n_anchors, n_positions) = (n_positions, n_anchors)
+        (n_anchors, n_times) = (n_times, n_anchors)
 
     # Check corner cases
     if np.isinf(n_anchors):  # (just for a speed up)
@@ -157,10 +157,10 @@ def probability_upper_bound(n_dimensions,
     for partition in partitions(n_measurements, n_anchors):
         if full_rank_condition(partition, n_dimensions + 1, n_constraints):
             new_combinations = partition_frequency(partition)
-            if np.isinf(n_positions):  # use limit formulation that does not use n_positions
+            if np.isinf(n_times):  # use limit formulation that does not use n_times
                 new_combinations /= np.prod(special.factorial(partition))
             else:  # use general formulation
-                new_combinations *= np.prod(special.binom(n_positions, partition))
+                new_combinations *= np.prod(special.binom(n_times, partition))
             upper_bound_sum += new_combinations
 
     end = time.time()
@@ -168,111 +168,65 @@ def probability_upper_bound(n_dimensions,
         print("Upper bound, position {}, measurements {}, elapsed time: {:.2f}s".format(
             n_measurements, position_wise, end - start))
 
-    if np.isinf(n_positions):
+    if np.isinf(n_times):
         common_factor = special.factorial(n_measurements) / (n_anchors**n_measurements)
     else:  # the common factor in this case is the total number of partitions
-        common_factor = 1. / special.binom(n_positions * n_anchors, n_measurements)
+        common_factor = 1. / special.binom(n_times * n_anchors, n_measurements)
     return upper_bound_sum * common_factor
 
 
-def matrix_rank_experiment(params):
+def matrix_rank_experiment(n_dimensions,
+                           n_constraints,
+                           n_times,
+                           n_repetitions,
+                           full_matrix,
+                           n_anchors_list,
+                           one_per_time=False):
     """Run simulations to estimate probability of matrix being full rank for different number of measurements
 
-    %TODO do we use both options? (number of positions fixed and number of measurements fixed?
 
-     :param params: all parameters of the simulation, might contain:
-        n_dimensions: number of dimensions
-        n_constraints: number of constrains / degrees of freedom of the trajectory
-        n_positions: number of positions at which measurements are taken
-        n_repetitions: number of runs with the same parameters
-        full_matrix: if True simulate the whole matrix, otherwise only the left part
-        n_anchors_list: list of number number of anchors f
-        one_per_time: if True, number of measurements per time/position is limited to 1
-        fixed_n_measurements: if present, the number of measurements is fixed, and the number of positions/times very
-        incompatible with `one_per_time`
+     :param n_dimensions: number of dimensions
+     :param n_constraints: number of constrains / degrees of freedom of the trajectory
+     :param n_times: number of positions at which measurements are taken
+     :param n_repetitions: number of runs with the same parameters
+     :param full_matrix: if True simulate the whole matrix, otherwise only the left part
+     :param n_anchors_list: list of numbers of anchors to iterate over
+     :param  one_per_time: if True, number of measurements per time/position is limited to 1
      """
 
-    n_measurements = 0
-    n_positions = 0
-    n_anchors_list = [max(params["n_dimensions"] * n, params["n_dimensions"] + 1) for n in params["n_anchors_list"]]
-    params["n_anchors_list"] = n_anchors_list
-    if 'one_per_time' not in params:
-        params['one_per_time'] = False
+    params = locals()
 
-    # prepare parameters for when the number of measurements is fixed
-    if "fixed_n_measurements" in params:
-        if params["one_per_time"]:
-            warnings.warn("It does not make sense to fix number of measurements and have only one measurement per "
-                          "time. All iterations will give the same result.")
-        if params["fixed_n_measurements"] == 0:
-            n_measurements = (params["n_dimensions"] + 1) * params["n_constraints"]
-            if params["full_matrix"]:
-                n_measurements += params["n_constraints"] - 1
-            params["fixed_n_measurements"] = n_measurements
-        else:
-            n_measurements = params["fixed_n_measurements"]
-        params["min_positions"] = n_measurements if params['one_per_time'] else int(
-            np.ceil(n_measurements / np.min(n_anchors_list)))
-        params["second_key"] = "m{}".format(n_measurements)
-        second_list = list(range(params["min_positions"], params["max_positions"]))
+    n_anchors_list = np.array(n_anchors_list)
+    n_anchors_list = n_anchors_list[n_anchors_list > n_dimensions]
+    if len(n_anchors_list) == 0:
+        raise ValueError('Number of anchors must be bigger than number of dimensions')
+    if len(n_anchors_list) < len(params["n_anchors_list"]):
+        print("Some numbers of anchors are smaller than number of dimensions +1: cropping anchor list")
+        params["n_anchors_list"] = n_anchors_list
 
-    # prepare parameters for when the number of positions is fixed
-    else:
-        n_positions = params["n_positions"]
-        max_measurements = (1 if params["one_per_time"] else (np.min(params["n_anchors_list"]))) * n_positions
-        second_list = list(range(params["n_dimensions"] * params["n_constraints"], max_measurements))
-        params["second_key"] = "p{}".format(n_positions)
-    params["second_list"] = second_list
+    max_measurements = (1 if one_per_time else (np.min(n_anchors_list))) * n_times + 1
+    params["n_measurements_list"] = list(range(n_dimensions * n_constraints, max_measurements))
 
-    ranks = np.zeros((len(second_list), len(n_anchors_list), params["n_repetitions"]))
-    anchor_condition = np.zeros_like(ranks)
-    frame_condition = np.zeros_like(ranks)
-    wrong_matrices = []
+    ranks = np.zeros((len(params["n_measurements_list"]), len(n_anchors_list), n_repetitions))
     for a_idx, n_anchors in enumerate(n_anchors_list):
-        anchors = m.create_anchors(n_anchors=n_anchors, dim=params["n_dimensions"], check=True)
-        # iterate over whatever the second parameter is (number of positions or number of measurements)
-        for second_idx, second_param in enumerate(second_list):
-            if "fixed_n_measurements" in params:
-                n_positions = second_param
-            else:
-                n_measurements = second_param
-            for r in range(params["n_repetitions"]):
-                frame = c.get_frame(params["n_constraints"], n_positions)
+        anchors = m.create_anchors(n_anchors=n_anchors, dim=n_dimensions, check=True)
+        for m_idx, n_measurements in enumerate(params["n_measurements_list"]):
+            for r in range(n_repetitions):
+                frame = c.get_frame(n_constraints, n_times)
                 try:
-                    idx_a, idx_f = random_indexes(n_anchors,
-                                                  n_positions,
-                                                  n_measurements,
-                                                  one_per_time=params["one_per_time"])
-                    if params["full_matrix"]:
+                    idx_a, idx_f = random_indexes(n_anchors, n_times, n_measurements, one_per_time=one_per_time)
+                    if full_matrix:
                         constraints = c.get_reduced_constraints(idx_a, idx_f, anchors, frame)
                     else:
                         constraints = c.get_left_submatrix(idx_a, idx_f, anchors, frame, extended=True)
-                    ranks[second_idx, a_idx, r] = np.linalg.matrix_rank(constraints)
-                    measurement_matrix = indexes_to_matrix(idx_a, idx_f, n_anchors, n_positions)
-                    if full_rank_condition(-np.sort(-np.sum(measurement_matrix, axis=0)), params["n_constraints"],
-                                           params["n_dimensions"] + 1):
-                        anchor_condition[second_idx, a_idx, r] = 1
-                    if full_rank_condition(-np.sort(-np.sum(measurement_matrix, axis=1)), params["n_dimensions"] + 1,
-                                           params["n_constraints"]):
-                        frame_condition[second_idx, a_idx, r] = 1
-                    if ranks[second_idx, a_idx, r] < params["n_constraints"] * (params["n_dimensions"] + 1):
-                        if frame_condition[second_idx, a_idx, r] * anchor_condition[second_idx, a_idx, r] == 1:
-                            wrong_matrices.append({
-                                "constraints": constraints,
-                                "measurements": measurement_matrix,
-                                "second_idx": second_idx,
-                                "a_idx": a_idx
-                            })
+                    ranks[m_idx, a_idx, r] = np.linalg.matrix_rank(constraints)
 
                 except ValueError as e:
-                    ranks[second_idx, a_idx, r] = np.NaN
+                    ranks[m_idx, a_idx, r] = np.NaN
                     print(e)
                     break
 
-    params["anchor_condition"] = anchor_condition
-    params["frame_condition"] = frame_condition
-    params["wrong_matrices"] = wrong_matrices
-    params["max_rank"] = (params["n_dimensions"] + 1) * params["n_constraints"]
-    if params["full_matrix"]:
-        params["max_rank"] += params["n_constraints"] - 1
+    params["max_rank"] = (n_dimensions + 1) * n_constraints
+    if full_matrix:
+        params["max_rank"] += n_constraints - 1
     return ranks, params

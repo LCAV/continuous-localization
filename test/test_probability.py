@@ -41,35 +41,31 @@ class TestMatrixRankExperiments(unittest.TestCase):
         experiment_params = {
             "n_dimensions": 1,
             "n_constraints": 2,
-            "fixed_n_measurements": 0,
-            "max_positions": 5,
+            "n_times": 2,
             "n_repetitions": 1,
             "full_matrix": False,
-            "n_anchors_list": [1],
+            "n_anchors_list": [2],
         }
-        ranks, params = matrix_rank_experiment(experiment_params)
+        ranks, params = matrix_rank_experiment(**experiment_params)
         self.assertEqual((3, 1, 1), ranks.shape)
         # there might be seed changes that we don't want to care about,
         # but we want the ranks to be reasonable
         self.assertTrue(([2, 2, 2] <= ranks[:, 0, 0]).all())
         self.assertTrue(([4, 4, 4] >= ranks[:, 0, 0]).all())
         self.assertEqual(2, params["n_anchors_list"][0])
-        self.assertEqual(4, params["fixed_n_measurements"])
 
     def test_full_single_run(self):
         experiment_params = {
             "n_dimensions": 1,
             "n_constraints": 2,
-            "fixed_n_measurements": 0,
-            "max_positions": 4,
+            "n_times": 3,
             "n_repetitions": 1,
             "full_matrix": True,
-            "n_anchors_list": [1],
+            "n_anchors_list": [2],
         }
-        ranks, params = matrix_rank_experiment(experiment_params)
-        self.assertEqual((1, 1, 1), ranks.shape)
-        self.assertEqual(5, ranks[0, 0, 0])
-        self.assertEqual(5, params["fixed_n_measurements"])
+        ranks, params = matrix_rank_experiment(**experiment_params)
+        self.assertEqual((5, 1, 1), ranks.shape)
+        self.assertEqual(5, ranks[-1, 0, 0])
 
 
 class TestPartitions(unittest.TestCase):
@@ -217,7 +213,7 @@ class TestBounds(unittest.TestCase):
     def test_infinity_anchors(self):
         infinity = probability_upper_bound(self.n_dimensions,
                                            self.n_constrains,
-                                           n_positions=30,
+                                           n_times=30,
                                            n_anchors=np.Infinity,
                                            n_measurements=30)
         self.assertAlmostEqual(1, infinity)
@@ -226,13 +222,13 @@ class TestBounds(unittest.TestCase):
         for n_anchors in range(3, 6):
             infinity = probability_upper_bound(self.n_dimensions,
                                                self.n_constrains,
-                                               n_positions=100000000,
+                                               n_times=100000000,
                                                n_anchors=n_anchors,
                                                n_measurements=15)
 
             large = probability_upper_bound(self.n_dimensions,
                                             self.n_constrains,
-                                            n_positions=np.Infinity,
+                                            n_times=np.Infinity,
                                             n_anchors=n_anchors,
                                             n_measurements=15)
             self.assertAlmostEqual(large, infinity)

@@ -356,37 +356,32 @@ def plot_complexities(traj, times, results, points_gt=None, ax=None, verbose=Fal
     return ax
 
 
-def plot_probabilities(ranks, params, directory="results/ranks/", save=False):
-    key = "_d{}_c{}_{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["second_key"],
-                                      params["full_matrix"])
+def plot_probabilities(probabilities,
+                       params,
+                       ax,
+                       directory="results/probabilities/",
+                       save=False,
+                       label="estimated",
+                       **kwargs):
+    key = "_d{}_c{}_p{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["n_times"],
+                                       params["full_matrix"])
 
-    max_rank = params["max_rank"]
-    n_repetitions = ranks.shape[2]
-    x = np.array(params["second_list"])
-    if "fixed_n_measurements" not in params:
-        x = x / max_rank
+    x = np.array(params["n_measurements_list"]) / params["max_rank"]
 
-    f, ax = plt.subplots()
     for a_idx, n_anchors in enumerate(params["n_anchors_list"]):
-        plt.plot(x,
-                 np.mean(ranks[:, a_idx, :], axis=1) / max_rank,
-                 label="mean rank, {} anchors".format(n_anchors),
-                 color="C{}".format(a_idx),
-                 linestyle='dashed')
         plt.step(x,
-                 np.sum(ranks[:, a_idx, :] >= max_rank, axis=1) / n_repetitions,
-                 label="probability, {} anchors".format(n_anchors),
+                 probabilities[:, a_idx],
+                 label="{} probability, {} anchors".format(label, n_anchors),
                  color="C{}".format(a_idx),
-                 where='post')
-    if "fixed_n_measurements" in params:
-        plt.xlabel("number of positions")
-    else:
-        plt.xlabel("number of measurements")
-        formatter_text = '%g (D+1)K + (K-1)' if params["full_matrix"] else '%g (D+1)K'
-        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(formatter_text))
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(base=1))
-    plt.grid()
+                 where='post',
+                 **kwargs)
+    plt.xlabel("number of measurements")
+    formatter_text = '%g (D+1)K + (K-1)' if params["full_matrix"] else '%g (D+1)K'
+    ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(formatter_text))
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(base=1))
+    ax.set_ylim(0)
     plt.legend()
+    ax.grid(b=True)
     params["directory"] = directory
     if save:
         plt.ylim(bottom=0)
