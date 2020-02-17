@@ -101,6 +101,11 @@ def plot_noise(key,
                anchors=False,
                lines=None,
                ax=None):
+    """Plot results of the simulations of the influence of noise on the recovery.
+
+    :param key: directory of the data
+    :param error_types: which data to load from the directory ('absolute-errors', 'relative-errors' or 'errors')"""
+
     if error_types is None:
         error_types = ['absolute-errors', 'relative-errors', 'errors']
 
@@ -160,8 +165,7 @@ def plot_noise(key,
         ax1.set_xticks(measurements[::int(len(measurements) / 5)])
         ax1.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
         ax1.get_xaxis().set_minor_formatter(ticker.NullFormatter())
-        plt.grid()
-        plt.tight_layout()
+        ax1.grid(b=True)
         # plt.title(key)
         if save_figures:
             plt.savefig(resultfolder + "oversapling_" + error_type + ".pdf", bbox_inches="tight")
