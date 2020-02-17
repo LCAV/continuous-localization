@@ -48,7 +48,7 @@ mv pre-commit.sh .git/hooks/pre-commit
  
 ## Documentation format
 
-Use sphynx standard: 
+Use sphynx standard (for docstrings and long comments).
 
 ```python
 
@@ -66,8 +66,9 @@ This is a long description.
 
 ## Requirements
 
-Keep track of requirements in the file requirements.txt
-(including version number where necessary)
+Keep track of requirements (including version number where necessary) in the files `requirements.txt` **and** in the
+ `environment.yml`. This helps people install requirements both if they use `pip` and `conda`. 
+
 
 When refering to lab-internal code (or unstable libraries), 
 add those as github submodules, for example:
@@ -75,5 +76,20 @@ add those as github submodules, for example:
 ```
 git submodule add https://github.com/LCAV/pylocus 
 ```
+
+## Imports 
+Use the correct order of import blocks, and alphabetical order within each block:
+1. standard python (e.g. math, sys, time)
+2. systemwide standard libraries (e.g. numpy, scipy, pandas)
+3. our own libraries (e.g. pylocus)
+4. modules from within the project (e.g. trajectory)
+
+## Other 
+
+ - Do not use python shebang and do not put `__main__` in modules &mdash; create a new script if you need. 
+ - Save everything in figures/ or results/ (depending on if they are plots or data, respectively)
+ - Use `NotImplementError` either for functions that are under development (as in "not yet implemented") or for
+  abstract classes. For an option/flag that is not supported use `ValueError`.
+
 
 

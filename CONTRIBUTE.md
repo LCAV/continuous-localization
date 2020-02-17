@@ -2,7 +2,7 @@
 
 ### Formatting
 
-Check Guidelines.md for the detailed formatting rules.
+Check [Guidelines.md](./GUIDELINES.md) for the detailed formatting rules.
 
 We use automatic `yapf` formatting specified in setup.cfg, and used with yapf version 0.28.0.
 You can run:

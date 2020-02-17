@@ -14,6 +14,7 @@ Welcome to SamplingTrajectories's documentation!
   trajectory
   simulation
   solvers
+  probability
   
 
 
