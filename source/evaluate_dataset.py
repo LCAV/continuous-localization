@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 import scipy as sp
+import scipy.linalg as linalg
 
 # These system_ids are used by the python measurement pipeline,
 # but will be changed to better-readable "GT" and "Range", respectively.
@@ -138,10 +139,10 @@ def match_reference(reference, points):
     """
     assert reference.shape == points.shape
     reference_center = np.mean(reference, axis=1)
-    reference -= reference_center[:, None]
+    reference_centered = reference - reference_center[:, None]
     rotation_center = np.mean(points, axis=1)
     points -= rotation_center[:, None]
-    rotation, e = sp.linalg.orthogonal_procrustes(points.T, reference.T)
+    rotation, e = linalg.orthogonal_procrustes(reference_centered.T, points.T)
     points = rotation @ points
     points += reference_center[:, None]
     return points, (rotation, rotation_center, reference_center)
