@@ -368,6 +368,14 @@ def pointwise_rls(D, anchors, traj, indices, grid):
 
 
 def apply_algorithm(traj, D, times, anchors, method='ours'):
+    """
+    Apply method to given measurements.
+
+    :return: Chat, points, indices
+        Chat contains the trajectory fitted to the measurements.
+        points 
+
+    """
     if method == 'ours-weighted':
         basis = traj.get_basis(times=times)
         Chat = trajectory_recovery(D, anchors, basis, weighted=True)

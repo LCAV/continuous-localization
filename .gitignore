@@ -113,13 +113,14 @@ results/ranks
 results/fitting
 test/results
 results/*/*.pdf
+results/*.pdf
 results/get_distances/
 results/one_per_time/
+figures/*.pdf
 
 # datasets
 datasets/*
 !datasets/README.md
-results/*.pdf
 
 # images 
 *.png
@@ -131,3 +132,4 @@ results/*.pdf
 *.swp
 *.swo
 *.swap
+

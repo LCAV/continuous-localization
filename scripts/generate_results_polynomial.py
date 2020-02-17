@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 
 from public_data_utils import read_dataset, get_plotting_params, get_ground_truth, TIME_RANGES
-from evaluate_dataset import compute_distance_matrix, compute_anchors
-from generate_results import generate_results, generate_suitable_mask, calibrate, add_gt_fitting
+from evaluate_dataset import compute_distance_matrix, compute_anchors, calibrate
+from results_generation import generate_results, generate_suitable_mask, add_gt_fitting
 
 METHODS = ['ours-weighted', 'ours', 'lm-ours-weighted', 'lm-line', 'srls', 'rls']
 
@@ -23,14 +23,15 @@ if __name__ == "__main__":
     np.random.seed(1)
 
     #filename = 'datasets/uah1.mat' # fingers
-    filename = 'datasets/Plaza1.mat'
+    filename = '../datasets/Plaza1.mat'
     # zig zag.
     #filename = 'datasets/Plaza2.mat' # triangle
     #filename = 'datasets/Gesling1.mat' # not working
     #filename = 'datasets/Gesling2.mat' # not working
 
     chosen_distance = 'distance_calib'
-    resultname = 'results/polynomial_tuesday_calib.pkl'
+    #resultname = '../results/polynomial_tuesday_calib.pkl'
+    resultname = '../results/test.pkl'
 
     #chosen_distance = 'distance'
     #resultname = 'results/polynomial_tuesday.pkl'

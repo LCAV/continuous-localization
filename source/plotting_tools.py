@@ -393,3 +393,91 @@ def plot_probabilities(probabilities,
         fname = directory + matrix_type + "_matrix_anchors" + key + ".pdf"
         make_dirs_safe(fname)
         plt.savefig(fname)
+
+
+def plot_dataset_subsample(traj, results, times, srls=False, rls=True):
+    """ Create Figure 7, second row. 
+    
+    see plot_dataset_complexities for parameters.
+    """
+    n_measurements_list = sorted(results.n_measurements.unique())[::-1]
+    fig, axs = plt.subplots(1, len(n_measurements_list), sharex=True, sharey=True)
+    j = 0
+    for n_measurements in n_measurements_list:
+        df = results[results.n_measurements == n_measurements]
+        ax = axs[j]
+        df_ours = df[df.method == 'ours-weighted']
+
+        coeffs = np.empty([traj.dim, traj.n_complexity, 0])
+        colors = {0: 0, 1: 2, 2: 3}
+        for i in range(len(df_ours)):
+            df_our = df_ours.iloc[i]
+            Chat = df_our.result
+
+            coeffs = np.dstack([coeffs, Chat])
+            traj.set_coeffs(coeffs=Chat)
+            traj.plot_pretty(times=times, color=f'C{colors[i]}', ax=ax)
+
+        Chat_avg = np.mean(coeffs, axis=2)
+        traj.set_coeffs(coeffs=Chat_avg)
+        traj.plot_pretty(times=times, color='C0', ax=ax)
+
+        i = 1
+        if srls:
+            df_srls = df[df.method == 'srls']
+            points = df_srls.result.values[0]
+            ax.scatter(*points.T, color=f'C{i}', s=4.0)
+            i += 1
+
+        if rls:
+            df_rls = df[df.method == 'rls']
+            points = df_rls.result.values[0]
+            ax.scatter(*points.T, color=f'C{i}', s=4.0)
+
+        #ax.plot(full_df.px, full_df.py, ls=':', linewidth=1., color='black')
+        remove_ticks(ax)
+        ax.set_title('N = {}'.format(n_measurements), y=-0.22)
+        j += 1
+    add_scalebar(axs[0], 20, loc='lower left')
+    return fig, axs
+
+
+def plot_dataset_complexities(traj, results, times, srls=False, rls=True):
+    """ Create Figure 7, first row. 
+    
+    :param traj: instance of class Trajectory. 
+    :param results: generated using create_complexities from results_generation.
+    :param times: times at which we want to plot trajectory.
+    :param srls, rls: whether or not to plot SRLS or RLS estimate.
+    """
+    n_complexity_list = sorted(results.n_complexity.unique())
+    fig, axs = plt.subplots(1, len(n_complexity_list), sharex=True, sharey=True)
+    j = 0
+    for n_complexity in n_complexity_list:
+        df = results[results.n_complexity == n_complexity]
+        ax = axs[j]
+        df_ours = df[df.method == 'ours-weighted']
+
+        Chat = df_ours.result.values[0]
+
+        traj.set_coeffs(coeffs=Chat)
+        traj.plot_pretty(times=times, color='C0', ax=ax)
+
+        i = 1
+        if srls:
+            df_srls = df[df.method == 'srls']
+            points = df_srls.result.values[0]
+            ax.scatter(*points.T, color=f'C{i}', s=4.0)
+            i += 1
+
+        if rls:
+            df_rls = df[df.method == 'rls']
+            points = df_rls.result.values[0]
+            ax.scatter(*points.T, color=f'C{i}', s=4.0)
+
+        #ax.plot(full_df.px, full_df.py, ls=':', linewidth=1., color='black')
+        remove_ticks(ax)
+        ax.set_title('N = {}'.format(n_complexity), y=-0.22)
+        j += 1
+    add_scalebar(axs[0], 20, loc='lower left')
+    return fig, axs
