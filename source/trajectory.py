@@ -33,7 +33,8 @@ class Trajectory(object):
                  full_period=False,
                  seed=None,
                  coeffs=None,
-                 name=None):
+                 name=None,
+                 centered=False):
         """
 
         :param n_complexity: complexity of trajectory.
@@ -54,6 +55,7 @@ class Trajectory(object):
         self.n_complexity = n_complexity
         self.coeffs = None
         self.model = model
+        self.centered = centered
         if self.model == 'full_bandlimited':
             if full_period is False:
                 print('Warning: setting full_period to True')
@@ -79,7 +81,8 @@ class Trajectory(object):
                          self.model,
                          self.period,
                          coeffs=np.copy(self.coeffs),
-                         full_period=self.params['full_period'])
+                         full_period=self.params['full_period'],
+                         centered=self.centered)
         new.params = copy.deepcopy(self.params)
         return new
 
@@ -119,9 +122,8 @@ class Trajectory(object):
         if self.model == 'bandlimited':
             basis = np.ones((self.n_complexity, n_samples))
             basis[1:] = 2 * np.cos(2 * np.pi * k[1:] * n / self.period)
-            return basis
         elif self.model == 'polynomial':
-            return np.power(n, k)
+            basis = np.power(n, k)
         elif self.model == 'full_bandlimited':
             assert self.n_complexity % 2 == 1, \
                 "full bandlimited model requires odd number of coefficients"
@@ -129,9 +131,13 @@ class Trajectory(object):
             basis = np.ones((self.n_complexity, n_samples))
             basis[2::2] = 2 * np.cos(2 * np.pi * k[1:] * n / self.period)
             basis[1::2] = 2 * np.sin(2 * np.pi * k[1:] * n / self.period)
-            return basis
         else:
             raise ValueError(self.model)
+
+        if self.centered:
+            basis = basis[1:, :]
+
+        return basis
 
     def get_basis_prime(self, times=None):
         """ Get basis vector derivatives evaluated at specific times. 
@@ -145,10 +151,10 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -4 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
+            basis = -4 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 1), [self.n_complexity - 1, 1])
-            return np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
+            basis = np.r_[np.zeros((1, n_samples)), (k_reduced + 1) * np.power(n, k_reduced)]
         elif self.model == 'full_bandlimited':
             assert self.n_complexity % 2 == 1, \
                 "full bandlimited model requires odd number of coefficients"
@@ -156,9 +162,12 @@ n_samples)
             basis = np.ones((self.n_complexity, n_samples))
             basis[::2] = -4 * np.pi * k / self.period * np.sin(2 * np.pi * k * n / self.period)
             basis[1::2] = 4 * np.pi * k[1:] / self.period * np.cos(2 * np.pi * k[1:] * n / self.period)
-            return basis
         else:
             raise ValueError(self.model)
+
+        if self.centered:
+            basis = basis[1:, :]
+        return basis
 
     def get_basis_twoprime(self, times=None):
         """ Get basis vector second derivatives evaluated at specific times. 
@@ -173,10 +182,10 @@ n_samples)
         n = np.reshape(times, [1, n_samples])
         if self.model == 'bandlimited':
             k = np.reshape(range(self.n_complexity), [self.n_complexity, 1])
-            return -2 * (2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
+            basis = -2 * (2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
         elif self.model == 'polynomial':
             k_reduced = np.reshape(range(self.n_complexity - 2), [self.n_complexity - 2, 1])
-            return np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
+            basis = np.r_[np.zeros((2, n_samples)), (k_reduced + 1) * (k_reduced + 2) * np.power(n, k_reduced)]
         elif self.model == 'full_bandlimited':
             assert self.n_complexity % 2 == 1, \
                 "full bandlimited model requires odd number of coefficients"
@@ -184,9 +193,12 @@ n_samples)
             basis = np.ones((self.n_complexity, n_samples))
             basis[::2] = -2 * (2 * np.pi * k / self.period)**2 * np.cos(2 * np.pi * k * n / self.period)
             basis[1::2] = -2 * (2 * np.pi * k[1:] / self.period)**2 * np.sin(2 * np.pi * k[1:] * n / self.period)
-            return basis
         else:
             raise ValueError(self.model)
+
+        if self.centered:
+            basis = basis[1:, :]
+        return basis
 
     def set_coeffs(self, seed=None, coeffs=None, dimension=5):
         if seed is not None:
@@ -194,10 +206,11 @@ n_samples)
 
         if coeffs is None:
             self.coeffs = dimension * \
-                np.random.rand(self.dim, self.n_complexity)
+                np.random.rand(self.dim, self.n_complexity - 1 if self.centered else self.n_complexity)
         else:
-            if coeffs.shape[1] != self.n_complexity:
-                print(f'Warning: complexity mismatch, old:{self.n_complexity}, new:{coeffs.shape[1]}')
+            expected_complexity = self.n_complexity - 1 if self.centered else self.n_complexity
+            if coeffs.shape[1] != expected_complexity:
+                print(f'Warning: complexity mismatch, old:{expected_complexity}, new:{coeffs.shape[1]}')
             self.coeffs = coeffs
             self.n_complexity = coeffs.shape[1]
 
@@ -359,19 +372,23 @@ n_samples)
         """
 
         points = self.get_continuous_points()
-        shift = np.min(points, axis=1)
-        points = points - shift[:, None]
-        self.coeffs[:, 0] -= shift
+        if not self.centered:
+            shift = np.min(points, axis=1)
+            points = points - shift[:, None]
+            self.coeffs[:, 0] -= shift
         scale = box_dims / np.max(points, axis=1)
         if keep_aspect_ratio:
             self.coeffs = self.coeffs * scale[0]
-            box_dims[1] = np.max(points[1, :]) * scale[0]
+            if not self.centered:
+                box_dims[1] = np.max(points[1, :]) * scale[0]
         else:
             self.coeffs = self.coeffs * scale[:, None]
         return box_dims
 
     def center(self):
         """Center trajectory so that the center of mass is at (0,0)"""
+        if self.centered:
+            raise ValueError("Centered trajectory cannot be shifted. Set self.centered to False")
         points = self.get_continuous_points()
         self.coeffs[:, 0] -= np.mean(points, axis=1)
 

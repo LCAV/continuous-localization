@@ -65,5 +65,23 @@ class TestTrajectory(unittest.TestCase):
         np.testing.assert_almost_equal(times, [0, 1, 2], decimal=5)
 
 
+class TestCenteredTrajectory(TestTrajectory):
+    def setUp(self):
+        self.n_complexity = 3
+        self.trajectory = Trajectory(n_complexity=self.n_complexity, model='full_bandlimited', centered=True)
+        self.trajectory.coeffs = np.zeros_like(self.trajectory.coeffs)
+        self.trajectory.coeffs[0, 1] = 2
+        self.trajectory.coeffs[1, 0] = 2
+
+    def test_dimensions(self):
+        n_samples = 10
+        basis = self.trajectory.get_basis(n_samples=n_samples)
+        self.assertEqual((self.n_complexity-1, n_samples), basis.shape, )
+        self.assertEqual(self.n_complexity-1, self.trajectory.coeffs.shape[1])
+
+    def test_center(self):
+        self.assertRaises(ValueError, self.trajectory.center)
+
+
 if __name__ == "__main__":
     unittest.main()
