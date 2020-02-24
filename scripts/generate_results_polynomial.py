@@ -32,12 +32,9 @@ if __name__ == "__main__":
     chosen_distance = 'distance'  # distance to use (can also be _calib, or _gt)
     range_system_id = 'Range'
 
-    #Parameters used for bandlimited results.
-    #outfile = this_dir + '../results/polynomial_tuesday.pkl'
-    #outfile = this_dir + '../results/polynomial_tuesday_calib.pkl'
-    #outfile = this_dir + '../results/polynomial_tuesday_gt.pkl'
-    #total_n_it = 5
-    #plotting = True
+    #Parameters used for polynomial results from paper.
+    #outfile = this_dir + '/../results/polynomial_tuesday.pkl'
+    #total_n_it = 20
 
     description = 'Generate polynomial reconstruction results.'
     outfile, plotting, total_n_it = arg_parser(description=description)

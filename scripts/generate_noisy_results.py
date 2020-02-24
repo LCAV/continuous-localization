@@ -28,6 +28,7 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--n_it', metavar='n_it', type=int, help='number of iterations', default=20)
     args = parser.parse_args()
 
+    #Parameters used for results from paper.
     #n_it = 1000
     #outfolder = this_dir + '/../results/
     outfolder = args.outfolder

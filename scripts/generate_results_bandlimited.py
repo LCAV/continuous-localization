@@ -33,10 +33,9 @@ if __name__ == "__main__":
     chosen_distance = 'distance'  # distance to use (can also be _calib, or _gt)
     range_system_id = 'Range'
 
-    #Parameters used for bandlimited results.
-    #outfile = '../results/bandlimited_tuesday.pkl'
+    #Parameters used for bandlimited results from paper.
+    #outfile = this_dir + '/../results/bandlimited_tuesday.pkl'
     #total_n_it = 20
-    #plotting = True
 
     description = 'Generate bandlmited reconstruction results.'
     outfile, plotting, total_n_it = arg_parser(description=description)
