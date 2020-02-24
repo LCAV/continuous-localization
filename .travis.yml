@@ -7,5 +7,6 @@ python:
 script:
   - ./bin/download_datasets all
   - ./bin/run_important_notebooks
+  - ./bin/run_scripts
   - pytest test/
   - make html

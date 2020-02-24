@@ -106,12 +106,10 @@ ENV/
 # pytest
 .pytest_cache/
 
-# own files
-Literature/
+### own files
 results/test
 results/ranks
 results/fitting
-test/results
 results/*/*.pdf
 results/*.pdf
 results/get_distances/
@@ -132,4 +130,3 @@ datasets/*
 *.swp
 *.swo
 *.swap
-

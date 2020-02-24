@@ -5,7 +5,9 @@ generate_results_polynomial.py: Generate polynomial results (average over many l
 """
 
 import sys
-sys.path.append('../source/')
+from os.path import abspath, dirname
+this_dir = dirname(abspath(__file__))
+sys.path.append(this_dir + '/../source/')
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +16,7 @@ import pandas as pd
 from evaluate_dataset import compute_distance_matrix, compute_anchors, calibrate
 from public_data_utils import read_dataset, get_plotting_params, get_ground_truth, TIME_RANGES
 from results_generation import generate_results, generate_suitable_mask, add_gt_fitting
+from simulation import arg_parser
 
 METHODS = ['ours-weighted', 'ours', 'lm-ours-weighted', 'lm-line', 'srls', 'rls']
 
@@ -21,22 +24,30 @@ if __name__ == "__main__":
     ##### Initialization  #####
     np.random.seed(1)
 
-    filename = '../datasets/Plaza1.mat'
+    dataset_file = this_dir + '/../datasets/Plaza1.mat'
+    list_complexities = [2]
+    list_measurements = [8, 10, 20, 30, 40, 50, 60]
+    anchor_names = None  # use all anchors.
+    verbose = True
+    chosen_distance = 'distance'  # distance to use (can also be _calib, or _gt)
+    range_system_id = 'Range'
 
-    #chosen_distance = 'distance_calib'
-    #resultname = '../results/polynomial_tuesday_calib.pkl'
+    #Parameters used for bandlimited results.
+    #outfile = this_dir + '../results/polynomial_tuesday.pkl'
+    #outfile = this_dir + '../results/polynomial_tuesday_calib.pkl'
+    #outfile = this_dir + '../results/polynomial_tuesday_gt.pkl'
+    #total_n_it = 5
+    #plotting = True
 
-    chosen_distance = 'distance'
-    #resultname = 'results/polynomial_tuesday.pkl'
+    description = 'Generate polynomial reconstruction results.'
+    outfile, plotting, total_n_it = arg_parser(description=description)
 
-    #chosen_distance = 'distance_gt'
-    #resultname = 'results/polynomial_tuesday_gt.pkl'
+    full_df, anchors_df, traj = read_dataset(dataset_file, verbose=False)
+    xlim, ylim = get_plotting_params(dataset_file)
 
-    resultname = '../results/test.pkl'
+    assert range_system_id in full_df.system_id.unique(), full_df.system_id.unique()
 
-    full_df, anchors_df, traj = read_dataset(filename, verbose=True)
-    xlim, ylim = get_plotting_params(filename)
-
+    # extract the piecewise linear time ranges.
     max_time = full_df.timestamp.max()
     time_ranges = [t for t in TIME_RANGES if t[0] < max_time]
 
@@ -45,37 +56,15 @@ if __name__ == "__main__":
         mask = mask | ((full_df.timestamp > time_range[0]) & (full_df.timestamp < time_range[1])).values
     full_df = full_df[mask]
 
-    calibrate(full_df)
-
-    range_system_id = 'Range'
-    assert range_system_id in full_df.system_id.unique(), full_df.system_id.unique()
-
-    list_complexities = [2]
-    list_measurements = [8, 10, 20, 30, 40, 50, 60]
-    total_n_it = 5
-    anchor_names = None  # use all anchors.
-
-    plotting = True
-    verbose = True
+    if chosen_distance == 'distance_calib':
+        calibrate(full_df)
 
     ##### Bring data in correct form #####
     anchors = compute_anchors(anchors_df, anchor_names)
-    times = full_df[full_df.system_id == range_system_id].timestamp.unique()
-    D, times = compute_distance_matrix(full_df, anchors_df, anchor_names, times, chosen_distance)
-    if np.sum(D > 0) > D.shape[0]:
-        print('Warning: multiple measurements for times:{}/{}!'.format(np.sum(np.sum(D > 0, axis=1) > 1), D.shape[0]))
-    anchors = anchors[:2, :]
+    n_min = 2 * (traj.dim + 2) - 1
+    print(f'need at least {n_min} measurements.')
 
     ##### Run experiments #####
-
-    traj.set_n_complexity(2)
-    n_min = traj.n_complexity * (traj.dim + 2) - 1
-    print('need at least', n_min)
-
-    anchor_names = None
-
-    ## Construct anchors.
-    anchors = compute_anchors(anchors_df, anchor_names)
 
     result_df = pd.DataFrame()
 
@@ -92,8 +81,7 @@ if __name__ == "__main__":
         times = part_df[part_df.system_id == range_system_id].timestamp.unique()
         D, times = compute_distance_matrix(part_df, anchors_df, anchor_names, times, chosen_distance)
         if np.sum(D > 0) > D.shape[0]:
-            print('Warning: multiple measurements for times:{}/{}!'.format(np.sum(np.sum(D > 0, axis=1) > 1),
-                                                                           D.shape[0]))
+            print(f'Warning: multiple measurements for times:{np.sum(np.sum(D > 0, axis=1) > 1)}/{D.shape[0]}!')
         elif np.sum(D > 0) < n_min:
             print('Condition (7) not satisfied!')
             continue
@@ -134,9 +122,9 @@ if __name__ == "__main__":
                     points_fitted = add_gt_fitting(traj, times_small, points_small, df, n_it=k)
 
                     result_df = pd.concat((result_df, df), ignore_index=True, sort=False)
-                if resultname != '':
-                    result_df.to_pickle(resultname)
-                    print('saved as', resultname)
+                if outfile != '':
+                    result_df.to_pickle(outfile)
+                    print('saved as', outfile)
 
         ## Plot the last one.
         if not plotting:

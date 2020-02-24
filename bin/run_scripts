@@ -1,0 +1,4 @@
+#!/bin/bash
+python scripts/generate_noisy_results.py --outfolder='' --n_it=1
+python scripts/generate_results_bandlimited.py --outfile='' --n_it=1
+python scripts/generate_results_polynomial.py --outfile='' --n_it=1

@@ -5,16 +5,19 @@ generate_results_bandlimited.py: Generate bandlimited results.
 """
 
 import sys
-sys.path.append('../source/')
+from os.path import abspath, dirname
+this_dir = dirname(abspath(__file__))
+sys.path.append(this_dir + '/../source/')
 
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 
-from evaluate_dataset import compute_distance_matrix, compute_anchors
-from results_generation import generate_results, add_gt_fitting, generate_suitable_mask
+from evaluate_dataset import compute_distance_matrix, compute_anchors, calibrate
 from plotting_tools import plot_complexities, add_scalebar
 from public_data_utils import read_dataset, get_ground_truth, get_plotting_params
+from results_generation import generate_results, add_gt_fitting, generate_suitable_mask
+from simulation import arg_parser
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']
 
@@ -22,33 +25,40 @@ if __name__ == "__main__":
     ##### Initialization  #####
     np.random.seed(1)
 
-    filename = '../datasets/Plaza2.mat'  # triangle
-
-    resultname = '../results/bandlimited_tuesday.pkl'
-    resultname = '../results/test.pkl'
-
-    full_df, anchors_df, traj = read_dataset(filename)
-    xlim, ylim = get_plotting_params(filename)
-
-    chosen_distance = 'distance'
-    #chosen_distance = 'distance_gt'
-    range_system_id = 'Range'
-    assert range_system_id in full_df.system_id.unique()
-
+    dataset_file = this_dir + '/../datasets/Plaza2.mat'  # triangle
     list_complexities = [3, 5, 11, 19]
     list_measurements = [40, 100, 200, 300, 400, 499]
-    total_n_it = 20
     anchor_names = None  # use all anchors.
-
-    plotting = True
     verbose = True
+    chosen_distance = 'distance'  # distance to use (can also be _calib, or _gt)
+    range_system_id = 'Range'
+
+    #Parameters used for bandlimited results.
+    #outfile = '../results/bandlimited_tuesday.pkl'
+    #total_n_it = 20
+    #plotting = True
+
+    description = 'Generate bandlmited reconstruction results.'
+    outfile, plotting, total_n_it = arg_parser(description=description)
+    if not plotting:
+        print('Plotting disabled.')
+    else:
+        print('Plotting enabled.')
+
+    full_df, anchors_df, traj = read_dataset(dataset_file)
+    xlim, ylim = get_plotting_params(dataset_file)
+
+    assert range_system_id in full_df.system_id.unique()
+
+    if chosen_distance == 'distance_calib':
+        calibrate(full_df)
 
     ##### Bring data in correct form #####
     anchors = compute_anchors(anchors_df, anchor_names)
     times = full_df[full_df.system_id == range_system_id].timestamp.unique()
     D, times = compute_distance_matrix(full_df, anchors_df, anchor_names, times, chosen_distance)
     if np.sum(D > 0) > D.shape[0]:
-        print('Warning: multiple measurements for times:{}/{}!'.format(np.sum(np.sum(D > 0, axis=1) > 1), D.shape[0]))
+        print(f'Warning: multiple measurements for times:{np.sum(np.sum(D > 0, axis=1) > 1)}/{D.shape[0]}')
     points_gt = get_ground_truth(full_df, times).values
     anchors = anchors[:2, :]
 
@@ -90,9 +100,9 @@ if __name__ == "__main__":
 
                 result_df = pd.concat((result_df, current_results), ignore_index=True, sort=False)
 
-            if resultname != '':
-                result_df.to_pickle(resultname)
-                print('saved as', resultname)
+            if outfile != '':
+                result_df.to_pickle(outfile)
+                print('saved as', outfile)
 
             if plotting:
                 results_plotting = {}
