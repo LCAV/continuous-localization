@@ -200,7 +200,5 @@ def trajectory_recovery(D_topright, anchors, basis, average_with_Q=False, weight
         #tmp = np.diag(np.sqrt(eigVals[:d]))
         #np.real(np.hstack((tmp, np.zeros([d, N - d]))) @ eigVecs.T)
         #MIGHT NEED TO ENFORCE SYMMETRY ON Q
-
-        #TODO PROJECT ONTO AFFINE SUBSPACE
-
+        #PROJECT ONTO AFFINE SUBSPACE
     return P_hat

@@ -57,10 +57,6 @@ def get_trajectory(filename, dim=2):
         direction = end_point - start_point
         direction /= np.linalg.norm(direction)
 
-        #TODO(FD) should scale by velocity here.
-        # For using a high velocity is good enough because later we will simply
-        # use a certain lenth of the trajectory. therefore we want the velocity
-        # to be high enough.
         coeffs = np.c_[start_point, 5 * direction][:2, :]
         trajectory.set_coeffs(coeffs=coeffs)
         return trajectory

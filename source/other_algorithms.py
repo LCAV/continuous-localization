@@ -157,7 +157,7 @@ def split_cost_function(X_vec, D_sq, A, F, squared=True):
     return res
 
 
-# TODO(FD) fix this function to pass unit tests.
+# TODO(FD) fix this function to pass unit tests (not currently used so it does not matter)
 def cost_jacobian(C_vec, D_sq, A, F, squared=True):
     """ Return Jacobian of squared distances cost function. 
 

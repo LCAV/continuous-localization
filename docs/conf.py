@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../source/'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'SamplingTrajectories'
+project = 'continuous-localization'
 copyright = '2019, Michalina, Frederike, Adam'
 author = 'Michalina, Frederike, Adam'
 
@@ -101,7 +101,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SamplingTrajectoriesdoc'
+htmlhelp_basename = 'continuous-localizationdoc'
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -127,7 +127,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'SamplingTrajectories.tex', 'SamplingTrajectories Documentation', 'Michalina, Frederike, Adam',
+    (master_doc, 'continuous-localization.tex', 'continuous-localization Documentation', 'Michalina, Frederike, Adam',
      'manual'),
 ]
 
@@ -135,7 +135,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'samplingtrajectories', 'SamplingTrajectories Documentation', [author], 1)]
+man_pages = [(master_doc, 'continuous-localization', 'continuous-localization Documentation', [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -143,7 +143,7 @@ man_pages = [(master_doc, 'samplingtrajectories', 'SamplingTrajectories Document
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'SamplingTrajectories', 'SamplingTrajectories Documentation', author, 'SamplingTrajectories',
+    (master_doc, 'continuous-localization', 'continuous-localization Documentation', author, 'continuous-localization',
      'One line description of project.', 'Miscellaneous'),
 ]
 

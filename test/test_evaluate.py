@@ -30,8 +30,8 @@ class TestEvaluate(unittest.TestCase):
         end_times, end_indices = find_end_times(test_df)
         np.testing.assert_allclose(start_indices, start_index_test)
 
-        # TODO this is not correct for now. There is a shift by two because of filter length.
-        #np.testing.assert_allclose(end_indices, [s + duration  for s in start_index_test])
+        # TODO(FD) This is not correct for now. There is a shift by two because of filter length.
+        # np.testing.assert_allclose(end_indices, [s + duration  for s in start_index_test])
 
 
 if __name__ == "__main__":

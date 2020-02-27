@@ -501,8 +501,7 @@ def find_start_times(tango_df, thresh_filter=-0.5, pattern=[1, 1, 1, 1, -1, -1],
 
 
 def find_end_times(tango_df, plot=False):
-    """ Find the tines at which movement ends. """
-    # TODO(FD) there is a shift of two here but it doesn't matter for now.
+    """ Find the times at which movement ends. """
     end_times, end_indices = find_start_times(tango_df, thresh_filter=-0.2, pattern=[-1, -1, 1, 1, 1, 1], plot=plot)
     return end_times, end_indices
 
