@@ -3,12 +3,15 @@
 simulation.py: Generate random trajectories and noisy distance estimates, reconstruct trajectory and save errors.  
 """
 
-import numpy as np
-import cvxpy
+import argparse
 import json
-import os
-import time
 import logging
+import os
+import sys
+import time
+
+import cvxpy
+import numpy as np
 
 from global_variables import DIM
 from measurements import get_measurements, create_mask, add_noise, create_anchors
@@ -36,7 +39,8 @@ def robust_add(arr, idx, value):
 def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
     """ Run simulation. 
 
-    :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
+    :param parameters: Can be either the name of the folder where parameters.json 
+    is stored, or a new dict of parameters.
 
     """
     if type(parameters) == str:
@@ -140,8 +144,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                             D_topright = np.multiply(D_topright, mask)
 
                             try:
-                                assert p.full_rank_condition(np.sort(np.sum(mask, axis=0))[::-1], DIM + 1,
-                                                         n_complexity), "insufficient rank"
+                                assert p.full_rank_condition(
+                                    np.sort(np.sum(mask, axis=0))[::-1], DIM + 1, n_complexity), "insufficient rank"
                                 if (solver is None) or (solver == "semidef_relaxation_noiseless"):
                                     X = semidef_relaxation_noiseless(D_topright,
                                                                      anchors_coord,
@@ -267,3 +271,29 @@ def read_params(filename):
     with open(filename, 'r') as fp:
         param_dict = json.load(fp)
     return param_dict
+
+
+def arg_parser(description=''):
+    """ Parse command line for resultfile argument and do checks. """
+
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-o', '--outfile', metavar='outfile', type=str, help='location of results file.', default='')
+    parser.add_argument('-p', '--plotting', dest='plotting', action='store_true')
+    parser.add_argument('-n', '--n_it', metavar='n_it', type=int, help='number of iterations', default=20)
+    parser.set_defaults(plotting=False)
+    args = parser.parse_args()
+
+    outfile = args.outfile
+
+    continue_ = ''
+    if os.path.isfile(outfile):
+        while not continue_ in ['y', 'n']:
+            continue_ = input(f'{outfile} exists. Do you want to overwrite? (y/n)')
+    if continue_ == 'n':
+        sys.exit()
+
+    if outfile != '':
+        print(f'Saving results as {outfile}.')
+    else:
+        print(f'Not saving results.')
+    return outfile, args.plotting, args.n_it

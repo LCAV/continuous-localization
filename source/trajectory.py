@@ -197,8 +197,9 @@ n_samples)
                 np.random.rand(self.dim, self.n_complexity)
         else:
             if coeffs.shape[1] != self.n_complexity:
-                print('Warning: coeffs mismatch', coeffs.shape[1], self.n_complexity)
+                print(f'Warning: complexity mismatch, old:{self.n_complexity}, new:{coeffs.shape[1]}')
             self.coeffs = coeffs
+            self.n_complexity = coeffs.shape[1]
 
         dim = self.coeffs.shape[0]
         self.Z_opt = np.vstack(

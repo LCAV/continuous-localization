@@ -97,7 +97,7 @@ def read_dataset(filename, verbose=False):
     try:
         result_dict = loadmat(filename)
     except FileNotFoundError:
-        raise FileNotFoundError('Could not find {}. Did you run the script download_datasets?'.format(dataset))
+        raise FileNotFoundError('Could not find {}. Did you run the script download_datasets?'.format(filename))
     except Exception as e:
         print('Unknown reading error with {}. Check if the file looks ok.'.format(filename))
         raise e
@@ -122,7 +122,7 @@ def get_plotting_params(filename):
         ylim = -20, 75
     elif dataname == 'Plaza2':
         xlim = -80, 10
-        ylim = -20, 75
+        ylim = -15, 75
     elif 'Gesling' in dataname:
         xlim = -2, 50
         ylim = -2, 120

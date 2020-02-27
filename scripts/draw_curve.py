@@ -4,13 +4,13 @@
 draw_curve.py: draw trajectory and save coordinates. 
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 import sys
 from os.path import abspath, dirname
+this_dir = dirname(abspath(__file__))
+sys.path.append(this_dir + '/../source/')
 
-sys.path.append(dirname(abspath(__file__)) + '/../source')
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class TrajectoryCreator:
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     from coordinate_fitting import fit_trajectory_and_times
     from trajectory import Trajectory
 
-    fname = '../results/fitting/plaza'
+    fname = this_dir + '/../results/fitting/plaza'
 
     # draw a trajectory
     fig, ax = plt.subplots()

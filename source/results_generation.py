@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
 import sys
 sys.path.append('../source')
@@ -13,6 +12,10 @@ import seaborn as sns
 
 from coordinate_fitting import fit_trajectory
 from other_algorithms import apply_algorithm, error_measure, cost_function
+from other_algorithms import pointwise_srls
+from other_algorithms import get_grid, pointwise_rls
+import probability as pr
+from solvers import trajectory_recovery
 
 METHODS = ['ours-weighted', 'ours', 'lm-ellipse', 'lm-ours-weighted', 'srls', 'rls']
 
@@ -29,10 +32,9 @@ def generate_suitable_mask(D, dim, K, n_measurements):
 
 
 def test_hypothesis(D, dim, K):
-    import hypothesis as h
     mask = (D)
     p = np.sort(np.sum(mask, axis=0))[::-1]
-    return h.limit_condition(list(p), dim + 1, K)
+    return pr.full_rank_condition(list(p), dim + 1, K)
 
 
 def generate_results(traj, D_small, times_small, anchors, points_small, methods=METHODS, n_it=0):
@@ -106,4 +108,81 @@ def add_gt_fitting(traj, times_small, points_small, current_results, n_it=0):
     return points_fitted
 
 
-# TODO(FD): add main part here if appropriate, or move this file to the source/ folder.
+def create_subsample(traj, D, times, anchors, n_measurements_list):
+    """ Evaluate our algorithm and srls, srls for different numbers of measurements.
+
+    Used to create Figure 7, second row, in Relax and Recover paper.
+    
+    """
+    grid = get_grid(anchors, grid_size=0.5)
+    results = pd.DataFrame(columns=['method', 'result', 'n_measurements'])
+    num_seeds = 3
+    for n_measurements in n_measurements_list:
+        for seed in range(num_seeds):
+            np.random.seed(seed)
+            indices = np.random.choice(D.shape[0], n_measurements, replace=False)
+            D_small = D[indices, :]
+
+            times_small = np.array(times)[indices]
+            basis_small = traj.get_basis(times=times_small)
+            Chat = trajectory_recovery(D_small, anchors[:2, :], basis_small, weighted=True)
+
+            results.loc[len(results), :] = dict(
+                n_measurements=n_measurements,
+                method='ours-weighted',
+                result=Chat
+            )
+
+        p_rls, __ = pointwise_rls(D, anchors, traj, indices, grid)
+
+        p_srls, __ = pointwise_srls(D, anchors, traj, indices)
+        results.loc[len(results), :] = dict(
+            n_measurements=n_measurements,
+            method='srls',
+            result=p_srls
+        )
+        results.loc[len(results), :] = dict(
+            n_measurements=n_measurements,
+            method='rls',
+            result=p_rls
+        )
+    return results
+
+
+def create_complexities(traj, D, times, anchors, list_complexities):
+    """ Evaluate our algorithm and srls, srls for different complexities.
+
+    Used to create Figure 7, first row, in Relax and Recover paper.
+    
+    """
+    grid = get_grid(anchors, grid_size=0.5)
+    results = pd.DataFrame(columns=['method', 'result', 'n_complexity'])
+    num_seeds = 3
+    for n_complexity in list_complexities:
+        traj.set_n_complexity(n_complexity)
+
+        basis = traj.get_basis(times=times)
+
+        Chat = trajectory_recovery(D, anchors[:2, :], basis, weighted=True)
+
+        results.loc[len(results), :] = dict(
+            n_complexity=n_complexity,
+            method='ours-weighted',
+            result=Chat
+        )
+
+        indices = range(D.shape[0])[traj.dim + 2::3]
+        p_rls, __ = pointwise_rls(D, anchors, traj, indices, grid)
+        p_srls, __ = pointwise_srls(D, anchors, traj, indices)
+
+        results.loc[len(results), :] = dict(
+            n_complexity=n_complexity,
+            method='srls',
+            result=p_srls
+        )
+        results.loc[len(results), :] = dict(
+            n_complexity=n_complexity,
+            method='rls',
+            result=p_rls
+        )
+    return results
