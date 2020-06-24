@@ -210,6 +210,11 @@ class TestBounds(unittest.TestCase):
         self.assertTrue(full_rank_condition(part, 3, 5))
         self.assertFalse(full_rank_condition(part, 4, 2))
 
+    def test_limit_condition_few_bins(self):
+        part = (5, 3)
+        self.assertTrue(full_rank_condition(part, 2, 3))
+        self.assertFalse(full_rank_condition(part, 3, 2))
+
     def test_infinity_anchors(self):
         infinity = probability_upper_bound(self.n_dimensions,
                                            self.n_constrains,
@@ -220,18 +225,25 @@ class TestBounds(unittest.TestCase):
 
     def test_infinity_positions(self):
         for n_anchors in range(3, 6):
-            infinity = probability_upper_bound(self.n_dimensions,
-                                               self.n_constrains,
-                                               n_times=100000000,
-                                               n_anchors=n_anchors,
-                                               n_measurements=15)
-
             large = probability_upper_bound(self.n_dimensions,
                                             self.n_constrains,
-                                            n_times=np.Infinity,
+                                            n_times=100000000,
                                             n_anchors=n_anchors,
                                             n_measurements=15)
+
+            infinity = probability_upper_bound(self.n_dimensions,
+                                               self.n_constrains,
+                                               n_times=np.Infinity,
+                                               n_anchors=n_anchors,
+                                               n_measurements=15)
+            self.assertTrue(infinity >= 0)
+            self.assertTrue(large >= 0)
             self.assertAlmostEqual(large, infinity)
+
+    def test_types(self):
+        numpyInt = probability_upper_bound(2, 5, n_measurements=15, n_anchors=np.int64(20), n_times=np.Infinity)
+        pythonInt = probability_upper_bound(2, 5, n_measurements=15, n_anchors=20, n_times=np.Infinity)
+        self.assertEqual(numpyInt, pythonInt)
 
 
 if __name__ == '__main__':
