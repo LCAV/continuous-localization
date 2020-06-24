@@ -366,6 +366,7 @@ def plot_probabilities(probabilities,
                        directory="results/probabilities/",
                        save=False,
                        label="estimated",
+                       variance=None,
                        **kwargs):
     key = "_d{}_c{}_p{}_full{}".format(params["n_dimensions"], params["n_constraints"], params["n_times"],
                                        params["full_matrix"])
@@ -379,6 +380,12 @@ def plot_probabilities(probabilities,
                  color="C{}".format(a_idx),
                  where='post',
                  **kwargs)
+        if variance is not None:
+            plt.fill_between(x,
+                             probabilities[:, a_idx] - variance[:, a_idx],
+                             probabilities[:, a_idx] + variance[:, a_idx],
+                             color="C{}".format(a_idx),
+                             alpha=0.3)
     plt.xlabel("number of measurements")
     formatter_text = '%g (D+1)K + (K-1)' if params["full_matrix"] else '%g (D+1)K'
     ax.xaxis.set_major_formatter(ticker.FormatStrFormatter(formatter_text))

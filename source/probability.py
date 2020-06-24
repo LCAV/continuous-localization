@@ -170,6 +170,7 @@ def probability_upper_bound(n_dimensions,
             n_measurements, position_wise, end - start))
 
     if np.isinf(n_times):
+        n_anchors = int(n_anchors)  # floats and numpy its have to small range
         common_factor = special.factorial(n_measurements) / (n_anchors**n_measurements)
     else:  # the common factor in this case is the total number of partitions
         common_factor = 1. / special.binom(n_times * n_anchors, n_measurements)
