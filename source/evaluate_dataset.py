@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 import scipy as sp
-import scipy.linalg as linalg
 
 # These system_ids are used by the python measurement pipeline,
 # but will be changed to better-readable "GT" and "Range", respectively.
