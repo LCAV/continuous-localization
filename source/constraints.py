@@ -244,7 +244,7 @@ def get_reduced_constraints(idx_a, idx_f, anchors, frame):
                           axis=1)
 
 
-def get_frame(n_constraints, n_positions):  # TODO(michalina) allow random times
+def get_frame(n_constraints, n_positions):
     """Generate frame (basis) the fast way, without crating the trajectory.
     It speeds up simulations compared to Trajectory.get_basis.
 
