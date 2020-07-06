@@ -47,14 +47,15 @@ def full_rank_condition(p, bins, measurements):
     """
     Calculate the condition from Theorem 1 in Relax and Recover paper.
 
-    :param p: a partition **sorted in a descending order**
+    :param p: a partition (does not need to be sorted anymore)
     :param bins: minimum number of bins that should be possible to fill (D+1 or K)
     :param measurements: minimum number of measurements per bin (K or D+1)
 
     :return: true if the condition is satisfied
     """
-    missing = np.clip(measurements - np.array(p[:bins]), a_min=0, a_max=None)
-    return np.sum(p[bins:]) >= np.sum(missing)
+
+    total = np.sum(np.clip(p, a_min=None, a_max=measurements))
+    return total >= bins * measurements
 
 
 def partitions(n, n_bins):
@@ -87,7 +88,7 @@ def _partitions(n, n_bins, previous):
 
 
 def partition_frequency(partition):
-    """ Calculate the number of partitions that are permutations of partition.
+    """ Calculate the number of partitions that are permutations of a given partition.
 
     If all entries of a length n partition are different, then there are n! permutations.
     But if some entries repeat, we would end up counting some permutations twice, so we divide
@@ -169,6 +170,7 @@ def probability_upper_bound(n_dimensions,
             n_measurements, position_wise, end - start))
 
     if np.isinf(n_times):
+        n_anchors = int(n_anchors)  # floats and numpy its have to small range
         common_factor = special.factorial(n_measurements) / (n_anchors**n_measurements)
     else:  # the common factor in this case is the total number of partitions
         common_factor = 1. / special.binom(n_times * n_anchors, n_measurements)
