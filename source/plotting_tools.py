@@ -125,7 +125,7 @@ def plot_noise(key,
     else:
         second_dim = parameters['noise_sigmas']
 
-    max_measurements = np.min(parameters["positions"]) * np.min(parameters["complexities"])
+    max_measurements = np.min(parameters["positions"]) * np.min(parameters["anchors"])
     if 'sampling_strategy' in parameters:
         if parameters['sampling_strategy'] == 'single_time':
             max_measurements = np.min(parameters["positions"])
