@@ -196,8 +196,8 @@ def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
                                         n_positions, n_missing))
                                     robust_increment(num_not_accurate, indexes)
 
-                            errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
-                            relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
+                        errors[indexes] = errors[indexes] / (n_its - num_not_solved[indexes])
+                        relative_errors[indexes] = relative_errors[indexes] / (n_its - num_not_solved[indexes])
 
     results = {
         'successes': successes,
