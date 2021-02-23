@@ -17,4 +17,4 @@ The WiFi and Lawnmower datasets can be automatically downloaded by running the s
 
 *Plaza1.mat, Plaza2.mat*: from https://github.com/gtrll/gpslam/tree/master/matlab/data. Localization of an autonomous lawnmower using UWB-based ranging to access points of known locations, as published in the [paper](https://www.ri.cmu.edu/pub_files/2009/9/Final_5datasetsRangingRadios.pdf) *Djugash et al.: Navigating with Ranging Radios: Five Data Sets with Ground Truth*.
 
-The [original website](http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData) of these data sets is broken, but we were given [this](https://panda.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/download.html) alternative source by the administrators. 
+The [original website](http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData) of these data sets is broken, so we created a copy at https://infoscience.epfl.ch/record/283435.
