@@ -39,8 +39,8 @@ def robust_add(arr, idx, value):
 def run_simulation(parameters, outfolder=None, solver=None, verbose=False):
     """ Run simulation. 
 
-    :param parameters: Can be either the name of the folder where parameters.json 
-    is stored, or a new dict of parameters.
+    :param parameters: Can be either the name of the folder where parameters.json is stored, or a new dict of parameters.
+
     """
     if type(parameters) == str:
         fname = parameters + 'parameters.json'
