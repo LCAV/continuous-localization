@@ -2,6 +2,21 @@
 
 [![Build Status](https://travis-ci.com/LCAV/continuous-localization.svg?branch=master)](https://travis-ci.com/LCAV/continuous-localization)
 
+Code for continuous localization based on sparse range measurements only, including recovery guarantees. If you use this code, please cite the [paper](https://ieeexplore.ieee.org/document/8978573):
+
+```
+@article{8978573,
+  author={Pacholska, Michalina and D{\"u}mbgen, Frederike and Scholefield, Adam},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={Relax and Recover: Guaranteed Range-Only Continuous Localization}, 
+  year={2020},
+  volume={5},
+  number={2},
+  pages={2248-2255},
+  doi={10.1109/LRA.2020.2970952}
+}
+```
+
 ## Authors
 
 Created by (in alphabetic order):
